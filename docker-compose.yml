@@ -1,0 +1,127 @@
+# Usage:
+#   docker compose up --build        # first run / after changes
+#   docker compose up -d             # run in background
+#   docker compose down              # stop
+#   docker compose logs -f backend   # watch backend logs
+#
+# MySQL: set MYSQL_* in a .env file (see backend/.env.example). The `db` service
+# starts first; the backend waits until MySQL is healthy.
+
+services:
+
+  # ── MySQL (user accounts) ───────────────────────────────────────────────────
+  db:
+    image: mysql:8.0
+    container_name: course_copilot_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-course_copilot_root}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-course_copilot}
+      MYSQL_USER: ${MYSQL_USER:-cocopilot}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-cocopilot_secret}
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mysqladmin ping -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" || exit 1",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 40s
+
+  # ── phpMyAdmin (browse MySQL in browser) ────────────────────────────────────
+  # Open http://localhost:${PHPMYADMIN_PORT:-8080} — log in as MYSQL_USER /
+  # MYSQL_PASSWORD or root / MYSQL_ROOT_PASSWORD (defaults in `db` service above).
+  phpmyadmin:
+    image: phpmyadmin:5-apache
+    container_name: course_copilot_phpmyadmin
+    restart: unless-stopped
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      UPLOAD_LIMIT: 64M
+    ports:
+      - "${PHPMYADMIN_PORT:-8080}:80"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ── Backend (FastAPI + FAISS) ────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: ../Dockerfile.backend
+    container_name: course_copilot_backend
+    restart: unless-stopped
+
+    env_file:
+      - ./backend/.env
+
+    environment:
+      OPENAI_API_KEY:       ${OPENAI_API_KEY}
+      ENVIRONMENT:          production
+      API_HOST:             0.0.0.0
+      API_PORT:             8000
+      CORS_ORIGINS:         "http://localhost,http://localhost:80,http://localhost:3000,http://localhost:3001,http://localhost:5173,http://127.0.0.1,http://127.0.0.1:80,http://127.0.0.1:3000,http://127.0.0.1:3001,http://127.0.0.1:5173,http://frontend"
+      EMBEDDING_MODEL:      ${EMBEDDING_MODEL:-text-embedding-3-small}
+      EMBEDDING_DIMENSIONS: ${EMBEDDING_DIMENSIONS:-1536}
+      LLM_MODEL:            ${LLM_MODEL:-gpt-4o}
+      LLM_TEMPERATURE:      ${LLM_TEMPERATURE:-0.0}
+      LLM_MAX_TOKENS:       ${LLM_MAX_TOKENS:-1000}
+      CHUNK_SIZE:           ${CHUNK_SIZE:-1000}
+      CHUNK_OVERLAP:        ${CHUNK_OVERLAP:-200}
+      TOP_K:                ${TOP_K:-5}
+
+      # MySQL (hostname = Docker service name `db` — overrides MYSQL_HOST in env_file)
+      MYSQL_HOST:           db
+      MYSQL_PORT:           3306
+      MYSQL_USER:           ${MYSQL_USER:-cocopilot}
+      MYSQL_PASSWORD:       ${MYSQL_PASSWORD:-cocopilot_secret}
+      MYSQL_DATABASE:       ${MYSQL_DATABASE:-course_copilot}
+      # SMTP_* and APP_NAME come from ./backend/.env via env_file above
+
+    ports:
+      - "8000:8000"
+
+    volumes:
+      - faiss_data:/app/faiss_store
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ── Frontend (React → nginx) ─────────────────────────────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        VITE_API_URL: http://localhost:8000
+    container_name: course_copilot_frontend
+    restart: unless-stopped
+
+    ports:
+      - "3000:80"
+
+    depends_on:
+      backend:
+        condition: service_healthy
+
+# ── Volumes ────────────────────────────────────────────────────────────────────
+volumes:
+  faiss_data:
+    driver: local
+  mysql_data:
+    driver: local

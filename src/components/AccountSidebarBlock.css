@@ -1,0 +1,101 @@
+/* Shared with Upload (`up-*`) and Chat (`cp-*`) dashboard sidebars */
+
+.up-account,
+.cp-account {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 0 8px;
+  margin-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.up-account-main,
+.cp-account-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.2s;
+}
+
+.up-account-main:hover,
+.cp-account-main:hover {
+  background: rgba(79, 172, 254, 0.12);
+}
+
+.up-account-avatar,
+.cp-account-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #4facfe, #764ba2);
+  color: #fff;
+  font-weight: 800;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.up-account-avatar-img,
+.cp-account-avatar-img {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.up-account-text,
+.cp-account-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.up-account-label,
+.cp-account-label {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #7a8199;
+  font-weight: 700;
+}
+
+.up-account-name,
+.cp-account-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e8eaf2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.up-account-logout,
+.cp-account-logout {
+  align-self: flex-start;
+  margin-left: 4px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #9ba3bf;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.up-account-logout:hover,
+.cp-account-logout:hover {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.25);
+}

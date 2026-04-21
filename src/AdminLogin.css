@@ -1,0 +1,132 @@
+.al-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at top left, #2a2f4d 0%, #11142a 60%);
+  padding: 24px;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.al-card {
+  width: 100%;
+  max-width: 420px;
+  background: #1a1e36;
+  color: #eef1ff;
+  border-radius: 16px;
+  padding: 32px 30px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  border: 1px solid rgba(79, 172, 254, 0.18);
+}
+
+.al-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 4px;
+}
+
+.al-brand-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f87171, #f59e0b);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 22px;
+  color: #fff;
+}
+
+.al-title {
+  margin: 0;
+  font-size: 20px;
+  letter-spacing: 0.4px;
+}
+
+.al-subtitle {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: #8b91ad;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+}
+
+.al-error {
+  background: rgba(248, 113, 113, 0.12);
+  border: 1px solid rgba(248, 113, 113, 0.4);
+  color: #fca5a5;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+.al-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.al-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #8b91ad;
+  font-weight: 600;
+}
+
+.al-input {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid #2c3354;
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: #fff;
+  font-size: 14px;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.al-input:focus {
+  outline: none;
+  border-color: #4facfe;
+  background: rgba(79, 172, 254, 0.08);
+}
+
+.al-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.al-submit {
+  margin-top: 6px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #4facfe, #00f2fe);
+  border: none;
+  border-radius: 10px;
+  color: #0a0e1f;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: transform 0.1s, opacity 0.15s;
+}
+
+.al-submit:hover { transform: translateY(-1px); }
+.al-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+.al-foot {
+  text-align: center;
+  margin-top: 6px;
+}
+
+.al-link {
+  background: transparent;
+  border: none;
+  color: #8b91ad;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.al-link:hover { color: #4facfe; }

@@ -1,0 +1,12 @@
+node_modules
+dist
+.git
+*.md
+backend/venv
+backend/__pycache__
+backend/faiss_store
+backend/.env
+**/__pycache__
+**/*.pyc
+**/*.pyo
+.DS_Store
