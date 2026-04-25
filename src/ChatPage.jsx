@@ -208,8 +208,7 @@ const ChatPage = () => {
     <div className="cp-page">
       <aside className="cp-sidebar">
         <div className="cp-brand" onClick={() => navigate("/")}>
-          <span className="cp-brand-icon">C</span>
-          <span className="cp-brand-name">Laboracle</span>
+          <img src="/laboracle-logo.png" alt="Laboracle" className="cp-brand-logo" />
         </div>
 
         <nav className="cp-nav">

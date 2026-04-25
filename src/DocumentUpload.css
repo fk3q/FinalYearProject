@@ -28,6 +28,13 @@
   color: #667eea;
 }
 
+.nav-left .logo-img {
+  height: 50px;
+  width: auto;
+  display: block;
+  object-fit: contain;
+}
+
 
 .company-badge {
   font-size: 11px;

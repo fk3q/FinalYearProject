@@ -98,8 +98,8 @@ const MainPage = () => {
       {/* Header */}
       <header className="header">
         <div className="header-content">
-          <div className="logo">
-            <span className="logo-text">Laboracle</span>
+          <div className="logo" onClick={() => navigate('/')}>
+            <img src="/laboracle-logo.png" alt="Laboracle" className="logo-img" />
           </div>
           <nav className="nav-links">
             <a href="#features">Features</a>
