@@ -2,8 +2,8 @@
  * Admin dashboard API — separate token stored in sessionStorage.
  */
 
-const ADMIN_TOKEN_KEY = "course_copilot_admin_token";
-const ADMIN_TOKEN_EXPIRES_KEY = "course_copilot_admin_token_expires";
+const ADMIN_TOKEN_KEY = "laboracle_admin_token";
+const ADMIN_TOKEN_EXPIRES_KEY = "laboracle_admin_token_expires";
 
 function jsonHeaders() {
   return { "Content-Type": "application/json" };

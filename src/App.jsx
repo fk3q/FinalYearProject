@@ -9,6 +9,7 @@ import ChatPage from './ChatPage';
 import ProfilePage from './ProfilePage';
 import AdminLogin from './AdminLogin';
 import AdminDashboard from './AdminDashboard';
+import { PaymentSuccess, PaymentCancel } from './PaymentReturn';
 
 function App() {
   return (
@@ -23,6 +24,8 @@ function App() {
         <Route path="/chat"    element={<ChatPage />} />
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin"       element={<AdminDashboard />} />
+        <Route path="/pay/success" element={<PaymentSuccess />} />
+        <Route path="/pay/cancel"  element={<PaymentCancel />} />
       </Routes>
     </Router>
   );

@@ -1,6 +1,6 @@
 # Complete Setup Instructions
 
-## Course Co-Pilot - Full Stack Setup Guide
+## Laboracle - Full Stack Setup Guide
 
 This guide will help you set up both the **frontend** (React) and **backend** (FastAPI with RAG).
 

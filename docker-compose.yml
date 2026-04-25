@@ -83,6 +83,16 @@ services:
       MYSQL_USER:           ${MYSQL_USER:-cocopilot}
       MYSQL_PASSWORD:       ${MYSQL_PASSWORD:-cocopilot_secret}
       MYSQL_DATABASE:       ${MYSQL_DATABASE:-course_copilot}
+      # Stripe payments — all blank by default so the app runs even without them.
+      # Set these in project-root .env (same level as docker-compose.yml).
+      STRIPE_SECRET_KEY:              ${STRIPE_SECRET_KEY:-}
+      STRIPE_PUBLISHABLE_KEY:         ${STRIPE_PUBLISHABLE_KEY:-}
+      STRIPE_WEBHOOK_SECRET:          ${STRIPE_WEBHOOK_SECRET:-}
+      STRIPE_PRICE_REGULAR_MONTHLY:   ${STRIPE_PRICE_REGULAR_MONTHLY:-}
+      STRIPE_PRICE_REGULAR_YEARLY:    ${STRIPE_PRICE_REGULAR_YEARLY:-}
+      STRIPE_PRICE_ADVANCED_MONTHLY:  ${STRIPE_PRICE_ADVANCED_MONTHLY:-}
+      STRIPE_PRICE_ADVANCED_YEARLY:   ${STRIPE_PRICE_ADVANCED_YEARLY:-}
+      FRONTEND_URL:                   ${FRONTEND_URL:-http://localhost:3000}
       # SMTP_* and APP_NAME come from ./backend/.env via env_file above
 
     ports:
@@ -108,7 +118,10 @@ services:
       context: .
       dockerfile: Dockerfile.frontend
       args:
-        VITE_API_URL: http://localhost:8000
+        # Leave empty so the built frontend uses same-origin relative /api/... paths.
+        # nginx inside the frontend container proxies those to the backend service.
+        # This is what makes the site work from any host/IP/domain, not just localhost.
+        VITE_API_URL: ""
     container_name: course_copilot_frontend
     restart: unless-stopped
 

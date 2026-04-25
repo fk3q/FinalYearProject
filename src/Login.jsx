@@ -92,7 +92,7 @@ const Login = () => {
               <div className="text-center mb-4">
                 <h1 className="h4 mb-1">Welcome Back</h1>
                 <p className="text-muted mb-2">
-                  Login to access your Course Co-Pilot
+                  Login to access your Laboracle
                 </p>
                 <span className="badge text-bg-light">Flosendo Learning Platform</span>
               </div>

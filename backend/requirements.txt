@@ -34,3 +34,6 @@ cryptography==42.0.8
 bcrypt==4.1.2
 tiktoken==0.7.0
 numpy==1.26.4
+
+# Payments
+stripe==9.11.0

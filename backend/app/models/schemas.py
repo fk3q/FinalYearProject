@@ -139,6 +139,7 @@ class UserPublic(BaseModel):
     last_name: str
     phone: str
     created_at: Optional[datetime] = None
+    subscription_tier: str = "free"
 
     model_config = {"from_attributes": True}
 
@@ -164,6 +165,8 @@ class UserProfileResponse(BaseModel):
     created_at: Optional[datetime] = None
     profile_picture_url: Optional[str] = None
     daily_time_seconds: int = 0
+    subscription_tier: str = "free"
+    has_stripe_customer: bool = False
 
     model_config = {"from_attributes": True}
 

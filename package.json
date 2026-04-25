@@ -1,7 +1,7 @@
 {
-  "name": "course-copilot",
+  "name": "laboracle",
   "version": "1.0.0",
-  "description": "Course Co-Pilot - Safe, Low-Hallucination Q&A Assistant for K12 Education",
+  "description": "Laboracle - Safe, Low-Hallucination Q&A Assistant for K12 Education",
   "main": "index.js",
   "scripts": {
     "dev": "vite",

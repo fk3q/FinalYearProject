@@ -196,7 +196,7 @@ const AdminDashboard = () => {
         <div>
           <h1 className="ad-h1">Admin Dashboard</h1>
           <p className="ad-sub">
-            Generated {formatDate(stats.generated_at)} · Course Co-Pilot
+            Generated {formatDate(stats.generated_at)} · Laboracle
           </p>
         </div>
         <div className="ad-header-actions">

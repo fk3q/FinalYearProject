@@ -1,4 +1,4 @@
-# Quick Start Guide - Course Co-Pilot
+# Quick Start Guide - Laboracle
 
 ## 🚀 Get Started in 5 Minutes!
 

@@ -84,7 +84,8 @@ def update_signup_geo(
 def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
     email_norm = email.strip().lower()
     q = """
-    SELECT id, email, password_hash, first_name, last_name, phone, created_at
+    SELECT id, email, password_hash, first_name, last_name, phone, created_at,
+           COALESCE(subscription_tier, 'free') AS subscription_tier
     FROM users WHERE email = %s LIMIT 1
     """
     return mysql_db.fetch_one(q, (email_norm,))
@@ -92,7 +93,8 @@ def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
 
 def get_public_user_by_id(user_id: int) -> Optional[Dict[str, Any]]:
     q = """
-    SELECT id, email, first_name, last_name, phone, created_at
+    SELECT id, email, first_name, last_name, phone, created_at,
+           COALESCE(subscription_tier, 'free') AS subscription_tier
     FROM users WHERE id = %s LIMIT 1
     """
     row = mysql_db.fetch_one(q, (user_id,))
@@ -112,7 +114,9 @@ def verify_login(email: str, password: str) -> Optional[Dict[str, Any]]:
 def get_user_profile_detail(user_id: int) -> Optional[Dict[str, Any]]:
     """Public profile fields + optional profile picture data URL + today's usage seconds."""
     q = """
-    SELECT id, email, first_name, last_name, phone, created_at, profile_picture_data
+    SELECT id, email, first_name, last_name, phone, created_at, profile_picture_data,
+           COALESCE(subscription_tier, 'free') AS subscription_tier,
+           stripe_customer_id
     FROM users WHERE id = %s LIMIT 1
     """
     row = mysql_db.fetch_one(q, (user_id,))
@@ -134,6 +138,8 @@ def get_user_profile_detail(user_id: int) -> Optional[Dict[str, Any]]:
         "created_at": row.get("created_at"),
         "profile_picture_url": str(pic) if pic else None,
         "daily_time_seconds": daily_seconds,
+        "subscription_tier": str(row.get("subscription_tier") or "free"),
+        "has_stripe_customer": bool(row.get("stripe_customer_id")),
     }
 
 

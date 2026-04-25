@@ -1,5 +1,5 @@
 """
-FastAPI entry point – Course Co-Pilot backend
+FastAPI entry point – Laboracle backend
 """
 
 import logging
@@ -26,6 +26,7 @@ from app.models.schemas import (
 )
 from app.routers.auth import router as auth_router, users_router
 from app.routers.admin import router as admin_router
+from app.routers.payments import router as payments_router
 from app.services import chat_history_service, user_service
 
 
@@ -45,7 +46,7 @@ async def lifespan(app: FastAPI):
 
 # ── App ───────────────────────────────────────────────────────────────────────
 app = FastAPI(
-    title="Course Co-Pilot API",
+    title="Laboracle API",
     description="RAG-based Q&A — FAISS + OpenAI embeddings + GPT-4o",
     version="2.0.0",
     lifespan=lifespan,
@@ -73,6 +74,7 @@ chat_service     = ChatService(document_service)
 app.include_router(auth_router, prefix="/api")
 app.include_router(users_router, prefix="/api")
 app.include_router(admin_router, prefix="/api")
+app.include_router(payments_router, prefix="/api")
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
@@ -82,7 +84,7 @@ app.include_router(admin_router, prefix="/api")
 async def health():
     return HealthResponse(
         status="healthy",
-        message="Course Co-Pilot API is running",
+        message="Laboracle API is running",
         timestamp=datetime.utcnow().isoformat(),
     )
 

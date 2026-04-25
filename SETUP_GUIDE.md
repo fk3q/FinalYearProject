@@ -1,6 +1,6 @@
-# Course Co-Pilot - Setup Guide
+# Laboracle - Setup Guide
 
-Complete guide to set up and run the Course Co-Pilot application.
+Complete guide to set up and run the Laboracle application.
 
 ## 📋 Table of Contents
 1. [Quick Start](#quick-start)

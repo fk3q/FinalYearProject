@@ -4,7 +4,7 @@
 
 const jsonHeaders = { "Content-Type": "application/json" };
 
-export const USER_STORAGE_KEY = "course_copilot_user";
+export const USER_STORAGE_KEY = "laboracle_user";
 
 export function saveSessionUser(user) {
   if (user && typeof user === "object") {

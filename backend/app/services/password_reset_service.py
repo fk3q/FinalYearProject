@@ -106,7 +106,7 @@ def _increment_attempts(code_id: int) -> None:
 
 
 def _email_code(to_email: str, first_name: str, code: str) -> bool:
-    app_name = settings.APP_NAME or "Course Co-Pilot"
+    app_name = settings.APP_NAME or "Laboracle"
     subject = f"{app_name} — your password reset code"
     greeting = f"Hi {first_name}," if first_name else "Hi,"
     text = (

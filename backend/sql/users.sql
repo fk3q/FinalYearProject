@@ -1,4 +1,4 @@
--- Course Co-Pilot — users table (also created automatically on API startup)
+-- Laboracle — users table (also created automatically on API startup)
 CREATE DATABASE IF NOT EXISTS course_copilot
   CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;

@@ -14,7 +14,7 @@ import "./ChatPage.css";
 const WELCOME_MESSAGE = {
   id: 0,
   type: "bot",
-  text: "Hello! I'm your Course Co-Pilot. Ask me anything about the documents you've uploaded.",
+  text: "Hello! I'm Laboracle. Ask me anything about the documents you've uploaded.",
   confidence: 100,
   citations: [],
 };
@@ -209,7 +209,7 @@ const ChatPage = () => {
       <aside className="cp-sidebar">
         <div className="cp-brand" onClick={() => navigate("/")}>
           <span className="cp-brand-icon">C</span>
-          <span className="cp-brand-name">Course Co-Pilot</span>
+          <span className="cp-brand-name">Laboracle</span>
         </div>
 
         <nav className="cp-nav">
@@ -339,7 +339,7 @@ const ChatPage = () => {
           <div className="cp-header-left">
             <div className="cp-ai-avatar">AI</div>
             <div>
-              <div className="cp-header-title">Course Co-Pilot</div>
+              <div className="cp-header-title">Laboracle</div>
               <div className="cp-header-sub">
                 {aiMode === "deterministic" ? "Deterministic" : "Exploratory"} &bull;{" "}
                 {userRole === "student" ? "Student" : "Teacher"} mode

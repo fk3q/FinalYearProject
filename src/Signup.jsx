@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Auth.css';
 import { registerUser, saveSessionUser } from './api/auth';
+import { createCheckoutSession } from './api/payments';
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -101,6 +102,41 @@ const Signup = () => {
       if (data.user) {
         saveSessionUser(data.user);
       }
+
+      // If the user came from the pricing page, continue them into Stripe
+      // checkout now that they have an account.
+      let pendingPlan = null;
+      try {
+        const raw = sessionStorage.getItem('laboracle_pending_plan');
+        if (raw) pendingPlan = JSON.parse(raw);
+      } catch {
+        /* ignore */
+      }
+      sessionStorage.removeItem('laboracle_pending_plan');
+
+      if (pendingPlan?.plan && data.user?.id) {
+        try {
+          const { url } = await createCheckoutSession({
+            userId: data.user.id,
+            plan: pendingPlan.plan,
+            billing: pendingPlan.billing || 'monthly',
+          });
+          if (url) {
+            window.location.href = url;
+            return;
+          }
+        } catch (err) {
+          // Fall through to profile if checkout fails; show an inline warning.
+          setApiError(
+            'Account created, but we could not start checkout: ' +
+              (err?.message || 'unknown error') +
+              ' — you can try again from the Pricing page.'
+          );
+          navigate('/profile');
+          return;
+        }
+      }
+
       navigate('/profile');
     } catch (err) {
       setApiError(err.message || 'Could not create account');
@@ -114,7 +150,7 @@ const Signup = () => {
       <div className="auth-card">
         <div className="auth-header">
           <h1>Create Account</h1>
-          <p>Join Flosendo's Course Co-Pilot learning platform</p>
+          <p>Join Flosendo's Laboracle learning platform</p>
           <span className="auth-company">Ages 9-17 | Safe & Secure</span>
         </div>
 

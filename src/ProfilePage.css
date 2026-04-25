@@ -294,3 +294,43 @@
   color: #1a1d2e;
   letter-spacing: -0.02em;
 }
+
+/* Subscription section */
+.pf-sub-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.pf-sub-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.pf-tier-badge {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.pf-tier-free {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.pf-tier-regular {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.pf-tier-advanced {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}

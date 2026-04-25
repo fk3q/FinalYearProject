@@ -2,8 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './DocumentUpload.css';
 
-// API Configuration
-const API_BASE_URL = 'http://localhost:8000';
+// API base — empty string = same-origin relative /api/... paths (proxied by nginx).
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 const DocumentUpload = () => {
   const navigate = useNavigate();
@@ -14,7 +14,7 @@ const DocumentUpload = () => {
   const [messages, setMessages] = useState([
     { 
       type: 'bot', 
-      text: 'Hello! I\'m your Course Co-Pilot. I can help you with questions about your entrepreneurship program, financial literacy course, and curriculum details. All my answers include source citations!',
+      text: 'Hello! I\'m Laboracle. I can help you with questions about your entrepreneurship program, financial literacy course, and curriculum details. All my answers include source citations!',
       confidence: 100
     }
   ]);
@@ -196,7 +196,7 @@ const DocumentUpload = () => {
       {/* Top Navigation */}
       <div className="top-nav">
         <div className="nav-left">
-          <span className="logo-text">Course Co-Pilot</span>
+          <span className="logo-text">Laboracle</span>
           <span className="company-badge">by Flosendo</span>
         </div>
         <div className="nav-right">
@@ -316,7 +316,7 @@ const DocumentUpload = () => {
             <div className="chat-header-content">
               <div className="bot-avatar">AI</div>
               <div className="header-text">
-                <h2>Course Co-Pilot</h2>
+                <h2>Laboracle</h2>
                 <p className="chat-status">
                   {uploadedFiles.length === 0 
                     ? 'Ready with curriculum database' 

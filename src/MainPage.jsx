@@ -1,9 +1,95 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './MainPage.css';
+import { getSessionUser } from './api/auth';
+import { createCheckoutSession } from './api/payments';
+
+// Pricing plans. Regular is the free default tier — no payment, just a signup.
+// Advanced is the only paid tier and goes through Stripe Checkout.
+const PLANS = [
+  {
+    id: 'regular',
+    name: 'Regular',
+    tagline: 'Free forever',
+    free: true,
+    featured: false,
+    cta: 'Get started free',
+    features: [
+      '50 questions per month',
+      'Course Q&A with citations',
+      'Upload up to 5 documents',
+      'Standard response time',
+      'Email support',
+    ],
+  },
+  {
+    id: 'advanced',
+    name: 'Advanced',
+    tagline: 'For power users',
+    monthly: 0.99,
+    yearly: 9.99, // ~17% discount (2 months free)
+    featured: true,
+    cta: 'Subscribe',
+    features: [
+      'Unlimited questions',
+      'Course Q&A with citations',
+      'Unlimited document uploads',
+      'Priority response time',
+      'Priority support',
+      'Early access to new features',
+    ],
+  },
+];
 
 const MainPage = () => {
   const navigate = useNavigate();
+  const [billing, setBilling] = useState('monthly'); // 'monthly' | 'yearly'
+  const [checkoutLoading, setCheckoutLoading] = useState(null); // plan id currently checking out
+  const [checkoutError, setCheckoutError] = useState('');
+
+  const handleSelectPlan = async (planId) => {
+    setCheckoutError('');
+    const plan = PLANS.find((p) => p.id === planId);
+    const user = getSessionUser();
+
+    // Free plan — no Stripe involved. Just send them to signup (or to the app
+    // if they're already signed in, since they already have free access).
+    if (plan?.free) {
+      navigate(user?.id ? '/chat' : '/signup');
+      return;
+    }
+
+    // Paid plan — need to be signed in before we can create a Stripe customer.
+    if (!user || !user.id) {
+      try {
+        sessionStorage.setItem(
+          'laboracle_pending_plan',
+          JSON.stringify({ plan: planId, billing })
+        );
+      } catch {
+        /* storage might be full / blocked — safe to ignore */
+      }
+      navigate('/signup');
+      return;
+    }
+
+    setCheckoutLoading(planId);
+    try {
+      const { url } = await createCheckoutSession({
+        userId: user.id,
+        plan: planId,
+        billing,
+      });
+      if (url) {
+        window.location.href = url;
+      } else {
+        throw new Error('No checkout URL returned from the server.');
+      }
+    } catch (err) {
+      setCheckoutError(err?.message || 'Could not start checkout.');
+      setCheckoutLoading(null);
+    }
+  };
 
   return (
 
@@ -13,11 +99,12 @@ const MainPage = () => {
       <header className="header">
         <div className="header-content">
           <div className="logo">
-            <span className="logo-text">Course Co-Pilot</span>
+            <span className="logo-text">Laboracle</span>
           </div>
           <nav className="nav-links">
             <a href="#features">Features</a>
             <a href="#how-it-works">How It Works</a>
+            <a href="#pricing">Pricing</a>
             <a href="#about">About</a>
           </nav>
           <div className="auth-buttons">
@@ -121,21 +208,113 @@ const MainPage = () => {
         </div>
       </section>
 
+      {/* Pricing Section */}
+      <section id="pricing" className="pricing">
+        <h2 className="section-title">Pricing plans</h2>
+        <p className="pricing-subtitle">
+          Choose the plan that works best for your learning journey
+        </p>
 
-      
+        <div className="billing-toggle" role="tablist" aria-label="Billing cycle">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={billing === 'monthly'}
+            className={`billing-option ${billing === 'monthly' ? 'is-active' : ''}`}
+            onClick={() => setBilling('monthly')}
+          >
+            Monthly
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={billing === 'yearly'}
+            className={`billing-option ${billing === 'yearly' ? 'is-active' : ''}`}
+            onClick={() => setBilling('yearly')}
+          >
+            Yearly
+          </button>
+        </div>
+
+        <div className="pricing-grid">
+          {PLANS.map((plan) => {
+            const isFree = plan.free === true;
+            const price = isFree ? 0 : (billing === 'monthly' ? plan.monthly : plan.yearly);
+            const period = isFree
+              ? 'forever'
+              : billing === 'monthly' ? 'per month' : 'per year';
+            return (
+              <div
+                key={plan.id}
+                className={`pricing-card ${plan.featured ? 'is-featured' : ''}`}
+              >
+                <div className="pricing-card-head">
+                  <h3 className="pricing-name">{plan.name.toUpperCase()}</h3>
+                  {plan.featured && (
+                    <span className="pricing-badge">Most Popular</span>
+                  )}
+                </div>
+
+                {isFree ? (
+                  <div className="pricing-price">
+                    <span className="pricing-amount">Free</span>
+                  </div>
+                ) : (
+                  <div className="pricing-price">
+                    <span className="pricing-currency">£</span>
+                    <span className="pricing-amount">{price.toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="pricing-period">{period}</div>
+                <div className="pricing-tagline">{plan.tagline}</div>
+
+                <ul className="pricing-features">
+                  {plan.features.map((feat) => (
+                    <li key={feat}>
+                      <span className="pricing-check" aria-hidden="true">✓</span>
+                      <span>{feat}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <button
+                  type="button"
+                  className={`pricing-cta ${plan.featured ? 'pricing-cta--primary' : ''}`}
+                  onClick={() => handleSelectPlan(plan.id)}
+                  disabled={checkoutLoading !== null}
+                >
+                  {checkoutLoading === plan.id
+                    ? 'Redirecting…'
+                    : (plan.cta || 'Subscribe')}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+
+        {checkoutError && (
+          <p className="pricing-error" role="alert">
+            {checkoutError}
+          </p>
+        )}
+
+        <p className="pricing-footnote">
+          Secure payments powered by Stripe. Cancel any time from your profile.
+        </p>
+      </section>
 
       {/* About Section */}
       <section id="about" className="about">
         <div className="about-content">
-          <h2 className="section-title">About Course Co-Pilot</h2>
+          <h2 className="section-title">About Laboracle</h2>
           <p>
-            Course Co-Pilot is Flosendo Limited's safe, intelligent learning assistant designed specifically 
+            Laboracle is Flosendo Limited's safe, intelligent learning assistant designed specifically 
             for K12 students (ages 9-17). Built for our entrepreneurship accelerator and gamified financial 
             literacy courses, it helps students stay on track during online missions and classroom blocks.
           </p>
           <p>
             Using advanced RAG technology with citation verification and low-hallucination safeguards, 
-            Course Co-Pilot reduces teacher workload while ensuring students get accurate, age-appropriate 
+            Laboracle reduces teacher workload while ensuring students get accurate, age-appropriate 
             answers to their course questions. Every answer includes source citations for transparency and trust.
           </p>
         </div>
@@ -145,7 +324,7 @@ const MainPage = () => {
       <footer className="footer">
         <div className="footer-content">
           <div className="footer-section">
-            <h3>Course Co-Pilot</h3>
+            <h3>Laboracle</h3>
             <p>Your smart learning companion</p>
             <p style={{ marginTop: '10px', fontSize: '13px' }}>by Flosendo Limited</p>
             <div className="social-links">
@@ -158,7 +337,7 @@ const MainPage = () => {
             <h4>Product</h4>
             <a href="#features">Features</a>
             <a href="#how-it-works">How It Works</a>
-            <a href="#">Pricing</a>
+            <a href="#pricing">Pricing</a>
             <a href="#">FAQ</a>
           </div>
           <div className="footer-section">

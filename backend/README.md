@@ -1,4 +1,4 @@
-# Course Co-Pilot Backend API
+# Laboracle Backend API
 
 FastAPI backend with RAG (Retrieval-Augmented Generation) using LangChain, MongoDB Atlas, and OpenAI.
 

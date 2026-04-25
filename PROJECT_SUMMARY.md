@@ -1,7 +1,7 @@
-# Course Co-Pilot - Project Summary
+# Laboracle - Project Summary
 
 **Client**: Flosendo Limited  
-**Project**: Course Co-Pilot - Safe Q&A Assistant for K12 Education  
+**Project**: Laboracle - Safe Q&A Assistant for K12 Education  
 **Date**: February 4, 2026  
 **Status**: ✅ Frontend Complete & Ready for Backend Integration
 
@@ -22,7 +22,7 @@ Build a safe, low-hallucination Q&A assistant that answers programme, curriculum
 ### 1. Four Core React Components
 
 #### 📍 **MainPage.jsx** - Landing Page
-- Hero section with Course Co-Pilot branding
+- Hero section with Laboracle branding
 - Features showcase (6 key features)
 - How It Works section (3-step process)
 - About Flosendo section
@@ -412,7 +412,7 @@ Open browser: `http://localhost:3000`
 
 ## 📝 Final Notes
 
-This frontend implementation provides a **production-ready** user interface for the Course Co-Pilot project. The application is:
+This frontend implementation provides a **production-ready** user interface for the Laboracle project. The application is:
 
 - **Complete**: All 4 requested pages implemented
 - **Beautiful**: Modern, professional design

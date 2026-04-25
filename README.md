@@ -1,4 +1,4 @@
-# Course Co-Pilot
+# Laboracle
 
 **By Flosendo Limited**
 
@@ -6,7 +6,7 @@ A safe, low-hallucination Q&A assistant for K12 education that answers program, 
 
 ## 🎯 Project Overview
 
-Course Co-Pilot is designed to reduce teacher workload while keeping students moving through a hybrid flow of short online missions and classroom blocks. The system uses retrieval with citations and switches between deterministic and exploratory modes for safe, reliable learning assistance.
+Laboracle is designed to reduce teacher workload while keeping students moving through a hybrid flow of short online missions and classroom blocks. The system uses retrieval with citations and switches between deterministic and exploratory modes for safe, reliable learning assistance.
 
 ## ✨ Key Features
 
@@ -90,7 +90,7 @@ http://localhost:3000
 
 ## 📚 Course Content
 
-Course Co-Pilot currently supports queries about:
+Laboracle currently supports queries about:
 - **Entrepreneurship Accelerator** (Ages 12-17)
   - Project-based learning
   - Real-world business skills
@@ -215,7 +215,7 @@ Flosendo is an education platform delivering enrichment learning for K12 student
 
 ## 📞 Support
 
-For questions about the Course Co-Pilot project, please contact the project team.
+For questions about the Laboracle project, please contact the project team.
 
 ---
 

@@ -1,4 +1,4 @@
-# Quick Bootstrap Examples for Your Course Co-Pilot
+# Quick Bootstrap Examples for Your Laboracle
 
 Here are some ready-to-use Bootstrap enhancements for your specific components:
 
@@ -169,7 +169,7 @@ import { Navbar, Container, Nav, Button } from 'react-bootstrap';
   <Container>
     <Navbar.Brand href="/">
       <i className="bi bi-mortarboard me-2"></i>
-      Course Co-Pilot
+      Laboracle
     </Navbar.Brand>
     <Navbar.Toggle />
     <Navbar.Collapse className="justify-content-end">

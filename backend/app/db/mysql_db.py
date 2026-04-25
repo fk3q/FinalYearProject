@@ -59,12 +59,27 @@ def init_db_schema() -> None:
                 "ALTER TABLE users ADD COLUMN signup_country VARCHAR(64) NULL",
                 "ALTER TABLE users ADD COLUMN signup_country_code VARCHAR(8) NULL",
                 "ALTER TABLE users ADD COLUMN signup_city VARCHAR(128) NULL",
+                # Subscription columns — everyone defaults to 'free'; webhook flips
+                # this to 'regular' / 'advanced' after a successful Stripe checkout.
+                "ALTER TABLE users ADD COLUMN subscription_tier VARCHAR(20) NOT NULL DEFAULT 'free'",
+                "ALTER TABLE users ADD COLUMN stripe_customer_id VARCHAR(64) NULL",
+                "ALTER TABLE users ADD COLUMN stripe_subscription_id VARCHAR(64) NULL",
+                "ALTER TABLE users ADD COLUMN subscription_current_period_end TIMESTAMP NULL",
             ):
                 try:
                     cur.execute(column_ddl)
                 except OperationalError as e:
                     if e.args[0] != 1060:
                         raise
+            # Index for webhook lookups (stripe_customer_id → user row)
+            try:
+                cur.execute(
+                    "ALTER TABLE users ADD UNIQUE KEY uq_users_stripe_customer (stripe_customer_id)"
+                )
+            except OperationalError as e:
+                # 1061 = duplicate key name, 1062 = dup value (unlikely at migration time)
+                if e.args[0] not in (1061, 1062):
+                    raise
             cur.execute(
                 """
                 CREATE TABLE IF NOT EXISTS user_usage_daily (

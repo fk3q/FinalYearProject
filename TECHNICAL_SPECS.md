@@ -1,8 +1,8 @@
-# Course Co-Pilot - Technical Specifications
+# Laboracle - Technical Specifications
 
 ## Architecture Overview
 
-Course Co-Pilot is a RAG-based Q&A system designed with safety and accuracy as primary concerns for K12 education.
+Laboracle is a RAG-based Q&A system designed with safety and accuracy as primary concerns for K12 education.
 
 ## System Components
 

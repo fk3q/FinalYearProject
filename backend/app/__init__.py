@@ -1,3 +1,3 @@
 """
-Course Co-Pilot Backend Application
+Laboracle Backend Application
 """

@@ -6,9 +6,22 @@ import {
   getSessionUser,
   mergeSessionUser,
 } from "./api/auth";
+import { createPortalSession } from "./api/payments";
 import { useUsageTracker } from "./hooks/useUsageTracker";
 import AccountSidebarBlock from "./components/AccountSidebarBlock";
 import "./ProfilePage.css";
+
+const TIER_LABEL = {
+  free: "Free",
+  regular: "Regular",
+  advanced: "Advanced",
+};
+
+const TIER_DESCRIPTION = {
+  free: "You're on the free plan. Upgrade to unlock more questions and features.",
+  regular: "You're on the Regular plan.",
+  advanced: "You're on the Advanced plan — unlimited access.",
+};
 
 function formatDuration(totalSeconds) {
   if (totalSeconds < 60) return `${totalSeconds}s`;
@@ -26,6 +39,8 @@ const ProfilePage = () => {
   const [loadError, setLoadError] = useState("");
   const [savingPic, setSavingPic] = useState(false);
   const [picError, setPicError] = useState("");
+  const [portalLoading, setPortalLoading] = useState(false);
+  const [portalError, setPortalError] = useState("");
 
   useUsageTracker();
 
@@ -88,6 +103,23 @@ const ProfilePage = () => {
     e.target.value = "";
   };
 
+  const openBillingPortal = async () => {
+    if (!session?.id) return;
+    setPortalError("");
+    setPortalLoading(true);
+    try {
+      const { url } = await createPortalSession({ userId: session.id });
+      if (url) {
+        window.location.href = url;
+      } else {
+        throw new Error("No portal URL returned from the server.");
+      }
+    } catch (err) {
+      setPortalError(err?.message || "Could not open subscription portal.");
+      setPortalLoading(false);
+    }
+  };
+
   const clearPicture = async () => {
     if (!session?.id) return;
     setSavingPic(true);
@@ -110,7 +142,7 @@ const ProfilePage = () => {
       <aside className="pf-sidebar">
         <div className="pf-brand" onClick={() => navigate("/")}>
           <span className="pf-brand-icon">C</span>
-          <span className="pf-brand-name">Course Co-Pilot</span>
+          <span className="pf-brand-name">Laboracle</span>
         </div>
 
         <nav className="pf-nav">
@@ -139,7 +171,7 @@ const ProfilePage = () => {
           <p className="pf-kicker">You're signed in</p>
           <h1 className="pf-title">Your account</h1>
           <p className="pf-sub">
-            View your profile details, photo, and how long you’ve used Course Co-Pilot today.
+            View your profile details, photo, and how long you’ve used Laboracle today.
           </p>
         </header>
 
@@ -231,8 +263,43 @@ const ProfilePage = () => {
               </dl>
             </div>
 
+            <div className="pf-section">
+              <h3 className="pf-section-title">Subscription</h3>
+              <div className="pf-sub-row">
+                <div>
+                  <div className={`pf-tier-badge pf-tier-${profile.subscription_tier || 'free'}`}>
+                    {TIER_LABEL[profile.subscription_tier] || 'Free'} plan
+                  </div>
+                  <p className="pf-muted" style={{ marginTop: 8 }}>
+                    {TIER_DESCRIPTION[profile.subscription_tier] || TIER_DESCRIPTION.free}
+                  </p>
+                </div>
+                <div className="pf-sub-actions">
+                  {profile.has_stripe_customer ? (
+                    <button
+                      type="button"
+                      className="pf-file-btn"
+                      onClick={openBillingPortal}
+                      disabled={portalLoading}
+                    >
+                      {portalLoading ? 'Opening…' : 'Manage subscription'}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="pf-file-btn"
+                      onClick={() => navigate('/#pricing')}
+                    >
+                      See plans
+                    </button>
+                  )}
+                </div>
+              </div>
+              {portalError && <p className="pf-field-error">{portalError}</p>}
+            </div>
+
             <div className="pf-section pf-usage">
-              <h3 className="pf-section-title">Daily time on Course Co-Pilot</h3>
+              <h3 className="pf-section-title">Daily time on Laboracle</h3>
               <p className="pf-muted">
                 Tracked while you keep Upload or Chat open (approximate).
               </p>

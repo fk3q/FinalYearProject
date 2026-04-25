@@ -58,14 +58,29 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str = ""
     SMTP_USE_TLS: bool = True
     SMTP_FROM_EMAIL: str = ""
-    SMTP_FROM_NAME: str = "Course Co-Pilot"
-    APP_NAME: str = "Course Co-Pilot"
+    SMTP_FROM_NAME: str = "Laboracle"
+    APP_NAME: str = "Laboracle"
 
     # ── Admin dashboard ───────────────────────────────────────────────────────
     # Single hardcoded admin account. Override via env vars in production.
     ADMIN_USERNAME: str = "fk3q"
     ADMIN_PASSWORD: str = "123456"
     ADMIN_TOKEN_TTL_HOURS: int = 8
+
+    # ── Stripe / Payments ─────────────────────────────────────────────────────
+    # Leave all blank to disable the payment routes — the app still runs.
+    # For test mode, use keys starting with `sk_test_` / `pk_test_`.
+    STRIPE_SECRET_KEY: str = ""
+    STRIPE_PUBLISHABLE_KEY: str = ""
+    STRIPE_WEBHOOK_SECRET: str = ""
+    # Price IDs from your Stripe dashboard (Products → Prices). One per tier/cycle.
+    STRIPE_PRICE_REGULAR_MONTHLY: str = ""
+    STRIPE_PRICE_REGULAR_YEARLY: str = ""
+    STRIPE_PRICE_ADVANCED_MONTHLY: str = ""
+    STRIPE_PRICE_ADVANCED_YEARLY: str = ""
+    # Where Stripe should send the user after checkout (must include scheme).
+    # Default assumes the Docker frontend at http://localhost:3000.
+    FRONTEND_URL: str = "http://localhost:3000"
 
     def get_cors_origins(self) -> List[str]:
         if isinstance(self.CORS_ORIGINS, str):

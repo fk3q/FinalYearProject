@@ -1,6 +1,6 @@
 # Bootstrap Setup Guide
 
-Bootstrap 5 has been added to your Course Co-Pilot project!
+Bootstrap 5 has been added to your Laboracle project!
 
 ## What's Included
 

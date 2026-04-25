@@ -5,7 +5,10 @@ import { useUsageTracker } from './hooks/useUsageTracker';
 import { getSessionUser } from './api/auth';
 import './UploadPage.css';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+// Empty string => same-origin relative paths (/api/...). nginx in the frontend
+// container proxies those to the backend. Keeps the app host-agnostic so it
+// works from localhost, AWS, or a real domain without a rebuild.
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 const UploadPage = () => {
   useUsageTracker();
@@ -110,7 +113,7 @@ const UploadPage = () => {
       <aside className="up-sidebar">
         <div className="up-brand" onClick={() => navigate('/')}>
           <span className="up-brand-icon">C</span>
-          <span className="up-brand-name">Course Co-Pilot</span>
+          <span className="up-brand-name">Laboracle</span>
         </div>
 
         <nav className="up-nav">

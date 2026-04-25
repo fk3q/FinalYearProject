@@ -41,7 +41,7 @@ const AdminLogin = () => {
           <span className="al-brand-icon">A</span>
           <div>
             <h1 className="al-title">Admin Console</h1>
-            <p className="al-subtitle">Course Co-Pilot Operations</p>
+            <p className="al-subtitle">Laboracle Operations</p>
           </div>
         </div>
 

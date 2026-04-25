@@ -148,6 +148,7 @@ def _normalize_user_row(row: Dict[str, Any]) -> Dict[str, Any]:
         "last_name": str(row["last_name"]),
         "phone": str(row["phone"]),
         "created_at": row.get("created_at"),
+        "subscription_tier": str(row.get("subscription_tier") or "free"),
     }
 
 
@@ -164,6 +165,8 @@ def _profile_from_service(row: dict) -> UserProfileResponse:
         created_at=row.get("created_at"),
         profile_picture_url=row.get("profile_picture_url"),
         daily_time_seconds=int(row.get("daily_time_seconds", 0)),
+        subscription_tier=str(row.get("subscription_tier") or "free"),
+        has_stripe_customer=bool(row.get("has_stripe_customer")),
     )
 
 
