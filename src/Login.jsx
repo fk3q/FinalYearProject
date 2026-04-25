@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Auth.css"; // im keeping this but slides will i am keeping for bootstrap
-import { loginUser, saveSessionUser } from "./api/auth";
+import { googleSignIn, loginUser, saveSessionUser } from "./api/auth";
 import { useTheme } from "./contexts/ThemeContext";
+import GoogleSignInButton from "./components/GoogleSignInButton";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -14,6 +15,27 @@ const Login = () => {
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [apiError, setApiError] = useState("");
+  const [googleBusy, setGoogleBusy] = useState(false);
+
+  const onGoogleCredential = useCallback(
+    async (credential) => {
+      setGoogleBusy(true);
+      setApiError("");
+      try {
+        const data = await googleSignIn({ credential });
+        if (data.user) {
+          saveSessionUser(data.user);
+          if (data.user.theme) applyTheme(data.user.theme);
+        }
+        navigate("/profile");
+      } catch (err) {
+        setApiError(err.message || "Google sign-in failed");
+      } finally {
+        setGoogleBusy(false);
+      }
+    },
+    [applyTheme, navigate]
+  );
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -105,6 +127,13 @@ const Login = () => {
                   {apiError}
                 </div>
               ) : null}
+
+              <GoogleSignInButton onCredential={onGoogleCredential} disabled={googleBusy || submitting} />
+              {googleBusy ? (
+                <p className="text-center text-muted small mt-2 mb-0">Signing in with Google…</p>
+              ) : null}
+
+              <div className="auth-divider">or email</div>
 
               <form onSubmit={handleSubmit} noValidate>
                 {/* Email */}

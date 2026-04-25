@@ -107,10 +107,98 @@ def verify_login(email: str, password: str) -> Optional[Dict[str, Any]]:
     row = get_user_by_email(email)
     if not row:
         return None
-    if not _verify_password(password, row["password_hash"]):
+    ph = row.get("password_hash")
+    if not ph:
+        return None
+    if not _verify_password(password, ph):
         return None
     row.pop("password_hash", None)
     return row
+
+
+def get_user_by_google_sub(google_sub: str) -> Optional[Dict[str, Any]]:
+    q = """
+    SELECT id, email, first_name, last_name, phone, created_at,
+           COALESCE(subscription_tier, 'free') AS subscription_tier,
+           COALESCE(theme, 'light') AS theme, google_sub, google_email
+    FROM users WHERE google_sub = %s LIMIT 1
+    """
+    return mysql_db.fetch_one(q, (google_sub,))
+
+
+def upsert_google_user(
+    *,
+    google_sub: str,
+    email: str,
+    first_name: str,
+    last_name: str,
+    signup_ip: Optional[str] = None,
+    signup_country: Optional[str] = None,
+    signup_country_code: Optional[str] = None,
+    signup_city: Optional[str] = None,
+) -> int:
+    """
+    Find or create a user row for a Google account.
+
+    - If `google_sub` already exists → return that id (refresh google_email).
+    - Else if email exists:
+        - If that row has no password (Google-only stub) → attach google_sub.
+        - Else if already linked to this google_sub → return id.
+        - Else → 409-style conflict is handled by the router (email/password account).
+    - Else insert a new Google-only user (password_hash = NULL, phone = placeholder).
+    """
+    email_norm = email.strip().lower()
+    existing_sub = get_user_by_google_sub(google_sub)
+    if existing_sub:
+        mysql_db.execute_update(
+            "UPDATE users SET google_email = %s WHERE id = %s",
+            (email_norm, int(existing_sub["id"])),
+        )
+        return int(existing_sub["id"])
+
+    by_email = get_user_by_email(email_norm)
+    if by_email:
+        uid = int(by_email["id"])
+        ph = by_email.get("password_hash")
+        existing_gs = by_email.get("google_sub")
+        if existing_gs and str(existing_gs) != google_sub:
+            raise ValueError("google_account_mismatch")
+        if ph:
+            raise ValueError("email_password_exists")
+        mysql_db.execute_update(
+            """
+            UPDATE users
+            SET google_sub = %s, google_email = %s,
+                first_name = %s, last_name = %s
+            WHERE id = %s
+            """,
+            (google_sub, email_norm, first_name.strip(), last_name.strip(), uid),
+        )
+        return uid
+
+    q = """
+    INSERT INTO users (
+        email, password_hash, first_name, last_name, phone,
+        signup_ip, signup_country, signup_country_code, signup_city,
+        google_sub, google_email
+    )
+    VALUES (%s, NULL, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    """
+    return mysql_db.execute_insert(
+        q,
+        (
+            email_norm,
+            first_name.strip(),
+            last_name.strip(),
+            "google-oauth",
+            signup_ip,
+            signup_country,
+            signup_country_code,
+            signup_city,
+            google_sub,
+            email_norm,
+        ),
+    )
 
 
 def get_user_profile_detail(user_id: int) -> Optional[Dict[str, Any]]:

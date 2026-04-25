@@ -15,6 +15,7 @@ from app.models.schemas import (
     ChatSessionDetailResponse,
     ChatSessionSummary,
     ForgotPasswordRequest,
+    GoogleSignInRequest,
     RegisterResponse,
     ResetPasswordRequest,
     SimpleMessageResponse,
@@ -29,6 +30,7 @@ from app.services import (
     admin_service,
     captcha_service,
     chat_history_service,
+    google_oauth_service,
     password_reset_service,
     user_service,
 )
@@ -116,6 +118,68 @@ async def login(body: UserLoginRequest):
 
     user = UserPublic(**_normalize_user_row(row))
     return AuthSuccessResponse(message="Signed in successfully.", user=user)
+
+
+@router.post("/google", response_model=AuthSuccessResponse)
+async def google_sign_in(body: GoogleSignInRequest, request: Request):
+    """
+    Sign in or register via Google. Verifies the ID token server-side.
+
+    If an account with the same email already exists with a password, returns 409
+    so the user signs in with email/password (we do not auto-link without proof
+    of password ownership).
+    """
+    claims, err = google_oauth_service.verify_google_id_token(body.credential)
+    if err:
+        raise HTTPException(status_code=400, detail=err)
+
+    client_ip = _client_ip_from_request(request)
+    country, country_code, city = admin_service.lookup_geo(client_ip)
+
+    try:
+        user_id = user_service.upsert_google_user(
+            google_sub=claims["sub"],
+            email=claims["email"],
+            first_name=claims["given_name"],
+            last_name=claims["family_name"],
+            signup_ip=client_ip,
+            signup_country=country,
+            signup_country_code=country_code,
+            signup_city=city,
+        )
+    except ValueError as e:
+        code = str(e)
+        if code == "email_password_exists":
+            raise HTTPException(
+                status_code=409,
+                detail="An account with this email already exists. Sign in with your password, or use a different Google account.",
+            ) from e
+        if code == "google_account_mismatch":
+            raise HTTPException(
+                status_code=409,
+                detail="This email is already linked to a different Google account.",
+            ) from e
+        raise HTTPException(status_code=400, detail="Could not sign in with Google.") from e
+    except IntegrityError as e:
+        err = str(e).lower()
+        if "duplicate" in err or (e.args and e.args[0] == 1062):
+            raise HTTPException(
+                status_code=409,
+                detail="This Google account or email is already in use.",
+            ) from e
+        raise HTTPException(status_code=400, detail="Could not create account.") from e
+    except pymysql.err.OperationalError as e:
+        raise _db_unavailable(e) from e
+
+    user_service.update_signup_geo(
+        user_id, country=country, country_code=country_code, city=city
+    )
+
+    row = user_service.get_public_user_by_id(user_id)
+    if not row:
+        raise HTTPException(status_code=500, detail="Signed in but profile could not be loaded.")
+    user = UserPublic(**_normalize_user_row(row))
+    return AuthSuccessResponse(message="Signed in with Google.", user=user)
 
 
 @router.post("/forgot-password", response_model=SimpleMessageResponse)

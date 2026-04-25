@@ -88,6 +88,11 @@ class Settings(BaseSettings):
     # via VITE_TURNSTILE_SITE_KEY in docker-compose.yml.
     TURNSTILE_SECRET_KEY: str = ""
 
+    # ── Google Sign-In ────────────────────────────────────────────────────────
+    # OAuth 2.0 Web Client ID from Google Cloud Console (ends in
+    # .apps.googleusercontent.com). Used by the backend to verify ID tokens.
+    GOOGLE_OAUTH_CLIENT_ID: str = ""
+
     def get_cors_origins(self) -> List[str]:
         if isinstance(self.CORS_ORIGINS, str):
             return [o.strip() for o in self.CORS_ORIGINS.split(',') if o.strip()]

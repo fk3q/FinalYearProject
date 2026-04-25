@@ -95,6 +95,8 @@ services:
       FRONTEND_URL:                   ${FRONTEND_URL:-http://localhost:3000}
       # Cloudflare Turnstile (signup CAPTCHA). Leave blank to disable verification.
       TURNSTILE_SECRET_KEY:           ${TURNSTILE_SECRET_KEY:-}
+      # Google Sign-In — Web Client ID (same value as VITE_GOOGLE_CLIENT_ID).
+      GOOGLE_OAUTH_CLIENT_ID:         ${GOOGLE_OAUTH_CLIENT_ID:-}
       # SMTP_* and APP_NAME come from ./backend/.env via env_file above
 
     ports:
@@ -127,6 +129,8 @@ services:
         # Public Cloudflare Turnstile site key for the signup captcha. The
         # default is Cloudflare's "always-passes" dummy key for local dev.
         VITE_TURNSTILE_SITE_KEY: ${VITE_TURNSTILE_SITE_KEY:-1x00000000000000000000AA}
+        # Google Sign-In — same Web Client ID string as in Google Cloud Console.
+        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
     container_name: course_copilot_frontend
     restart: unless-stopped
 

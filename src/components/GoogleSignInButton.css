@@ -1,0 +1,26 @@
+.google-signin-mount {
+  display: flex;
+  justify-content: center;
+  min-height: 44px;
+}
+
+.google-signin-mount--disabled {
+  pointer-events: none;
+  opacity: 0.45;
+}
+
+.google-signin-hint {
+  font-size: 13px;
+  color: #b45309;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 0;
+}
+
+html[data-theme="dark"] .google-signin-hint {
+  color: #fde68a;
+  background: #422006;
+  border-color: #78350f;
+}

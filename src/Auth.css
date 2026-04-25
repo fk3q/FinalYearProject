@@ -125,6 +125,35 @@ body {
   min-height: 65px;
 }
 
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0 16px;
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #e2e8f0;
+}
+
+html[data-theme="dark"] .auth-divider {
+  color: #64748b;
+}
+
+html[data-theme="dark"] .auth-divider::before,
+html[data-theme="dark"] .auth-divider::after {
+  background: #334155;
+}
+
 .error-message {
   color: #f44336;
   font-size: 12px;

@@ -37,3 +37,6 @@ numpy==1.26.4
 
 # Payments
 stripe==9.11.0
+
+# Google Sign-In (ID token verification)
+google-auth==2.36.0

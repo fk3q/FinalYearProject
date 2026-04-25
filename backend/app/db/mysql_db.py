@@ -68,6 +68,10 @@ def init_db_schema() -> None:
                 # User-selectable UI theme. Stored on the account so it follows
                 # the user across devices/browsers. Allowed values: 'light' | 'dark'.
                 "ALTER TABLE users ADD COLUMN theme VARCHAR(10) NOT NULL DEFAULT 'light'",
+                # Google Sign-In: stable subject id from the ID token ("sub" claim).
+                "ALTER TABLE users ADD COLUMN google_sub VARCHAR(64) NULL",
+                # NULL = password-based account; non-NULL = linked Google account.
+                "ALTER TABLE users ADD COLUMN google_email VARCHAR(255) NULL",
             ):
                 try:
                     cur.execute(column_ddl)
@@ -81,6 +85,21 @@ def init_db_schema() -> None:
                 )
             except OperationalError as e:
                 # 1061 = duplicate key name, 1062 = dup value (unlikely at migration time)
+                if e.args[0] not in (1061, 1062):
+                    raise
+            # Google-only accounts have no password — allow NULL on password_hash.
+            try:
+                cur.execute(
+                    "ALTER TABLE users MODIFY COLUMN password_hash VARCHAR(255) NULL"
+                )
+            except OperationalError:
+                # If the column is already nullable, MySQL may error — safe to ignore.
+                pass
+            try:
+                cur.execute(
+                    "ALTER TABLE users ADD UNIQUE KEY uq_users_google_sub (google_sub)"
+                )
+            except OperationalError as e:
                 if e.args[0] not in (1061, 1062):
                     raise
             cur.execute(

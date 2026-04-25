@@ -1,9 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Auth.css';
-import { registerUser, saveSessionUser } from './api/auth';
+import { googleSignIn, registerUser, saveSessionUser } from './api/auth';
 import { createCheckoutSession } from './api/payments';
 import { useTheme } from './contexts/ThemeContext';
+import GoogleSignInButton from './components/GoogleSignInButton';
 
 // Public site key. Cloudflare provides "always-passes" dummy keys so local dev
 // works without an account. Override with VITE_TURNSTILE_SITE_KEY for production.
@@ -26,6 +27,7 @@ const Signup = () => {
   const [submitting, setSubmitting] = useState(false);
   const [apiError, setApiError] = useState('');
   const [turnstileToken, setTurnstileToken] = useState('');
+  const [googleBusy, setGoogleBusy] = useState(false);
   const turnstileContainerRef = useRef(null);
   const turnstileWidgetIdRef = useRef(null);
 
@@ -72,6 +74,63 @@ const Signup = () => {
       try { window.turnstile.reset(turnstileWidgetIdRef.current); } catch { /* noop */ }
     }
   };
+
+  const continueAfterAuth = useCallback(
+    async (data) => {
+      let pendingPlan = null;
+      try {
+        const raw = sessionStorage.getItem('laboracle_pending_plan');
+        if (raw) pendingPlan = JSON.parse(raw);
+      } catch {
+        /* ignore */
+      }
+      sessionStorage.removeItem('laboracle_pending_plan');
+
+      if (pendingPlan?.plan && data.user?.id) {
+        try {
+          const { url } = await createCheckoutSession({
+            userId: data.user.id,
+            plan: pendingPlan.plan,
+            billing: pendingPlan.billing || 'monthly',
+          });
+          if (url) {
+            window.location.href = url;
+            return;
+          }
+        } catch (err) {
+          setApiError(
+            'Signed in, but we could not start checkout: ' +
+              (err?.message || 'unknown error') +
+              ' — you can try again from the Pricing page.'
+          );
+          navigate('/profile');
+          return;
+        }
+      }
+      navigate('/profile');
+    },
+    [navigate]
+  );
+
+  const onGoogleCredential = useCallback(
+    async (credential) => {
+      setGoogleBusy(true);
+      setApiError('');
+      try {
+        const data = await googleSignIn({ credential });
+        if (data.user) {
+          saveSessionUser(data.user);
+          if (data.user.theme) applyTheme(data.user.theme);
+        }
+        await continueAfterAuth(data);
+      } catch (err) {
+        setApiError(err.message || 'Google sign-in failed');
+      } finally {
+        setGoogleBusy(false);
+      }
+    },
+    [applyTheme, continueAfterAuth]
+  );
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -163,41 +222,7 @@ const Signup = () => {
         if (data.user.theme) applyTheme(data.user.theme);
       }
 
-      // If the user came from the pricing page, continue them into Stripe
-      // checkout now that they have an account.
-      let pendingPlan = null;
-      try {
-        const raw = sessionStorage.getItem('laboracle_pending_plan');
-        if (raw) pendingPlan = JSON.parse(raw);
-      } catch {
-        /* ignore */
-      }
-      sessionStorage.removeItem('laboracle_pending_plan');
-
-      if (pendingPlan?.plan && data.user?.id) {
-        try {
-          const { url } = await createCheckoutSession({
-            userId: data.user.id,
-            plan: pendingPlan.plan,
-            billing: pendingPlan.billing || 'monthly',
-          });
-          if (url) {
-            window.location.href = url;
-            return;
-          }
-        } catch (err) {
-          // Fall through to profile if checkout fails; show an inline warning.
-          setApiError(
-            'Account created, but we could not start checkout: ' +
-              (err?.message || 'unknown error') +
-              ' — you can try again from the Pricing page.'
-          );
-          navigate('/profile');
-          return;
-        }
-      }
-
-      navigate('/profile');
+      await continueAfterAuth(data);
     } catch (err) {
       setApiError(err.message || 'Could not create account');
       // The token is single-use, so failed attempts need a fresh challenge.
@@ -221,6 +246,15 @@ const Signup = () => {
             {apiError}
           </div>
         ) : null}
+
+        <GoogleSignInButton onCredential={onGoogleCredential} disabled={googleBusy || submitting} />
+        {googleBusy ? (
+          <p className="text-center" style={{ fontSize: 13, color: '#64748b', marginTop: 8 }}>
+            Signing in with Google…
+          </p>
+        ) : null}
+
+        <div className="auth-divider">or sign up with email</div>
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">

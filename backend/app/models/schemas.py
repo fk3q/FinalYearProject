@@ -123,6 +123,12 @@ class UserLoginRequest(BaseModel):
     password: str = Field(..., min_length=1, max_length=256)
 
 
+class GoogleSignInRequest(BaseModel):
+    """Credential string from `google.accounts.id` on the frontend (JWT)."""
+
+    credential: str = Field(..., min_length=10, max_length=16384)
+
+
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr
 

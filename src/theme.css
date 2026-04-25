@@ -88,6 +88,12 @@ html[data-theme="dark"] .auth-form input[type="password"] {
   border-color: var(--input-border);
 }
 
+html[data-theme="dark"] .auth-banner-error {
+  background: #450a0a;
+  color: #fecaca;
+  border-color: #7f1d1d;
+}
+
 /* Login (uses Bootstrap classes) */
 html[data-theme="dark"] .container .card { background: var(--bg-elevated); color: var(--text-primary); }
 html[data-theme="dark"] .container .card .text-muted { color: var(--text-secondary) !important; }
