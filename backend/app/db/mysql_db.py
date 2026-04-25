@@ -65,6 +65,9 @@ def init_db_schema() -> None:
                 "ALTER TABLE users ADD COLUMN stripe_customer_id VARCHAR(64) NULL",
                 "ALTER TABLE users ADD COLUMN stripe_subscription_id VARCHAR(64) NULL",
                 "ALTER TABLE users ADD COLUMN subscription_current_period_end TIMESTAMP NULL",
+                # User-selectable UI theme. Stored on the account so it follows
+                # the user across devices/browsers. Allowed values: 'light' | 'dark'.
+                "ALTER TABLE users ADD COLUMN theme VARCHAR(10) NOT NULL DEFAULT 'light'",
             ):
                 try:
                     cur.execute(column_ddl)

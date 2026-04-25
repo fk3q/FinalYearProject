@@ -85,7 +85,8 @@ def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
     email_norm = email.strip().lower()
     q = """
     SELECT id, email, password_hash, first_name, last_name, phone, created_at,
-           COALESCE(subscription_tier, 'free') AS subscription_tier
+           COALESCE(subscription_tier, 'free') AS subscription_tier,
+           COALESCE(theme, 'light') AS theme
     FROM users WHERE email = %s LIMIT 1
     """
     return mysql_db.fetch_one(q, (email_norm,))
@@ -94,7 +95,8 @@ def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
 def get_public_user_by_id(user_id: int) -> Optional[Dict[str, Any]]:
     q = """
     SELECT id, email, first_name, last_name, phone, created_at,
-           COALESCE(subscription_tier, 'free') AS subscription_tier
+           COALESCE(subscription_tier, 'free') AS subscription_tier,
+           COALESCE(theme, 'light') AS theme
     FROM users WHERE id = %s LIMIT 1
     """
     row = mysql_db.fetch_one(q, (user_id,))
@@ -116,6 +118,7 @@ def get_user_profile_detail(user_id: int) -> Optional[Dict[str, Any]]:
     q = """
     SELECT id, email, first_name, last_name, phone, created_at, profile_picture_data,
            COALESCE(subscription_tier, 'free') AS subscription_tier,
+           COALESCE(theme, 'light') AS theme,
            stripe_customer_id
     FROM users WHERE id = %s LIMIT 1
     """
@@ -140,6 +143,7 @@ def get_user_profile_detail(user_id: int) -> Optional[Dict[str, Any]]:
         "daily_time_seconds": daily_seconds,
         "subscription_tier": str(row.get("subscription_tier") or "free"),
         "has_stripe_customer": bool(row.get("stripe_customer_id")),
+        "theme": str(row.get("theme") or "light"),
     }
 
 
@@ -162,6 +166,17 @@ def update_profile_picture(user_id: int, data_url: Optional[str]) -> bool:
         return True
     finally:
         conn.close()
+
+
+def update_user_theme(user_id: int, theme: str) -> bool:
+    """Persist the user's UI theme preference. Returns False if user not found."""
+    if theme not in ("light", "dark"):
+        raise ValueError("Theme must be 'light' or 'dark'.")
+    affected = mysql_db.execute_update(
+        "UPDATE users SET theme = %s WHERE id = %s",
+        (theme, user_id),
+    )
+    return affected > 0
 
 
 def validate_profile_picture_payload(data_url: Optional[str]) -> Optional[str]:

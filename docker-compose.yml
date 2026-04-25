@@ -93,6 +93,8 @@ services:
       STRIPE_PRICE_ADVANCED_MONTHLY:  ${STRIPE_PRICE_ADVANCED_MONTHLY:-}
       STRIPE_PRICE_ADVANCED_YEARLY:   ${STRIPE_PRICE_ADVANCED_YEARLY:-}
       FRONTEND_URL:                   ${FRONTEND_URL:-http://localhost:3000}
+      # Cloudflare Turnstile (signup CAPTCHA). Leave blank to disable verification.
+      TURNSTILE_SECRET_KEY:           ${TURNSTILE_SECRET_KEY:-}
       # SMTP_* and APP_NAME come from ./backend/.env via env_file above
 
     ports:
@@ -122,6 +124,9 @@ services:
         # nginx inside the frontend container proxies those to the backend service.
         # This is what makes the site work from any host/IP/domain, not just localhost.
         VITE_API_URL: ""
+        # Public Cloudflare Turnstile site key for the signup captcha. The
+        # default is Cloudflare's "always-passes" dummy key for local dev.
+        VITE_TURNSTILE_SITE_KEY: ${VITE_TURNSTILE_SITE_KEY:-1x00000000000000000000AA}
     container_name: course_copilot_frontend
     restart: unless-stopped
 

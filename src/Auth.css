@@ -118,6 +118,13 @@ body {
   border-color: #f44336;
 }
 
+.turnstile-widget {
+  display: flex;
+  justify-content: center;
+  margin: 4px 0;
+  min-height: 65px;
+}
+
 .error-message {
   color: #f44336;
   font-size: 12px;

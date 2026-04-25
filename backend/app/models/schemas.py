@@ -111,6 +111,11 @@ class UserRegisterRequest(BaseModel):
     phone: str = Field(..., min_length=5, max_length=32)
     email: EmailStr
     password: str = Field(..., min_length=6, max_length=256)
+    turnstile_token: Optional[str] = Field(
+        default=None,
+        max_length=4096,
+        description="Cloudflare Turnstile challenge token from the signup form.",
+    )
 
 
 class UserLoginRequest(BaseModel):
@@ -140,6 +145,7 @@ class UserPublic(BaseModel):
     phone: str
     created_at: Optional[datetime] = None
     subscription_tier: str = "free"
+    theme: Literal["light", "dark"] = "light"
 
     model_config = {"from_attributes": True}
 
@@ -167,14 +173,16 @@ class UserProfileResponse(BaseModel):
     daily_time_seconds: int = 0
     subscription_tier: str = "free"
     has_stripe_customer: bool = False
+    theme: Literal["light", "dark"] = "light"
 
     model_config = {"from_attributes": True}
 
 
 class UserProfilePatchRequest(BaseModel):
-    """Set `profile_picture_url` to a data: URL, or omit / empty string to clear."""
+    """Update profile fields. Send only the fields you want to change."""
 
     profile_picture_url: Optional[str] = None
+    theme: Optional[Literal["light", "dark"]] = None
 
 
 class UsageSecondsRequest(BaseModel):

@@ -2,9 +2,11 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Auth.css"; // im keeping this but slides will i am keeping for bootstrap
 import { loginUser, saveSessionUser } from "./api/auth";
+import { useTheme } from "./contexts/ThemeContext";
 
 const Login = () => {
   const navigate = useNavigate();
+  const { applyTheme } = useTheme();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -66,6 +68,7 @@ const Login = () => {
       });
       if (data.user) {
         saveSessionUser(data.user);
+        if (data.user.theme) applyTheme(data.user.theme);
       }
       navigate("/profile");
     } catch (err) {

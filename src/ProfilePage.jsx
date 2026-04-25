@@ -9,6 +9,8 @@ import {
 import { createPortalSession } from "./api/payments";
 import { useUsageTracker } from "./hooks/useUsageTracker";
 import AccountSidebarBlock from "./components/AccountSidebarBlock";
+import ThemeToggle from "./components/ThemeToggle";
+import { useTheme } from "./contexts/ThemeContext";
 import "./ProfilePage.css";
 
 const TIER_LABEL = {
@@ -35,6 +37,7 @@ function formatDuration(totalSeconds) {
 
 const ProfilePage = () => {
   const navigate = useNavigate();
+  const { applyTheme } = useTheme();
   const [profile, setProfile] = useState(null);
   const [loadError, setLoadError] = useState("");
   const [savingPic, setSavingPic] = useState(false);
@@ -58,7 +61,9 @@ const ProfilePage = () => {
         setProfile(data);
         mergeSessionUser({
           profile_picture_url: data.profile_picture_url || undefined,
+          theme: data.theme || undefined,
         });
+        if (data.theme) applyTheme(data.theme);
       } catch (e) {
         if (!cancelled) setLoadError(e.message || "Could not load profile");
       }
@@ -66,7 +71,7 @@ const ProfilePage = () => {
     return () => {
       cancelled = true;
     };
-  }, [navigate]);
+  }, [navigate, applyTheme]);
 
   const session = getSessionUser();
 
@@ -141,8 +146,7 @@ const ProfilePage = () => {
     <div className="pf-page">
       <aside className="pf-sidebar">
         <div className="pf-brand" onClick={() => navigate("/")}>
-          <span className="pf-brand-icon">C</span>
-          <span className="pf-brand-name">Laboracle</span>
+          <img src="/laboracle-logo.png" alt="Laboracle" className="pf-brand-logo" />
         </div>
 
         <nav className="pf-nav">
@@ -296,6 +300,15 @@ const ProfilePage = () => {
                 </div>
               </div>
               {portalError && <p className="pf-field-error">{portalError}</p>}
+            </div>
+
+            <div className="pf-section">
+              <h3 className="pf-section-title">Settings</h3>
+              <p className="pf-muted">
+                Choose how Laboracle looks. Your preference is saved to your account
+                and follows you on every device.
+              </p>
+              <ThemeToggle />
             </div>
 
             <div className="pf-section pf-usage">

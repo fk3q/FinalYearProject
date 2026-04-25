@@ -10,24 +10,27 @@ import ProfilePage from './ProfilePage';
 import AdminLogin from './AdminLogin';
 import AdminDashboard from './AdminDashboard';
 import { PaymentSuccess, PaymentCancel } from './PaymentReturn';
+import { ThemeProvider } from './contexts/ThemeContext';
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/"        element={<MainPage />} />
-        <Route path="/login"   element={<Login />} />
-        <Route path="/signup"  element={<Signup />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/upload"  element={<UploadPage />} />
-        <Route path="/chat"    element={<ChatPage />} />
-        <Route path="/admin/login" element={<AdminLogin />} />
-        <Route path="/admin"       element={<AdminDashboard />} />
-        <Route path="/pay/success" element={<PaymentSuccess />} />
-        <Route path="/pay/cancel"  element={<PaymentCancel />} />
-      </Routes>
-    </Router>
+    <ThemeProvider>
+      <Router>
+        <Routes>
+          <Route path="/"        element={<MainPage />} />
+          <Route path="/login"   element={<Login />} />
+          <Route path="/signup"  element={<Signup />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/upload"  element={<UploadPage />} />
+          <Route path="/chat"    element={<ChatPage />} />
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin"       element={<AdminDashboard />} />
+          <Route path="/pay/success" element={<PaymentSuccess />} />
+          <Route path="/pay/cancel"  element={<PaymentCancel />} />
+        </Routes>
+      </Router>
+    </ThemeProvider>
   );
 }
 

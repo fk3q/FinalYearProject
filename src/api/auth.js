@@ -46,7 +46,7 @@ async function safeFetch(url, options) {
   }
 }
 
-export async function registerUser({ firstName, lastName, phone, email, password }) {
+export async function registerUser({ firstName, lastName, phone, email, password, turnstileToken }) {
   const res = await safeFetch("/api/auth/register", {
     method: "POST",
     headers: jsonHeaders,
@@ -56,6 +56,7 @@ export async function registerUser({ firstName, lastName, phone, email, password
       phone,
       email,
       password,
+      turnstile_token: turnstileToken || null,
     }),
   });
   const data = await res.json().catch(() => ({}));
@@ -158,11 +159,23 @@ export async function fetchUserProfile(userId) {
   throw new Error(msg);
 }
 
-export async function patchUserProfile(userId, { profile_picture_url }) {
+/**
+ * Patch any subset of profile fields. Only the keys you pass are sent — the
+ * backend uses `model_fields_set` to distinguish "field omitted" from
+ * "field explicitly null", so a theme-only update will not wipe the picture.
+ */
+export async function patchUserProfile(userId, payload) {
+  const body = {};
+  if (Object.prototype.hasOwnProperty.call(payload, "profile_picture_url")) {
+    body.profile_picture_url = payload.profile_picture_url;
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, "theme")) {
+    body.theme = payload.theme;
+  }
   const res = await safeFetch(`/api/users/${userId}/profile`, {
     method: "PATCH",
     headers: jsonHeaders,
-    body: JSON.stringify({ profile_picture_url }),
+    body: JSON.stringify(body),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {

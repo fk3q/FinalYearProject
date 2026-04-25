@@ -20,28 +20,18 @@
 .pf-brand {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
   cursor: pointer;
   margin-bottom: 16px;
 }
 
-.pf-brand-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #4facfe, #00f2fe);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 800;
-  font-size: 18px;
-  color: #fff;
-}
-
-.pf-brand-name {
-  font-size: 15px;
-  font-weight: 700;
-  color: #fff;
+.pf-brand-logo {
+  height: 110px;
+  width: auto;
+  display: block;
+  object-fit: contain;
+  filter: brightness(1.15);
 }
 
 .pf-nav {

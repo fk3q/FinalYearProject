@@ -1,11 +1,18 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Auth.css';
 import { registerUser, saveSessionUser } from './api/auth';
 import { createCheckoutSession } from './api/payments';
+import { useTheme } from './contexts/ThemeContext';
+
+// Public site key. Cloudflare provides "always-passes" dummy keys so local dev
+// works without an account. Override with VITE_TURNSTILE_SITE_KEY for production.
+const TURNSTILE_SITE_KEY =
+  import.meta.env.VITE_TURNSTILE_SITE_KEY || '1x00000000000000000000AA';
 
 const Signup = () => {
   const navigate = useNavigate();
+  const { applyTheme } = useTheme();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -18,6 +25,53 @@ const Signup = () => {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [apiError, setApiError] = useState('');
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const turnstileContainerRef = useRef(null);
+  const turnstileWidgetIdRef = useRef(null);
+
+  // Render the Turnstile widget once the Cloudflare script is available. We
+  // poll briefly because the script is loaded with `async defer` in index.html.
+  useEffect(() => {
+    let cancelled = false;
+    const tryRender = () => {
+      if (cancelled) return;
+      const container = turnstileContainerRef.current;
+      if (!window.turnstile || !container) {
+        setTimeout(tryRender, 200);
+        return;
+      }
+      if (turnstileWidgetIdRef.current) return;
+      try {
+        turnstileWidgetIdRef.current = window.turnstile.render(container, {
+          sitekey: TURNSTILE_SITE_KEY,
+          callback: (token) => {
+            setTurnstileToken(token || '');
+            setErrors((prev) => (prev.captcha ? { ...prev, captcha: '' } : prev));
+          },
+          'expired-callback': () => setTurnstileToken(''),
+          'error-callback': () => setTurnstileToken(''),
+          theme: 'light',
+        });
+      } catch {
+        /* ignore render errors */
+      }
+    };
+    tryRender();
+    return () => {
+      cancelled = true;
+      if (window.turnstile && turnstileWidgetIdRef.current) {
+        try { window.turnstile.remove(turnstileWidgetIdRef.current); } catch { /* noop */ }
+        turnstileWidgetIdRef.current = null;
+      }
+    };
+  }, []);
+
+  const resetTurnstile = () => {
+    setTurnstileToken('');
+    if (window.turnstile && turnstileWidgetIdRef.current) {
+      try { window.turnstile.reset(turnstileWidgetIdRef.current); } catch { /* noop */ }
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -77,6 +131,10 @@ const Signup = () => {
       newErrors.terms = 'You must agree to the terms and conditions';
     }
 
+    if (!turnstileToken) {
+      newErrors.captcha = 'Please complete the captcha below.';
+    }
+
     return newErrors;
   };
 
@@ -97,10 +155,12 @@ const Signup = () => {
         lastName: formData.lastName.trim(),
         phone: formData.phone.trim(),
         email: formData.email.trim(),
-        password: formData.password
+        password: formData.password,
+        turnstileToken,
       });
       if (data.user) {
         saveSessionUser(data.user);
+        if (data.user.theme) applyTheme(data.user.theme);
       }
 
       // If the user came from the pricing page, continue them into Stripe
@@ -140,6 +200,8 @@ const Signup = () => {
       navigate('/profile');
     } catch (err) {
       setApiError(err.message || 'Could not create account');
+      // The token is single-use, so failed attempts need a fresh challenge.
+      resetTurnstile();
     } finally {
       setSubmitting(false);
     }
@@ -266,6 +328,11 @@ const Signup = () => {
               <span>I agree to the <a href="#">Terms and Conditions</a></span>
             </label>
             {errors.terms && <span className="error-message">{errors.terms}</span>}
+          </div>
+
+          <div className="form-group">
+            <div ref={turnstileContainerRef} className="turnstile-widget" />
+            {errors.captcha && <span className="error-message">{errors.captcha}</span>}
           </div>
 
           <button type="submit" className="auth-button" disabled={submitting}>

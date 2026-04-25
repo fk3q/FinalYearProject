@@ -27,6 +27,7 @@ from app.models.schemas import (
 )
 from app.services import (
     admin_service,
+    captcha_service,
     chat_history_service,
     password_reset_service,
     user_service,
@@ -52,6 +53,13 @@ async def register(body: UserRegisterRequest, request: Request):
     Captures the client IP and (best-effort) country/city for the admin dashboard.
     """
     client_ip = _client_ip_from_request(request)
+
+    captcha_ok, captcha_err = await captcha_service.verify_turnstile_token(
+        body.turnstile_token, remote_ip=client_ip
+    )
+    if not captcha_ok:
+        raise HTTPException(status_code=400, detail=captcha_err or "Captcha failed.")
+
     country, country_code, city = admin_service.lookup_geo(client_ip)
     try:
         user_id = user_service.create_user(
@@ -149,6 +157,7 @@ def _normalize_user_row(row: Dict[str, Any]) -> Dict[str, Any]:
         "phone": str(row["phone"]),
         "created_at": row.get("created_at"),
         "subscription_tier": str(row.get("subscription_tier") or "free"),
+        "theme": str(row.get("theme") or "light"),
     }
 
 
@@ -167,6 +176,7 @@ def _profile_from_service(row: dict) -> UserProfileResponse:
         daily_time_seconds=int(row.get("daily_time_seconds", 0)),
         subscription_tier=str(row.get("subscription_tier") or "free"),
         has_stripe_customer=bool(row.get("has_stripe_customer")),
+        theme=str(row.get("theme") or "light"),
     )
 
 
@@ -187,16 +197,35 @@ async def patch_user_profile(
     body: UserProfilePatchRequest,
     user_id: int = Path(..., ge=1),
 ):
-    try:
-        cleaned = user_service.validate_profile_picture_payload(body.profile_picture_url)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
-    try:
-        ok = user_service.update_profile_picture(user_id, cleaned)
-    except pymysql.err.OperationalError as e:
-        raise _db_unavailable(e) from e
-    if not ok:
-        raise HTTPException(status_code=404, detail="User not found.")
+    # Profile picture is updated only if the field is explicitly present in the
+    # body (Pydantic gives `None` for both "missing" and "explicit null"; we use
+    # model_fields_set to tell them apart so a theme-only PATCH doesn't wipe the
+    # picture).
+    fields_sent = body.model_fields_set
+    user_found = True
+
+    if "profile_picture_url" in fields_sent:
+        try:
+            cleaned = user_service.validate_profile_picture_payload(body.profile_picture_url)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
+        try:
+            user_found = user_service.update_profile_picture(user_id, cleaned)
+        except pymysql.err.OperationalError as e:
+            raise _db_unavailable(e) from e
+        if not user_found:
+            raise HTTPException(status_code=404, detail="User not found.")
+
+    if "theme" in fields_sent and body.theme is not None:
+        try:
+            user_found = user_service.update_user_theme(user_id, body.theme)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
+        except pymysql.err.OperationalError as e:
+            raise _db_unavailable(e) from e
+        if not user_found:
+            raise HTTPException(status_code=404, detail="User not found.")
+
     row = user_service.get_user_profile_detail(user_id)
     if not row:
         raise HTTPException(status_code=404, detail="User not found.")

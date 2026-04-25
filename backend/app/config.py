@@ -82,6 +82,12 @@ class Settings(BaseSettings):
     # Default assumes the Docker frontend at http://localhost:3000.
     FRONTEND_URL: str = "http://localhost:3000"
 
+    # ── Cloudflare Turnstile (signup CAPTCHA) ─────────────────────────────────
+    # Leave blank to disable captcha verification (useful for local dev without
+    # a Turnstile account). The frontend site key is configured at build time
+    # via VITE_TURNSTILE_SITE_KEY in docker-compose.yml.
+    TURNSTILE_SECRET_KEY: str = ""
+
     def get_cors_origins(self) -> List[str]:
         if isinstance(self.CORS_ORIGINS, str):
             return [o.strip() for o in self.CORS_ORIGINS.split(',') if o.strip()]

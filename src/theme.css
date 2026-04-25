@@ -1,0 +1,128 @@
+/*
+ * Theme system — applied via [data-theme="dark"] on the <html> element.
+ * Colors are exposed as CSS custom properties so any component can opt in
+ * by referencing `var(--bg-primary)` etc. The block at the bottom is a
+ * pragmatic dark-mode override that re-skins the most user-visible surfaces
+ * without requiring every existing CSS file to be refactored.
+ */
+
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f4f6fb;
+  --bg-elevated: #ffffff;
+  --bg-sidebar: #1e2235;
+  --text-primary: #1a1d2e;
+  --text-secondary: #5c637a;
+  --text-muted: #7a8199;
+  --text-on-dark: #ffffff;
+  --border-soft: #e8ecf4;
+  --card-shadow: 0 4px 24px rgba(30, 34, 53, 0.08);
+  --accent: #667eea;
+  --accent-2: #764ba2;
+  --link: #2563eb;
+  --input-bg: #ffffff;
+  --input-border: #d1d5db;
+  --input-text: #1a1d2e;
+}
+
+html[data-theme="dark"] {
+  --bg-primary: #0f1424;
+  --bg-secondary: #0b0f1c;
+  --bg-elevated: #161b2e;
+  --bg-sidebar: #0a0d18;
+  --text-primary: #e7eaf3;
+  --text-secondary: #b3bacb;
+  --text-muted: #8c93a8;
+  --text-on-dark: #ffffff;
+  --border-soft: #232842;
+  --card-shadow: 0 6px 28px rgba(0, 0, 0, 0.45);
+  --accent: #8aa4ff;
+  --accent-2: #a78bfa;
+  --link: #93c5fd;
+  --input-bg: #0f1424;
+  --input-border: #2a304a;
+  --input-text: #e7eaf3;
+}
+
+/* ── Dark-mode page overrides ─────────────────────────────────────────────── */
+/* Targets concrete classes used across MainPage, Auth pages, ProfilePage,
+ * UploadPage, ChatPage. Keeps the chat sidebar deeply dark in both modes. */
+
+html[data-theme="dark"] body { background: var(--bg-secondary); color: var(--text-primary); }
+
+/* MainPage (landing) */
+html[data-theme="dark"] .main-page { color: var(--text-primary); background: var(--bg-secondary); }
+html[data-theme="dark"] .header { background: var(--bg-elevated); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5); }
+html[data-theme="dark"] .nav-links a { color: var(--text-secondary); }
+html[data-theme="dark"] .nav-links a:hover { color: var(--accent); }
+html[data-theme="dark"] .features,
+html[data-theme="dark"] .how-it-works,
+html[data-theme="dark"] .pricing,
+html[data-theme="dark"] .about { background: var(--bg-secondary); color: var(--text-primary); }
+html[data-theme="dark"] .section-title { color: var(--text-primary); }
+html[data-theme="dark"] .feature-card,
+html[data-theme="dark"] .step,
+html[data-theme="dark"] .pricing-card { background: var(--bg-elevated); color: var(--text-primary); box-shadow: var(--card-shadow); }
+html[data-theme="dark"] .feature-card h3,
+html[data-theme="dark"] .step h3 { color: var(--text-primary); }
+html[data-theme="dark"] .feature-card p,
+html[data-theme="dark"] .step p,
+html[data-theme="dark"] .about p,
+html[data-theme="dark"] .pricing-subtitle { color: var(--text-secondary); }
+html[data-theme="dark"] .footer { background: #05080f; color: #c9d1e1; }
+
+/* Auth (Signup) */
+html[data-theme="dark"] .auth-container { background: var(--bg-secondary); }
+html[data-theme="dark"] .auth-card { background: var(--bg-elevated); color: var(--text-primary); box-shadow: var(--card-shadow); }
+html[data-theme="dark"] .auth-header h1 { color: var(--text-primary); }
+html[data-theme="dark"] .auth-header p,
+html[data-theme="dark"] .auth-footer p { color: var(--text-secondary); }
+html[data-theme="dark"] .auth-form label,
+html[data-theme="dark"] .checkbox-label span { color: var(--text-primary); }
+html[data-theme="dark"] .auth-form input[type="text"],
+html[data-theme="dark"] .auth-form input[type="email"],
+html[data-theme="dark"] .auth-form input[type="tel"],
+html[data-theme="dark"] .auth-form input[type="password"] {
+  background: var(--input-bg);
+  color: var(--input-text);
+  border-color: var(--input-border);
+}
+
+/* Login (uses Bootstrap classes) */
+html[data-theme="dark"] .container .card { background: var(--bg-elevated); color: var(--text-primary); }
+html[data-theme="dark"] .container .card .text-muted { color: var(--text-secondary) !important; }
+html[data-theme="dark"] .container .card .form-label { color: var(--text-primary); }
+html[data-theme="dark"] .container .card .form-control { background: var(--input-bg); color: var(--input-text); border-color: var(--input-border); }
+html[data-theme="dark"] .container .card .form-control::placeholder { color: var(--text-muted); }
+
+/* Profile */
+html[data-theme="dark"] .pf-page { background: var(--bg-secondary); }
+html[data-theme="dark"] .pf-card { background: var(--bg-elevated); color: var(--text-primary); box-shadow: var(--card-shadow); }
+html[data-theme="dark"] .pf-title,
+html[data-theme="dark"] .pf-welcome,
+html[data-theme="dark"] .pf-section-title,
+html[data-theme="dark"] .pf-stat-big,
+html[data-theme="dark"] .pf-dl dd { color: var(--text-primary); }
+html[data-theme="dark"] .pf-sub,
+html[data-theme="dark"] .pf-muted,
+html[data-theme="dark"] .pf-email { color: var(--text-secondary); }
+html[data-theme="dark"] .pf-hero { border-bottom-color: var(--border-soft); }
+html[data-theme="dark"] .pf-tier-free { background: #232842; color: #e0e6f3; }
+
+/* Upload page top nav (light header bar) */
+html[data-theme="dark"] .top-nav { background: var(--bg-elevated); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5); }
+html[data-theme="dark"] .nav-left { color: var(--accent); }
+html[data-theme="dark"] .company-badge { background: rgba(138, 164, 255, 0.15); color: var(--accent); }
+
+/* Chat page main column (sidebar stays dark in both themes by design) */
+html[data-theme="dark"] .cp-main { background: var(--bg-primary); color: var(--text-primary); }
+html[data-theme="dark"] .cp-header { background: var(--bg-elevated); border-bottom-color: var(--border-soft); }
+html[data-theme="dark"] .cp-header-title { color: var(--text-primary); }
+html[data-theme="dark"] .cp-header-sub { color: var(--text-secondary); }
+html[data-theme="dark"] .cp-messages { background: var(--bg-primary); }
+
+/* Smooth fade between themes so the toggle feels intentional */
+html { transition: background-color 0.2s ease; }
+body, .main-page, .auth-card, .pf-card, .feature-card, .step, .pricing-card, .top-nav, .header, .footer, .cp-main, .cp-header {
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
