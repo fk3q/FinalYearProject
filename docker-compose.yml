@@ -100,6 +100,9 @@ services:
       # Facebook Login — App ID + App Secret (secret is server-only).
       FACEBOOK_APP_ID:                ${FACEBOOK_APP_ID:-}
       FACEBOOK_APP_SECRET:            ${FACEBOOK_APP_SECRET:-}
+      # Microsoft Sign-In — public Application (client) ID. No secret required;
+      # the backend verifies ID tokens against Microsoft's JWKS.
+      MICROSOFT_CLIENT_ID:            ${MICROSOFT_CLIENT_ID:-}
       # SMTP_* and APP_NAME come from ./backend/.env via env_file above
 
     ports:
@@ -136,6 +139,8 @@ services:
         VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
         # Facebook Login — public App ID (from Meta Developer → your app).
         VITE_FACEBOOK_APP_ID: ${VITE_FACEBOOK_APP_ID:-}
+        # Microsoft Sign-In — public Application (client) ID from Microsoft Entra ID.
+        VITE_MICROSOFT_CLIENT_ID: ${VITE_MICROSOFT_CLIENT_ID:-}
     container_name: course_copilot_frontend
     restart: unless-stopped
 

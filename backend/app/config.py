@@ -99,6 +99,13 @@ class Settings(BaseSettings):
     FACEBOOK_APP_ID: str = ""
     FACEBOOK_APP_SECRET: str = ""
 
+    # ── Microsoft Sign-In ───────────────────────────────────────────────────
+    # Application (client) ID from Microsoft Entra ID (Azure portal). Same
+    # value is exposed to the frontend as VITE_MICROSOFT_CLIENT_ID. There is
+    # no client secret — we use the public-client SPA flow with PKCE; the
+    # backend verifies ID tokens against Microsoft's JWKS.
+    MICROSOFT_CLIENT_ID: str = ""
+
     def get_cors_origins(self) -> List[str]:
         if isinstance(self.CORS_ORIGINS, str):
             return [o.strip() for o in self.CORS_ORIGINS.split(',') if o.strip()]

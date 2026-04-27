@@ -158,6 +158,26 @@ export async function facebookSignIn({ accessToken }) {
   return data;
 }
 
+export async function microsoftSignIn({ idToken }) {
+  const res = await safeFetch("/api/auth/microsoft", {
+    method: "POST",
+    headers: jsonHeaders,
+    body: JSON.stringify({ id_token: idToken }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const detail = data.detail;
+    const msg =
+      typeof detail === "string"
+        ? detail
+        : Array.isArray(detail)
+          ? detail.map((d) => d.msg || d).join(" ")
+          : res.statusText;
+    throw new Error(msg || "Microsoft sign-in failed");
+  }
+  return data;
+}
+
 export async function fetchUserById(userId) {
   const res = await safeFetch(`/api/users/${userId}`, { method: "GET" });
   const data = await res.json().catch(() => ({}));

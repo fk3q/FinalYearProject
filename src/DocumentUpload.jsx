@@ -197,7 +197,6 @@ const DocumentUpload = () => {
       <div className="top-nav">
         <div className="nav-left">
           <img src="/laboracle-logo.png" alt="Laboracle" className="logo-img" />
-          <span className="company-badge">by Flosendo</span>
         </div>
         <div className="nav-right">
           <div className="role-switch">

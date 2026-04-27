@@ -308,8 +308,8 @@ const MainPage = () => {
         <div className="about-content">
           <h2 className="section-title">About Laboracle</h2>
           <p>
-            Laboracle is Flosendo Limited's safe, intelligent learning assistant designed specifically 
-            for K12 students (ages 9-17). Built for our entrepreneurship accelerator and gamified financial 
+            Laboracle is a safe, intelligent learning assistant designed specifically 
+            for K12 students (ages 9-17). Built for entrepreneurship accelerator and gamified financial 
             literacy courses, it helps students stay on track during online missions and classroom blocks.
           </p>
           <p>
@@ -326,7 +326,6 @@ const MainPage = () => {
           <div className="footer-section">
             <h3>Laboracle</h3>
             <p>Your smart learning companion</p>
-            <p style={{ marginTop: '10px', fontSize: '13px' }}>by Flosendo Limited</p>
             <div className="social-links">
               <a href="#">Twitter</a>
               <a href="#">LinkedIn</a>
@@ -355,7 +354,7 @@ const MainPage = () => {
           </div>
         </div>
         <div className="footer-bottom">
-          <p>&copy; 2026 Flosendo Limited. All rights reserved.</p>
+          <p>&copy; 2026 Laboracle. All rights reserved.</p>
         </div>
       </footer>
     </div>

@@ -1,33 +1,40 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import './Auth.css';
-import { facebookSignIn, googleSignIn, registerUser, saveSessionUser } from './api/auth';
-import { createCheckoutSession } from './api/payments';
-import { useTheme } from './contexts/ThemeContext';
-import GoogleSignInButton from './components/GoogleSignInButton';
-import FacebookSignInButton from './components/FacebookSignInButton';
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import "./Auth.css";
+import {
+  facebookSignIn,
+  googleSignIn,
+  microsoftSignIn,
+  registerUser,
+  saveSessionUser,
+} from "./api/auth";
+import { createCheckoutSession } from "./api/payments";
+import { useTheme } from "./contexts/ThemeContext";
+import GoogleSignInButton from "./components/GoogleSignInButton";
+import MicrosoftSignInButton from "./components/MicrosoftSignInButton";
+import FacebookSignInButton from "./components/FacebookSignInButton";
 
 // Public site key. Cloudflare provides "always-passes" dummy keys so local dev
 // works without an account. Override with VITE_TURNSTILE_SITE_KEY for production.
 const TURNSTILE_SITE_KEY =
-  import.meta.env.VITE_TURNSTILE_SITE_KEY || '1x00000000000000000000AA';
+  import.meta.env.VITE_TURNSTILE_SITE_KEY || "1x00000000000000000000AA";
 
 const Signup = () => {
   const navigate = useNavigate();
   const { applyTheme } = useTheme();
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    phone: '',
-    email: '',
-    password: '',
-    confirmPassword: ''
+    firstName: "",
+    lastName: "",
+    phone: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
   });
   const [errors, setErrors] = useState({});
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [apiError, setApiError] = useState('');
-  const [turnstileToken, setTurnstileToken] = useState('');
+  const [apiError, setApiError] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState("");
   const [oauthBusy, setOauthBusy] = useState(false);
   const turnstileContainerRef = useRef(null);
   const turnstileWidgetIdRef = useRef(null);
@@ -48,12 +55,12 @@ const Signup = () => {
         turnstileWidgetIdRef.current = window.turnstile.render(container, {
           sitekey: TURNSTILE_SITE_KEY,
           callback: (token) => {
-            setTurnstileToken(token || '');
-            setErrors((prev) => (prev.captcha ? { ...prev, captcha: '' } : prev));
+            setTurnstileToken(token || "");
+            setErrors((prev) => (prev.captcha ? { ...prev, captcha: "" } : prev));
           },
-          'expired-callback': () => setTurnstileToken(''),
-          'error-callback': () => setTurnstileToken(''),
-          theme: 'light',
+          "expired-callback": () => setTurnstileToken(""),
+          "error-callback": () => setTurnstileToken(""),
+          theme: "light",
         });
       } catch {
         /* ignore render errors */
@@ -63,16 +70,24 @@ const Signup = () => {
     return () => {
       cancelled = true;
       if (window.turnstile && turnstileWidgetIdRef.current) {
-        try { window.turnstile.remove(turnstileWidgetIdRef.current); } catch { /* noop */ }
+        try {
+          window.turnstile.remove(turnstileWidgetIdRef.current);
+        } catch {
+          /* noop */
+        }
         turnstileWidgetIdRef.current = null;
       }
     };
   }, []);
 
   const resetTurnstile = () => {
-    setTurnstileToken('');
+    setTurnstileToken("");
     if (window.turnstile && turnstileWidgetIdRef.current) {
-      try { window.turnstile.reset(turnstileWidgetIdRef.current); } catch { /* noop */ }
+      try {
+        window.turnstile.reset(turnstileWidgetIdRef.current);
+      } catch {
+        /* noop */
+      }
     }
   };
 
@@ -80,19 +95,19 @@ const Signup = () => {
     async (data) => {
       let pendingPlan = null;
       try {
-        const raw = sessionStorage.getItem('laboracle_pending_plan');
+        const raw = sessionStorage.getItem("laboracle_pending_plan");
         if (raw) pendingPlan = JSON.parse(raw);
       } catch {
         /* ignore */
       }
-      sessionStorage.removeItem('laboracle_pending_plan');
+      sessionStorage.removeItem("laboracle_pending_plan");
 
       if (pendingPlan?.plan && data.user?.id) {
         try {
           const { url } = await createCheckoutSession({
             userId: data.user.id,
             plan: pendingPlan.plan,
-            billing: pendingPlan.billing || 'monthly',
+            billing: pendingPlan.billing || "monthly",
           });
           if (url) {
             window.location.href = url;
@@ -100,115 +115,136 @@ const Signup = () => {
           }
         } catch (err) {
           setApiError(
-            'Signed in, but we could not start checkout: ' +
-              (err?.message || 'unknown error') +
-              ' — you can try again from the Pricing page.'
+            "Signed in, but we could not start checkout: " +
+              (err?.message || "unknown error") +
+              " — you can try again from the Pricing page.",
           );
-          navigate('/profile');
+          navigate("/profile");
           return;
         }
       }
-      navigate('/profile');
+      navigate("/profile");
     },
-    [navigate]
+    [navigate],
+  );
+
+  const finishOAuth = useCallback(
+    async (data) => {
+      if (data?.user) {
+        saveSessionUser(data.user);
+        if (data.user.theme) applyTheme(data.user.theme);
+      }
+      await continueAfterAuth(data);
+    },
+    [applyTheme, continueAfterAuth],
   );
 
   const onGoogleCredential = useCallback(
     async (credential) => {
-      setGoogleBusy(true);
-      setApiError('');
+      setOauthBusy(true);
+      setApiError("");
       try {
         const data = await googleSignIn({ credential });
-        if (data.user) {
-          saveSessionUser(data.user);
-          if (data.user.theme) applyTheme(data.user.theme);
-        }
-        await continueAfterAuth(data);
+        await finishOAuth(data);
       } catch (err) {
-        setApiError(err.message || 'Google sign-in failed');
+        setApiError(err.message || "Google sign-in failed");
       } finally {
-        setGoogleBusy(false);
+        setOauthBusy(false);
       }
     },
-    [applyTheme, continueAfterAuth]
+    [finishOAuth],
+  );
+
+  const onMicrosoftIdToken = useCallback(
+    async (idToken) => {
+      setOauthBusy(true);
+      setApiError("");
+      try {
+        const data = await microsoftSignIn({ idToken });
+        await finishOAuth(data);
+      } catch (err) {
+        setApiError(err.message || "Microsoft sign-in failed");
+      } finally {
+        setOauthBusy(false);
+      }
+    },
+    [finishOAuth],
+  );
+
+  const onFacebookToken = useCallback(
+    async (accessToken) => {
+      setOauthBusy(true);
+      setApiError("");
+      try {
+        const data = await facebookSignIn({ accessToken });
+        await finishOAuth(data);
+      } catch (err) {
+        setApiError(err.message || "Facebook sign-in failed");
+      } finally {
+        setOauthBusy(false);
+      }
+    },
+    [finishOAuth],
   );
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
-    }
-    if (apiError) setApiError('');
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
+    if (apiError) setApiError("");
   };
 
   const validateForm = () => {
     const newErrors = {};
-
     if (!formData.firstName.trim()) {
-      newErrors.firstName = 'First name is required';
+      newErrors.firstName = "First name is required";
     } else if (formData.firstName.trim().length < 2) {
-      newErrors.firstName = 'First name must be at least 2 characters';
+      newErrors.firstName = "First name must be at least 2 characters";
     }
-
     if (!formData.lastName.trim()) {
-      newErrors.lastName = 'Last name is required';
+      newErrors.lastName = "Last name is required";
     } else if (formData.lastName.trim().length < 2) {
-      newErrors.lastName = 'Last name must be at least 2 characters';
+      newErrors.lastName = "Last name must be at least 2 characters";
     }
-
     if (!formData.phone.trim()) {
-      newErrors.phone = 'Phone number is required';
-    } else if (formData.phone.replace(/\D/g, '').length < 8) {
-      newErrors.phone = 'Enter a valid phone number';
+      newErrors.phone = "Phone number is required";
+    } else if (formData.phone.replace(/\D/g, "").length < 8) {
+      newErrors.phone = "Enter a valid phone number";
     }
-
     if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email is invalid';
+      newErrors.email = "Email is invalid";
     }
-
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = "Password is required";
     } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+      newErrors.password = "Password must be at least 6 characters";
     }
-
     if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'Please confirm your password';
+      newErrors.confirmPassword = "Please confirm your password";
     } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = "Passwords do not match";
     }
-
     if (!agreedToTerms) {
-      newErrors.terms = 'You must agree to the terms and conditions';
+      newErrors.terms = "You must agree to the terms and conditions";
     }
-
     if (!turnstileToken) {
-      newErrors.captcha = 'Please complete the captcha below.';
+      newErrors.captcha = "Please complete the captcha below.";
     }
-
     return newErrors;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const newErrors = validateForm();
-
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
 
     setSubmitting(true);
-    setApiError('');
+    setApiError("");
     try {
       const data = await registerUser({
         firstName: formData.firstName.trim(),
@@ -222,11 +258,9 @@ const Signup = () => {
         saveSessionUser(data.user);
         if (data.user.theme) applyTheme(data.user.theme);
       }
-
       await continueAfterAuth(data);
     } catch (err) {
-      setApiError(err.message || 'Could not create account');
-      // The token is single-use, so failed attempts need a fresh challenge.
+      setApiError(err.message || "Could not create account");
       resetTurnstile();
     } finally {
       setSubmitting(false);
@@ -234,158 +268,245 @@ const Signup = () => {
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <div className="auth-header">
-          <h1>Create Account</h1>
-          <p>Join Flosendo's Laboracle learning platform</p>
-          <span className="auth-company">Ages 9-17 | Safe & Secure</span>
-        </div>
-
-        {apiError ? (
-          <div className="auth-banner-error" role="alert">
-            {apiError}
+    <div className="auth-shell">
+      <aside className="auth-promo">
+        <div>
+          <div className="auth-promo__brand">
+            <div className="auth-promo__logo">
+              <img src="/laboracle-logo.png" alt="" />
+            </div>
+            <span className="auth-promo__brandname">Laboracle</span>
           </div>
-        ) : null}
-
-        <GoogleSignInButton onCredential={onGoogleCredential} disabled={oauthBusy || submitting} />
-        <div className="oauth-row" style={{ marginTop: 8 }}>
-          <FacebookSignInButton onAccessToken={onFacebookToken} disabled={oauthBusy || submitting} />
-        </div>
-        {oauthBusy ? (
-          <p className="text-center" style={{ fontSize: 13, color: '#64748b', marginTop: 8 }}>
-            Signing in…
+          <p className="auth-promo__date">
+            Free for students &amp; lecturers
+            <br />
+            Ages 9-17 · Safe by default
           </p>
-        ) : null}
+        </div>
 
-        <div className="auth-divider">or sign up with email</div>
+        <div className="auth-promo__hero">
+          <p className="auth-promo__eyebrow">
+            Join the next generation of learners.
+          </p>
+          <h2 className="auth-promo__title">
+            Create
+            <br />
+            your study
+            <br />
+            account.
+          </h2>
+          <p className="auth-promo__lead">
+            Curriculum-aware answers, citation-backed by default — built for
+            classrooms and home study.
+          </p>
+          <button
+            type="button"
+            className="auth-promo__cta"
+            onClick={() => navigate("/")}
+          >
+            Explore Laboracle →
+          </button>
+        </div>
 
-        <form onSubmit={handleSubmit} className="auth-form">
-          <div className="form-group">
-            <label htmlFor="firstName">First Name</label>
-            <input
-              type="text"
-              id="firstName"
-              name="firstName"
-              value={formData.firstName}
-              onChange={handleChange}
-              placeholder="First name"
-              className={errors.firstName ? 'error' : ''}
-              autoComplete="given-name"
+        <p className="auth-promo__footer">© 2026 Laboracle</p>
+      </aside>
+
+      <section className="auth-form-side">
+        <div className="auth-form-card">
+          <button
+            type="button"
+            className="auth-back-link"
+            onClick={() => navigate("/")}
+          >
+            ← Back to Home
+          </button>
+
+          <div className="auth-form-card__brand">
+            <img src="/laboracle-logo.png" alt="" />
+            <span className="auth-form-card__brand-name">Laboracle</span>
+          </div>
+          <h1 className="auth-form-card__title">Create your account</h1>
+          <p className="auth-form-card__subtitle">
+            It only takes a minute to get started.
+          </p>
+
+          {apiError ? (
+            <div className="auth-banner-error" role="alert">
+              {apiError}
+            </div>
+          ) : null}
+
+          <div className="oauth-buttons">
+            <GoogleSignInButton
+              onCredential={onGoogleCredential}
+              disabled={oauthBusy || submitting}
             />
-            {errors.firstName && <span className="error-message">{errors.firstName}</span>}
+            <MicrosoftSignInButton
+              onIdToken={onMicrosoftIdToken}
+              disabled={oauthBusy || submitting}
+            />
+            <FacebookSignInButton
+              onAccessToken={onFacebookToken}
+              disabled={oauthBusy || submitting}
+            />
           </div>
 
-          <div className="form-group">
-            <label htmlFor="lastName">Last Name</label>
-            <input
-              type="text"
-              id="lastName"
-              name="lastName"
-              value={formData.lastName}
-              onChange={handleChange}
-              placeholder="Last name"
-              className={errors.lastName ? 'error' : ''}
-              autoComplete="family-name"
-            />
-            {errors.lastName && <span className="error-message">{errors.lastName}</span>}
-          </div>
+          {oauthBusy ? <p className="oauth-busy">Signing in…</p> : null}
 
-          <div className="form-group">
-            <label htmlFor="phone">Phone Number</label>
-            <input
-              type="tel"
-              id="phone"
-              name="phone"
-              value={formData.phone}
-              onChange={handleChange}
-              placeholder="Phone number"
-              className={errors.phone ? 'error' : ''}
-              autoComplete="tel"
-            />
-            {errors.phone && <span className="error-message">{errors.phone}</span>}
-          </div>
+          <div className="oauth-divider">or sign up with email</div>
 
-          <div className="form-group">
-            <label htmlFor="email">Email Address</label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="your.email@example.com"
-              className={errors.email ? 'error' : ''}
-              autoComplete="email"
-            />
-            {errors.email && <span className="error-message">{errors.email}</span>}
-          </div>
+          <form onSubmit={handleSubmit} className="auth-form" noValidate>
+            <div className="signup-name-row">
+              <div className="auth-input-group">
+                <label htmlFor="firstName">First name</label>
+                <input
+                  id="firstName"
+                  name="firstName"
+                  type="text"
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  placeholder="First name"
+                  className={`auth-input ${errors.firstName ? "has-error" : ""}`}
+                  autoComplete="given-name"
+                />
+                {errors.firstName && (
+                  <p className="auth-input-error">{errors.firstName}</p>
+                )}
+              </div>
+              <div className="auth-input-group">
+                <label htmlFor="lastName">Last name</label>
+                <input
+                  id="lastName"
+                  name="lastName"
+                  type="text"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  placeholder="Last name"
+                  className={`auth-input ${errors.lastName ? "has-error" : ""}`}
+                  autoComplete="family-name"
+                />
+                {errors.lastName && (
+                  <p className="auth-input-error">{errors.lastName}</p>
+                )}
+              </div>
+            </div>
 
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="Create a password"
-              className={errors.password ? 'error' : ''}
-              autoComplete="new-password"
-            />
-            {errors.password && <span className="error-message">{errors.password}</span>}
-          </div>
+            <div className="auth-input-group">
+              <label htmlFor="phone">Phone number</label>
+              <input
+                id="phone"
+                name="phone"
+                type="tel"
+                value={formData.phone}
+                onChange={handleChange}
+                placeholder="Phone number"
+                className={`auth-input ${errors.phone ? "has-error" : ""}`}
+                autoComplete="tel"
+              />
+              {errors.phone && (
+                <p className="auth-input-error">{errors.phone}</p>
+              )}
+            </div>
 
-          <div className="form-group">
-            <label htmlFor="confirmPassword">Confirm Password</label>
-            <input
-              type="password"
-              id="confirmPassword"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              placeholder="Confirm your password"
-              className={errors.confirmPassword ? 'error' : ''}
-              autoComplete="new-password"
-            />
-            {errors.confirmPassword && <span className="error-message">{errors.confirmPassword}</span>}
-          </div>
+            <div className="auth-input-group">
+              <label htmlFor="email">Email address</label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="you@example.com"
+                className={`auth-input ${errors.email ? "has-error" : ""}`}
+                autoComplete="email"
+              />
+              {errors.email && (
+                <p className="auth-input-error">{errors.email}</p>
+              )}
+            </div>
 
-          <div className="form-group checkbox-group">
-            <label className="checkbox-label">
+            <div className="auth-input-group">
+              <label htmlFor="password">Password</label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Create a password"
+                className={`auth-input ${errors.password ? "has-error" : ""}`}
+                autoComplete="new-password"
+              />
+              {errors.password && (
+                <p className="auth-input-error">{errors.password}</p>
+              )}
+            </div>
+
+            <div className="auth-input-group">
+              <label htmlFor="confirmPassword">Confirm password</label>
+              <input
+                id="confirmPassword"
+                name="confirmPassword"
+                type="password"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                placeholder="Confirm your password"
+                className={`auth-input ${errors.confirmPassword ? "has-error" : ""}`}
+                autoComplete="new-password"
+              />
+              {errors.confirmPassword && (
+                <p className="auth-input-error">{errors.confirmPassword}</p>
+              )}
+            </div>
+
+            <label className="auth-checkbox auth-terms-row">
               <input
                 type="checkbox"
                 checked={agreedToTerms}
                 onChange={(e) => {
                   setAgreedToTerms(e.target.checked);
                   if (errors.terms) {
-                    setErrors(prev => ({ ...prev, terms: '' }));
+                    setErrors((prev) => ({ ...prev, terms: "" }));
                   }
                 }}
               />
-              <span>I agree to the <a href="#">Terms and Conditions</a></span>
+              <span>
+                I agree to the{" "}
+                <a href="#" className="auth-inline-link">
+                  Terms and Conditions
+                </a>
+              </span>
             </label>
-            {errors.terms && <span className="error-message">{errors.terms}</span>}
-          </div>
+            {errors.terms && (
+              <p className="auth-input-error">{errors.terms}</p>
+            )}
 
-          <div className="form-group">
             <div ref={turnstileContainerRef} className="turnstile-widget" />
-            {errors.captcha && <span className="error-message">{errors.captcha}</span>}
-          </div>
+            {errors.captcha && (
+              <p className="auth-input-error">{errors.captcha}</p>
+            )}
 
-          <button type="submit" className="auth-button" disabled={submitting}>
-            {submitting ? 'Creating account…' : 'Sign Up'}
-          </button>
-        </form>
+            <button
+              type="submit"
+              className="auth-submit"
+              disabled={submitting || oauthBusy}
+            >
+              {submitting ? "Creating account…" : "Create account"}
+            </button>
+          </form>
 
-        <div className="auth-footer">
-          <p>Already have an account? <span onClick={() => navigate('/login')} className="auth-link">Login</span></p>
+          <p className="auth-switch-row">
+            Already have an account?{" "}
+            <button
+              type="button"
+              className="auth-link-button"
+              onClick={() => navigate("/login")}
+            >
+              Log in
+            </button>
+          </p>
         </div>
-
-        <button onClick={() => navigate('/')} className="back-home-button" type="button">
-          ← Back to Home
-        </button>
-      </div>
+      </section>
     </div>
   );
 };

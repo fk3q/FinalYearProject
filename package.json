@@ -16,11 +16,12 @@
     "k12",
     "chatbot",
     "learning-assistant",
-    "flosendo"
+    "laboracle"
   ],
-  "author": "Flosendo Limited",
+  "author": "Laboracle",
   "license": "ISC",
   "dependencies": {
+    "@azure/msal-browser": "^5.8.0",
     "bootstrap": "^5.3.8",
     "react": "^18.2.0",
     "react-bootstrap": "^2.10.0",

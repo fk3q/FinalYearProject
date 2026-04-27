@@ -1,4 +1,4 @@
-.fb-signin-wrap {
+.ms-signin-wrap {
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -6,7 +6,7 @@
   width: 100%;
 }
 
-.fb-signin-btn {
+.ms-signin-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -25,53 +25,49 @@
   transition: background 0.2s, border-color 0.2s, opacity 0.2s, box-shadow 0.2s;
 }
 
-.fb-signin-btn:hover:not(:disabled) {
+.ms-signin-btn:hover:not(:disabled) {
   background: #f9fafb;
   border-color: #b6bcc7;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
 }
 
-.fb-signin-btn:focus-visible {
-  outline: 2px solid #1877f2;
+.ms-signin-btn:focus-visible {
+  outline: 2px solid #2563eb;
   outline-offset: 2px;
 }
 
-.fb-signin-btn:disabled {
+.ms-signin-btn:disabled {
   opacity: 0.55;
   cursor: not-allowed;
 }
 
-.fb-signin-btn__icon {
+.ms-signin-btn__icon {
   flex: 0 0 auto;
 }
 
-.fb-signin-btn__label {
+.ms-signin-btn__label {
   flex: 1 1 auto;
   text-align: center;
 }
 
-.fb-signin-err {
+.ms-signin-err {
   margin: 0;
   font-size: 12px;
   color: #b91c1c;
   text-align: center;
 }
 
-.fb-signin-hint {
-  display: none;
-}
-
-html[data-theme="dark"] .fb-signin-btn {
+html[data-theme="dark"] .ms-signin-btn {
   background: #1f2937;
   border-color: #334155;
   color: #e5e7eb;
 }
 
-html[data-theme="dark"] .fb-signin-btn:hover:not(:disabled) {
+html[data-theme="dark"] .ms-signin-btn:hover:not(:disabled) {
   background: #243244;
   border-color: #475569;
 }
 
-html[data-theme="dark"] .fb-signin-err {
+html[data-theme="dark"] .ms-signin-err {
   color: #fca5a5;
 }

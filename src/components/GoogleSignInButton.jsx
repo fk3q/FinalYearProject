@@ -36,9 +36,10 @@ export default function GoogleSignInButton({ onCredential, disabled }) {
       window.google.accounts.id.renderButton(inner, {
         theme: "outline",
         size: "large",
-        width: 320,
+        width: 380,
         text: "continue_with",
-        shape: "pill",
+        shape: "rectangular",
+        logo_alignment: "left",
       });
     };
 

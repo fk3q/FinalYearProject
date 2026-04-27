@@ -180,7 +180,7 @@ class ChatService:
         Role-aware and mode-aware system instruction sent to GPT-4o.
         """
         base = (
-            "You are Laboracle, an AI assistant for the Flosendo educational platform. "
+            "You are Laboracle, an AI assistant for an educational platform. "
             "You answer questions strictly based on the context excerpts provided below. "
             "Always be accurate — if the answer is not in the context, say so clearly "
             "instead of guessing."

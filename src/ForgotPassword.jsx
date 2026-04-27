@@ -144,7 +144,6 @@ const ForgotPassword = () => {
                     "Enter the 6-digit code from your email and choose a new password."}
                   {step === "done" && "You can now sign in with your new password."}
                 </p>
-                <span className="badge text-bg-light">Flosendo Learning Platform</span>
               </div>
 
               {apiError && (
@@ -307,9 +306,6 @@ const ForgotPassword = () => {
             </div>
           </div>
 
-          <p className="text-center text-muted mt-3 mb-0" style={{ fontSize: 13 }}>
-            by Flosendo Limited
-          </p>
         </div>
       </div>
     </div>

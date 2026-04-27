@@ -87,7 +87,7 @@ def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
     SELECT id, email, password_hash, first_name, last_name, phone, created_at,
            COALESCE(subscription_tier, 'free') AS subscription_tier,
            COALESCE(theme, 'light') AS theme,
-           google_sub, facebook_id
+           google_sub, facebook_id, microsoft_sub
     FROM users WHERE email = %s LIMIT 1
     """
     return mysql_db.fetch_one(q, (email_norm,))
@@ -163,12 +163,15 @@ def upsert_google_user(
         ph = by_email.get("password_hash")
         existing_gs = by_email.get("google_sub")
         existing_fb = by_email.get("facebook_id")
+        existing_ms = by_email.get("microsoft_sub")
         if existing_gs and str(existing_gs) != google_sub:
             raise ValueError("google_account_mismatch")
         if ph:
             raise ValueError("email_password_exists")
         if existing_fb:
             raise ValueError("facebook_account_exists")
+        if existing_ms:
+            raise ValueError("microsoft_account_exists")
         mysql_db.execute_update(
             """
             UPDATE users
@@ -247,6 +250,8 @@ def upsert_facebook_user(
         google_sub = by_email.get("google_sub")
         if google_sub:
             raise ValueError("google_account_exists")
+        if by_email.get("microsoft_sub"):
+            raise ValueError("microsoft_account_exists")
         mysql_db.execute_update(
             """
             UPDATE users
@@ -278,6 +283,97 @@ def upsert_facebook_user(
             signup_country_code,
             signup_city,
             facebook_id,
+            email_norm,
+        ),
+    )
+
+
+def get_user_by_microsoft_sub(microsoft_sub: str) -> Optional[Dict[str, Any]]:
+    q = """
+    SELECT id, email, first_name, last_name, phone, created_at,
+           COALESCE(subscription_tier, 'free') AS subscription_tier,
+           COALESCE(theme, 'light') AS theme, microsoft_sub, microsoft_email
+    FROM users WHERE microsoft_sub = %s LIMIT 1
+    """
+    return mysql_db.fetch_one(q, (microsoft_sub,))
+
+
+def upsert_microsoft_user(
+    *,
+    microsoft_sub: str,
+    email: str,
+    first_name: str,
+    last_name: str,
+    signup_ip: Optional[str] = None,
+    signup_country: Optional[str] = None,
+    signup_country_code: Optional[str] = None,
+    signup_city: Optional[str] = None,
+) -> int:
+    """
+    Find or create a user row for a Microsoft (Entra ID) account.
+
+    - If `microsoft_sub` already exists → return that id (refresh microsoft_email).
+    - Else if email exists:
+        - If linked to a different microsoft_sub → 409 (microsoft_account_mismatch).
+        - If has a password → 409 (email_password_exists).
+        - If linked to Google → 409 (google_account_exists).
+        - If linked to Facebook → 409 (facebook_account_exists).
+        - Otherwise attach microsoft_sub to the existing row.
+    - Else insert a new Microsoft-only user (password_hash = NULL, phone placeholder).
+    """
+    email_norm = email.strip().lower()
+    existing = get_user_by_microsoft_sub(microsoft_sub)
+    if existing:
+        mysql_db.execute_update(
+            "UPDATE users SET microsoft_email = %s WHERE id = %s",
+            (email_norm, int(existing["id"])),
+        )
+        return int(existing["id"])
+
+    by_email = get_user_by_email(email_norm)
+    if by_email:
+        uid = int(by_email["id"])
+        ph = by_email.get("password_hash")
+        existing_ms = by_email.get("microsoft_sub")
+        if existing_ms and str(existing_ms) != microsoft_sub:
+            raise ValueError("microsoft_account_mismatch")
+        if ph:
+            raise ValueError("email_password_exists")
+        if by_email.get("google_sub"):
+            raise ValueError("google_account_exists")
+        if by_email.get("facebook_id"):
+            raise ValueError("facebook_account_exists")
+        mysql_db.execute_update(
+            """
+            UPDATE users
+            SET microsoft_sub = %s, microsoft_email = %s,
+                first_name = %s, last_name = %s
+            WHERE id = %s
+            """,
+            (microsoft_sub, email_norm, first_name.strip(), last_name.strip(), uid),
+        )
+        return uid
+
+    q = """
+    INSERT INTO users (
+        email, password_hash, first_name, last_name, phone,
+        signup_ip, signup_country, signup_country_code, signup_city,
+        microsoft_sub, microsoft_email
+    )
+    VALUES (%s, NULL, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    """
+    return mysql_db.execute_insert(
+        q,
+        (
+            email_norm,
+            first_name.strip(),
+            last_name.strip(),
+            "microsoft-oauth",
+            signup_ip,
+            signup_country,
+            signup_country_code,
+            signup_city,
+            microsoft_sub,
             email_norm,
         ),
     )

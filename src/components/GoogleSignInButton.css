@@ -1,7 +1,17 @@
 .google-signin-mount {
   display: flex;
   justify-content: center;
+  width: 100%;
   min-height: 44px;
+}
+
+.google-signin-mount > div {
+  width: 100% !important;
+}
+
+.google-signin-mount iframe {
+  width: 100% !important;
+  max-width: 380px;
 }
 
 .google-signin-mount--disabled {

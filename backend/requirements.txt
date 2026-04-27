@@ -40,3 +40,6 @@ stripe==9.11.0
 
 # Google Sign-In (ID token verification)
 google-auth==2.36.0
+
+# Microsoft Sign-In (ID token verification via JWKS)
+PyJWT[crypto]==2.9.0

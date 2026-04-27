@@ -135,6 +135,12 @@ class FacebookSignInRequest(BaseModel):
     access_token: str = Field(..., min_length=10, max_length=4096)
 
 
+class MicrosoftSignInRequest(BaseModel):
+    """ID token (JWT) returned by MSAL.js after a successful loginPopup."""
+
+    id_token: str = Field(..., min_length=10, max_length=16384)
+
+
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr
 

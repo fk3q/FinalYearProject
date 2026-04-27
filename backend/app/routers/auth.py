@@ -17,6 +17,7 @@ from app.models.schemas import (
     FacebookSignInRequest,
     ForgotPasswordRequest,
     GoogleSignInRequest,
+    MicrosoftSignInRequest,
     RegisterResponse,
     ResetPasswordRequest,
     SimpleMessageResponse,
@@ -33,6 +34,7 @@ from app.services import (
     chat_history_service,
     facebook_oauth_service,
     google_oauth_service,
+    microsoft_oauth_service,
     password_reset_service,
     user_service,
 )
@@ -166,6 +168,11 @@ async def google_sign_in(body: GoogleSignInRequest, request: Request):
                 status_code=409,
                 detail="This email is already registered with Facebook. Use Facebook sign-in.",
             ) from e
+        if code == "microsoft_account_exists":
+            raise HTTPException(
+                status_code=409,
+                detail="This email is already registered with Microsoft. Use Microsoft sign-in.",
+            ) from e
         raise HTTPException(status_code=400, detail="Could not sign in with Google.") from e
     except IntegrityError as e:
         err = str(e).lower()
@@ -227,6 +234,11 @@ async def facebook_sign_in(body: FacebookSignInRequest, request: Request):
                 status_code=409,
                 detail="This email is already registered with Google. Use Google sign-in.",
             ) from e
+        if code == "microsoft_account_exists":
+            raise HTTPException(
+                status_code=409,
+                detail="This email is already registered with Microsoft. Use Microsoft sign-in.",
+            ) from e
         raise HTTPException(status_code=400, detail="Could not sign in with Facebook.") from e
     except IntegrityError as e:
         err = str(e).lower()
@@ -248,6 +260,72 @@ async def facebook_sign_in(body: FacebookSignInRequest, request: Request):
         raise HTTPException(status_code=500, detail="Signed in but profile could not be loaded.")
     user = UserPublic(**_normalize_user_row(row))
     return AuthSuccessResponse(message="Signed in with Facebook.", user=user)
+
+
+@router.post("/microsoft", response_model=AuthSuccessResponse)
+async def microsoft_sign_in(body: MicrosoftSignInRequest, request: Request):
+    """Sign in or register via Microsoft Entra ID (ID token from MSAL.js)."""
+    claims, err = microsoft_oauth_service.verify_microsoft_id_token(body.id_token)
+    if err:
+        raise HTTPException(status_code=400, detail=err)
+
+    client_ip = _client_ip_from_request(request)
+    country, country_code, city = admin_service.lookup_geo(client_ip)
+
+    try:
+        user_id = user_service.upsert_microsoft_user(
+            microsoft_sub=claims["sub"],
+            email=claims["email"],
+            first_name=claims["given_name"],
+            last_name=claims["family_name"],
+            signup_ip=client_ip,
+            signup_country=country,
+            signup_country_code=country_code,
+            signup_city=city,
+        )
+    except ValueError as e:
+        code = str(e)
+        if code == "email_password_exists":
+            raise HTTPException(
+                status_code=409,
+                detail="An account with this email already exists. Sign in with your password.",
+            ) from e
+        if code == "microsoft_account_mismatch":
+            raise HTTPException(
+                status_code=409,
+                detail="This email is already linked to a different Microsoft account.",
+            ) from e
+        if code == "google_account_exists":
+            raise HTTPException(
+                status_code=409,
+                detail="This email is already registered with Google. Use Google sign-in.",
+            ) from e
+        if code == "facebook_account_exists":
+            raise HTTPException(
+                status_code=409,
+                detail="This email is already registered with Facebook. Use Facebook sign-in.",
+            ) from e
+        raise HTTPException(status_code=400, detail="Could not sign in with Microsoft.") from e
+    except IntegrityError as e:
+        err = str(e).lower()
+        if "duplicate" in err or (e.args and e.args[0] == 1062):
+            raise HTTPException(
+                status_code=409,
+                detail="This Microsoft account or email is already in use.",
+            ) from e
+        raise HTTPException(status_code=400, detail="Could not create account.") from e
+    except pymysql.err.OperationalError as e:
+        raise _db_unavailable(e) from e
+
+    user_service.update_signup_geo(
+        user_id, country=country, country_code=country_code, city=city
+    )
+
+    row = user_service.get_public_user_by_id(user_id)
+    if not row:
+        raise HTTPException(status_code=500, detail="Signed in but profile could not be loaded.")
+    user = UserPublic(**_normalize_user_row(row))
+    return AuthSuccessResponse(message="Signed in with Microsoft.", user=user)
 
 
 @router.post("/forgot-password", response_model=SimpleMessageResponse)
