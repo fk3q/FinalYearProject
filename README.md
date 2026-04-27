@@ -1,8 +1,7 @@
 # Laboracle
 
-**By Flosendo Limited**
 
-A safe, low-hallucination Q&A assistant for K12 education that answers program, curriculum, and course-admin questions. Built for Flosendo's entrepreneurship accelerator (ages 12-17) and gamified financial literacy course (age 9).
+A safe, low-hallucination Q&A assistant for  education that answers program, curriculum, and course-admin questions. Built for entrepreneurship accelerator and gamified financial literacy course.
 
 ## 🎯 Project Overview
 
@@ -206,12 +205,6 @@ This is a Computer Science Project for Flosendo Limited.
 ## 📄 License
 
 ISC
-
-## 👥 About Flosendo Limited
-
-Flosendo is an education platform delivering enrichment learning for K12 students. Piloting:
-- Entrepreneurship accelerator (ages 12-17) - Q1 2026
-- Gamified classroom financial literacy course (age 9) - Q1 2026
 
 ## 📞 Support
 
