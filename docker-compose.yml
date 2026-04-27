@@ -97,6 +97,9 @@ services:
       TURNSTILE_SECRET_KEY:           ${TURNSTILE_SECRET_KEY:-}
       # Google Sign-In — Web Client ID (same value as VITE_GOOGLE_CLIENT_ID).
       GOOGLE_OAUTH_CLIENT_ID:         ${GOOGLE_OAUTH_CLIENT_ID:-}
+      # Facebook Login — App ID + App Secret (secret is server-only).
+      FACEBOOK_APP_ID:                ${FACEBOOK_APP_ID:-}
+      FACEBOOK_APP_SECRET:            ${FACEBOOK_APP_SECRET:-}
       # SMTP_* and APP_NAME come from ./backend/.env via env_file above
 
     ports:
@@ -131,6 +134,8 @@ services:
         VITE_TURNSTILE_SITE_KEY: ${VITE_TURNSTILE_SITE_KEY:-1x00000000000000000000AA}
         # Google Sign-In — same Web Client ID string as in Google Cloud Console.
         VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
+        # Facebook Login — public App ID (from Meta Developer → your app).
+        VITE_FACEBOOK_APP_ID: ${VITE_FACEBOOK_APP_ID:-}
     container_name: course_copilot_frontend
     restart: unless-stopped
 

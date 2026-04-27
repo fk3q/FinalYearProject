@@ -1,9 +1,10 @@
 import React, { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Auth.css"; // im keeping this but slides will i am keeping for bootstrap
-import { googleSignIn, loginUser, saveSessionUser } from "./api/auth";
+import { facebookSignIn, googleSignIn, loginUser, saveSessionUser } from "./api/auth";
 import { useTheme } from "./contexts/ThemeContext";
 import GoogleSignInButton from "./components/GoogleSignInButton";
+import FacebookSignInButton from "./components/FacebookSignInButton";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -15,11 +16,11 @@ const Login = () => {
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [apiError, setApiError] = useState("");
-  const [googleBusy, setGoogleBusy] = useState(false);
+  const [oauthBusy, setOauthBusy] = useState(false);
 
   const onGoogleCredential = useCallback(
     async (credential) => {
-      setGoogleBusy(true);
+      setOauthBusy(true);
       setApiError("");
       try {
         const data = await googleSignIn({ credential });
@@ -31,7 +32,27 @@ const Login = () => {
       } catch (err) {
         setApiError(err.message || "Google sign-in failed");
       } finally {
-        setGoogleBusy(false);
+        setOauthBusy(false);
+      }
+    },
+    [applyTheme, navigate]
+  );
+
+  const onFacebookToken = useCallback(
+    async (accessToken) => {
+      setOauthBusy(true);
+      setApiError("");
+      try {
+        const data = await facebookSignIn({ accessToken });
+        if (data.user) {
+          saveSessionUser(data.user);
+          if (data.user.theme) applyTheme(data.user.theme);
+        }
+        navigate("/profile");
+      } catch (err) {
+        setApiError(err.message || "Facebook sign-in failed");
+      } finally {
+        setOauthBusy(false);
       }
     },
     [applyTheme, navigate]
@@ -128,9 +149,12 @@ const Login = () => {
                 </div>
               ) : null}
 
-              <GoogleSignInButton onCredential={onGoogleCredential} disabled={googleBusy || submitting} />
-              {googleBusy ? (
-                <p className="text-center text-muted small mt-2 mb-0">Signing in with Google…</p>
+              <GoogleSignInButton onCredential={onGoogleCredential} disabled={oauthBusy || submitting} />
+              <div className="mt-2 oauth-row">
+                <FacebookSignInButton onAccessToken={onFacebookToken} disabled={oauthBusy || submitting} />
+              </div>
+              {oauthBusy ? (
+                <p className="text-center text-muted small mt-2 mb-0">Signing in…</p>
               ) : null}
 
               <div className="auth-divider">or email</div>

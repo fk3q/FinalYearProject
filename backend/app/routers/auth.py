@@ -14,6 +14,7 @@ from app.models.schemas import (
     ChatHistoryMessage,
     ChatSessionDetailResponse,
     ChatSessionSummary,
+    FacebookSignInRequest,
     ForgotPasswordRequest,
     GoogleSignInRequest,
     RegisterResponse,
@@ -30,6 +31,7 @@ from app.services import (
     admin_service,
     captcha_service,
     chat_history_service,
+    facebook_oauth_service,
     google_oauth_service,
     password_reset_service,
     user_service,
@@ -159,6 +161,11 @@ async def google_sign_in(body: GoogleSignInRequest, request: Request):
                 status_code=409,
                 detail="This email is already linked to a different Google account.",
             ) from e
+        if code == "facebook_account_exists":
+            raise HTTPException(
+                status_code=409,
+                detail="This email is already registered with Facebook. Use Facebook sign-in.",
+            ) from e
         raise HTTPException(status_code=400, detail="Could not sign in with Google.") from e
     except IntegrityError as e:
         err = str(e).lower()
@@ -180,6 +187,67 @@ async def google_sign_in(body: GoogleSignInRequest, request: Request):
         raise HTTPException(status_code=500, detail="Signed in but profile could not be loaded.")
     user = UserPublic(**_normalize_user_row(row))
     return AuthSuccessResponse(message="Signed in with Google.", user=user)
+
+
+@router.post("/facebook", response_model=AuthSuccessResponse)
+async def facebook_sign_in(body: FacebookSignInRequest, request: Request):
+    """Sign in or register via Facebook (access token from the JS SDK)."""
+    profile, err = await facebook_oauth_service.verify_facebook_access_token(body.access_token)
+    if err:
+        raise HTTPException(status_code=400, detail=err)
+
+    client_ip = _client_ip_from_request(request)
+    country, country_code, city = admin_service.lookup_geo(client_ip)
+
+    try:
+        user_id = user_service.upsert_facebook_user(
+            facebook_id=profile["fb_id"],
+            email=profile["email"],
+            first_name=profile["first_name"],
+            last_name=profile["last_name"],
+            signup_ip=client_ip,
+            signup_country=country,
+            signup_country_code=country_code,
+            signup_city=city,
+        )
+    except ValueError as e:
+        code = str(e)
+        if code == "email_password_exists":
+            raise HTTPException(
+                status_code=409,
+                detail="An account with this email already exists. Sign in with your password.",
+            ) from e
+        if code == "facebook_account_mismatch":
+            raise HTTPException(
+                status_code=409,
+                detail="This email is already linked to a different Facebook account.",
+            ) from e
+        if code == "google_account_exists":
+            raise HTTPException(
+                status_code=409,
+                detail="This email is already registered with Google. Use Google sign-in.",
+            ) from e
+        raise HTTPException(status_code=400, detail="Could not sign in with Facebook.") from e
+    except IntegrityError as e:
+        err = str(e).lower()
+        if "duplicate" in err or (e.args and e.args[0] == 1062):
+            raise HTTPException(
+                status_code=409,
+                detail="This Facebook account or email is already in use.",
+            ) from e
+        raise HTTPException(status_code=400, detail="Could not create account.") from e
+    except pymysql.err.OperationalError as e:
+        raise _db_unavailable(e) from e
+
+    user_service.update_signup_geo(
+        user_id, country=country, country_code=country_code, city=city
+    )
+
+    row = user_service.get_public_user_by_id(user_id)
+    if not row:
+        raise HTTPException(status_code=500, detail="Signed in but profile could not be loaded.")
+    user = UserPublic(**_normalize_user_row(row))
+    return AuthSuccessResponse(message="Signed in with Facebook.", user=user)
 
 
 @router.post("/forgot-password", response_model=SimpleMessageResponse)

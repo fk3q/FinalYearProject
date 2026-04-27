@@ -72,6 +72,8 @@ def init_db_schema() -> None:
                 "ALTER TABLE users ADD COLUMN google_sub VARCHAR(64) NULL",
                 # NULL = password-based account; non-NULL = linked Google account.
                 "ALTER TABLE users ADD COLUMN google_email VARCHAR(255) NULL",
+                "ALTER TABLE users ADD COLUMN facebook_id VARCHAR(32) NULL",
+                "ALTER TABLE users ADD COLUMN facebook_email VARCHAR(255) NULL",
             ):
                 try:
                     cur.execute(column_ddl)
@@ -98,6 +100,13 @@ def init_db_schema() -> None:
             try:
                 cur.execute(
                     "ALTER TABLE users ADD UNIQUE KEY uq_users_google_sub (google_sub)"
+                )
+            except OperationalError as e:
+                if e.args[0] not in (1061, 1062):
+                    raise
+            try:
+                cur.execute(
+                    "ALTER TABLE users ADD UNIQUE KEY uq_users_facebook_id (facebook_id)"
                 )
             except OperationalError as e:
                 if e.args[0] not in (1061, 1062):

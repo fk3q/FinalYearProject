@@ -129,6 +129,12 @@ class GoogleSignInRequest(BaseModel):
     credential: str = Field(..., min_length=10, max_length=16384)
 
 
+class FacebookSignInRequest(BaseModel):
+    """Short-lived user access token from the Facebook JS SDK login response."""
+
+    access_token: str = Field(..., min_length=10, max_length=4096)
+
+
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr
 

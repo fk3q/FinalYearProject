@@ -138,6 +138,26 @@ export async function googleSignIn({ credential }) {
   return data;
 }
 
+export async function facebookSignIn({ accessToken }) {
+  const res = await safeFetch("/api/auth/facebook", {
+    method: "POST",
+    headers: jsonHeaders,
+    body: JSON.stringify({ access_token: accessToken }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const detail = data.detail;
+    const msg =
+      typeof detail === "string"
+        ? detail
+        : Array.isArray(detail)
+          ? detail.map((d) => d.msg || d).join(" ")
+          : res.statusText;
+    throw new Error(msg || "Facebook sign-in failed");
+  }
+  return data;
+}
+
 export async function fetchUserById(userId) {
   const res = await safeFetch(`/api/users/${userId}`, { method: "GET" });
   const data = await res.json().catch(() => ({}));

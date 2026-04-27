@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Auth.css';
-import { googleSignIn, registerUser, saveSessionUser } from './api/auth';
+import { facebookSignIn, googleSignIn, registerUser, saveSessionUser } from './api/auth';
 import { createCheckoutSession } from './api/payments';
 import { useTheme } from './contexts/ThemeContext';
 import GoogleSignInButton from './components/GoogleSignInButton';
+import FacebookSignInButton from './components/FacebookSignInButton';
 
 // Public site key. Cloudflare provides "always-passes" dummy keys so local dev
 // works without an account. Override with VITE_TURNSTILE_SITE_KEY for production.
@@ -27,7 +28,7 @@ const Signup = () => {
   const [submitting, setSubmitting] = useState(false);
   const [apiError, setApiError] = useState('');
   const [turnstileToken, setTurnstileToken] = useState('');
-  const [googleBusy, setGoogleBusy] = useState(false);
+  const [oauthBusy, setOauthBusy] = useState(false);
   const turnstileContainerRef = useRef(null);
   const turnstileWidgetIdRef = useRef(null);
 
@@ -247,10 +248,13 @@ const Signup = () => {
           </div>
         ) : null}
 
-        <GoogleSignInButton onCredential={onGoogleCredential} disabled={googleBusy || submitting} />
-        {googleBusy ? (
+        <GoogleSignInButton onCredential={onGoogleCredential} disabled={oauthBusy || submitting} />
+        <div className="oauth-row" style={{ marginTop: 8 }}>
+          <FacebookSignInButton onAccessToken={onFacebookToken} disabled={oauthBusy || submitting} />
+        </div>
+        {oauthBusy ? (
           <p className="text-center" style={{ fontSize: 13, color: '#64748b', marginTop: 8 }}>
-            Signing in with Google…
+            Signing in…
           </p>
         ) : null}
 

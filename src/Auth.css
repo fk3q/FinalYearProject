@@ -154,6 +154,12 @@ html[data-theme="dark"] .auth-divider::after {
   background: #334155;
 }
 
+.oauth-row {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
 .error-message {
   color: #f44336;
   font-size: 12px;

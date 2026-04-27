@@ -93,6 +93,12 @@ class Settings(BaseSettings):
     # .apps.googleusercontent.com). Used by the backend to verify ID tokens.
     GOOGLE_OAUTH_CLIENT_ID: str = ""
 
+    # ── Facebook Login ──────────────────────────────────────────────────────
+    # App ID is public (also passed to the frontend as VITE_FACEBOOK_APP_ID).
+    # App secret stays on the server only — used to verify access tokens.
+    FACEBOOK_APP_ID: str = ""
+    FACEBOOK_APP_SECRET: str = ""
+
     def get_cors_origins(self) -> List[str]:
         if isinstance(self.CORS_ORIGINS, str):
             return [o.strip() for o in self.CORS_ORIGINS.split(',') if o.strip()]

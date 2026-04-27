@@ -86,7 +86,8 @@ def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
     q = """
     SELECT id, email, password_hash, first_name, last_name, phone, created_at,
            COALESCE(subscription_tier, 'free') AS subscription_tier,
-           COALESCE(theme, 'light') AS theme
+           COALESCE(theme, 'light') AS theme,
+           google_sub, facebook_id
     FROM users WHERE email = %s LIMIT 1
     """
     return mysql_db.fetch_one(q, (email_norm,))
@@ -161,10 +162,13 @@ def upsert_google_user(
         uid = int(by_email["id"])
         ph = by_email.get("password_hash")
         existing_gs = by_email.get("google_sub")
+        existing_fb = by_email.get("facebook_id")
         if existing_gs and str(existing_gs) != google_sub:
             raise ValueError("google_account_mismatch")
         if ph:
             raise ValueError("email_password_exists")
+        if existing_fb:
+            raise ValueError("facebook_account_exists")
         mysql_db.execute_update(
             """
             UPDATE users
@@ -196,6 +200,84 @@ def upsert_google_user(
             signup_country_code,
             signup_city,
             google_sub,
+            email_norm,
+        ),
+    )
+
+
+def get_user_by_facebook_id(fb_id: str) -> Optional[Dict[str, Any]]:
+    q = """
+    SELECT id, email, first_name, last_name, phone, created_at,
+           COALESCE(subscription_tier, 'free') AS subscription_tier,
+           COALESCE(theme, 'light') AS theme, facebook_id, facebook_email
+    FROM users WHERE facebook_id = %s LIMIT 1
+    """
+    return mysql_db.fetch_one(q, (fb_id,))
+
+
+def upsert_facebook_user(
+    *,
+    facebook_id: str,
+    email: str,
+    first_name: str,
+    last_name: str,
+    signup_ip: Optional[str] = None,
+    signup_country: Optional[str] = None,
+    signup_country_code: Optional[str] = None,
+    signup_city: Optional[str] = None,
+) -> int:
+    email_norm = email.strip().lower()
+    existing = get_user_by_facebook_id(facebook_id)
+    if existing:
+        mysql_db.execute_update(
+            "UPDATE users SET facebook_email = %s WHERE id = %s",
+            (email_norm, int(existing["id"])),
+        )
+        return int(existing["id"])
+
+    by_email = get_user_by_email(email_norm)
+    if by_email:
+        uid = int(by_email["id"])
+        ph = by_email.get("password_hash")
+        existing_fb = by_email.get("facebook_id")
+        if existing_fb and str(existing_fb) != facebook_id:
+            raise ValueError("facebook_account_mismatch")
+        if ph:
+            raise ValueError("email_password_exists")
+        google_sub = by_email.get("google_sub")
+        if google_sub:
+            raise ValueError("google_account_exists")
+        mysql_db.execute_update(
+            """
+            UPDATE users
+            SET facebook_id = %s, facebook_email = %s,
+                first_name = %s, last_name = %s
+            WHERE id = %s
+            """,
+            (facebook_id, email_norm, first_name.strip(), last_name.strip(), uid),
+        )
+        return uid
+
+    q = """
+    INSERT INTO users (
+        email, password_hash, first_name, last_name, phone,
+        signup_ip, signup_country, signup_country_code, signup_city,
+        facebook_id, facebook_email
+    )
+    VALUES (%s, NULL, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    """
+    return mysql_db.execute_insert(
+        q,
+        (
+            email_norm,
+            first_name.strip(),
+            last_name.strip(),
+            "facebook-oauth",
+            signup_ip,
+            signup_country,
+            signup_country_code,
+            signup_city,
+            facebook_id,
             email_norm,
         ),
     )
