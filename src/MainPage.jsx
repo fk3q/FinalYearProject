@@ -262,23 +262,29 @@ const MainPage = () => {
         </div>
       </section>
 
-      {/* How It Works Section */}
+      {/* How It Works Section. Each step card is wrapped in a small SVG that
+          paints a dashed rounded-rect stroke around the card's edge; the
+          stroke-dashoffset animation makes the dashes appear to march around
+          the perimeter, exactly like a conveyor belt. */}
       <section id="how-it-works" className="how-it-works">
         <h2 className="section-title">How It Works</h2>
         <div className="steps">
           <div className="step">
+            <StepBelt />
             <div className="step-number">1</div>
             <h3>Ask Your Question</h3>
             <p>Type any question about your course, curriculum, or program administration.</p>
           </div>
           <div className="step-arrow">→</div>
           <div className="step">
+            <StepBelt />
             <div className="step-number">2</div>
             <h3>AI Retrieval</h3>
             <p>Our system searches the curriculum database and retrieves relevant information.</p>
           </div>
           <div className="step-arrow">→</div>
           <div className="step">
+            <StepBelt />
             <div className="step-number">3</div>
             <h3>Get Cited Answers</h3>
             <p>Receive accurate answers with source citations and confidence scores.</p>
@@ -473,5 +479,28 @@ const MainPage = () => {
     </div>
   );
 };
+
+/**
+ * Decorative conveyor-belt animation that marches dashed segments around
+ * the edge of a step card.
+ *
+ * Implementation: an absolutely-positioned SVG fills the parent .step.
+ * Inside, a single <rect> is sized via CSS (x/y/width/height/rx as CSS
+ * properties — supported by every modern browser since 2020) so it
+ * reaches the card's edges with a small inset for the stroke. The stroke
+ * uses `stroke-dasharray` to produce belt segments and an animated
+ * `stroke-dashoffset` to push them around the rectangle's perimeter,
+ * giving the marching tread look. Pure CSS animation, no JS at runtime.
+ */
+const StepBelt = () => (
+  <svg
+    className="step-belt"
+    aria-hidden="true"
+    focusable="false"
+    preserveAspectRatio="none"
+  >
+    <rect className="step-belt-track" rx="14" ry="14" />
+  </svg>
+);
 
 export default MainPage;
