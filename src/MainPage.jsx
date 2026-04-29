@@ -167,8 +167,8 @@ const HeroStats = () => {
     return () => observer.disconnect();
   }, []);
 
-  const students = useAnimatedCounter(active, 850, 1000, 1800, 'linear');
-  const accuracy = useAnimatedCounter(active, 50, 95, 2400, 'easeOut');
+  const students = useAnimatedCounter(active, 900, 1000, 2200, 'linear');
+  const accuracy = useAnimatedCounter(active, 60, 95, 2800, 'easeOut');
   const studentsDone = students >= 1000;
 
   return (

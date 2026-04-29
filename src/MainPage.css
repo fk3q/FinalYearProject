@@ -425,6 +425,12 @@
   font-variant-numeric: tabular-nums;
   display: inline-flex;
   align-items: baseline;
+  /* Force a tight line-box on every variant. The 24/7 chip uses
+     `overflow: hidden` and needs line-height: 1 for its slide-in to
+     line up; without this rule the regular numbers (1000+, 95%) keep
+     the default ~1.5 line-height and end up drawn 8-10 px lower than
+     the chip, which is the misalignment in the screenshot. */
+  line-height: 1;
 }
 
 .stat-label {
