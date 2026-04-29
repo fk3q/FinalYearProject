@@ -11,7 +11,7 @@
 // user understands they exist but can't be selected right now.
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Check, ChevronDown, Sparkles } from "lucide-react";
+import { Check, ChevronDown, Lock, Sparkles } from "lucide-react";
 
 import "./ModelPicker.css";
 
@@ -112,6 +112,13 @@ const ModelPicker = ({
           {models.map((m) => {
             const isActive = m.id === selectedId;
             const isDisabled = !m.available;
+            // Backend tells us *why* a model is locked (tier vs missing
+            // key). Falls back to a generic message for older builds.
+            const lockedReason =
+              m.locked_reason ||
+              (isDisabled ? "Unavailable on this server" : null);
+            const isTierLocked =
+              isDisabled && /requires/i.test(lockedReason || "");
             return (
               <button
                 key={m.id}
@@ -120,18 +127,14 @@ const ModelPicker = ({
                 aria-selected={isActive}
                 className={`mp-option${isActive ? " mp-option--active" : ""}${
                   isDisabled ? " mp-option--disabled" : ""
-                }`}
+                }${isTierLocked ? " mp-option--locked" : ""}`}
                 onClick={() => {
                   if (isDisabled) return;
                   onSelect(m.id);
                   setOpen(false);
                 }}
                 disabled={isDisabled}
-                title={
-                  isDisabled
-                    ? "This provider isn't configured on the server."
-                    : m.description
-                }
+                title={isDisabled ? lockedReason : m.description}
               >
                 <div className="mp-option__main">
                   <span className="mp-option__label">{m.label}</span>
@@ -144,10 +147,13 @@ const ModelPicker = ({
                       {m.speed_label}
                     </span>
                   )}
+                  {isTierLocked && (
+                    <Lock size={12} className="mp-option__lock" aria-hidden />
+                  )}
                   {isActive && <Check size={14} className="mp-option__check" />}
                 </div>
                 <div className="mp-option__desc">
-                  {isDisabled ? "Unavailable on this server" : m.description}
+                  {isDisabled ? lockedReason : m.description}
                 </div>
               </button>
             );

@@ -175,6 +175,27 @@
   cursor: not-allowed;
 }
 
+/* Tier-locked rows (e.g. user is on Free, model needs Advanced).
+   Slightly more legible than plain "disabled" so the user can still
+   read the upgrade hint. */
+.mp-option--locked {
+  opacity: 0.72;
+}
+
+.mp-option--locked .mp-option__label {
+  color: #4b5563;
+}
+
+.mp-option--locked .mp-option__desc {
+  color: #7c3aed;
+  font-weight: 500;
+}
+
+.mp-option__lock {
+  color: #7c3aed;
+  flex-shrink: 0;
+}
+
 .mp-option__main {
   display: flex;
   align-items: center;
@@ -255,4 +276,16 @@ html[data-theme="dark"] .mp-speed--high {
 html[data-theme="dark"] .mp-speed--xhigh {
   background: rgba(239, 68, 68, 0.2);
   color: #fca5a5;
+}
+
+html[data-theme="dark"] .mp-option--locked .mp-option__label {
+  color: #c7c9ff;
+}
+
+html[data-theme="dark"] .mp-option--locked .mp-option__desc {
+  color: #c4b5fd;
+}
+
+html[data-theme="dark"] .mp-option__lock {
+  color: #c4b5fd;
 }

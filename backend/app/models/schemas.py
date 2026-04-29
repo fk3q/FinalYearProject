@@ -101,6 +101,14 @@ class ModelInfoResponse(BaseModel):
     speed_label: str
     description: str
     available: bool
+    locked_reason: Optional[str] = Field(
+        default=None,
+        description=(
+            "When `available` is false, a short human-readable hint that "
+            "the picker shows under the model name (e.g. 'Requires "
+            "Advanced plan or higher')."
+        ),
+    )
 
 
 class ModelsResponse(BaseModel):

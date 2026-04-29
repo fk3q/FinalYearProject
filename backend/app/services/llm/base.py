@@ -43,10 +43,17 @@ class ModelInfo:
     # model is best at without reading the docs.
     description: str
 
-    # Filled in at request time by the registry: True iff the API key
-    # for this provider is currently set. Keeps the picker honest --
-    # we never offer a model the server can't reach.
+    # Filled in at request time by the registry: True iff the user's
+    # tier allows this model AND the API key for its provider is set.
+    # Keeps the picker honest -- we never offer a model the server
+    # can't reach (or that the user's plan doesn't permit).
     available: bool = True
+
+    # When `available` is False, a short human-readable explanation that
+    # the picker can show under the model name (e.g. "Requires Advanced
+    # plan" or "Unavailable on this server"). None when the model is
+    # available -- the picker just shows the regular description.
+    locked_reason: Optional[str] = None
 
 
 class ProviderClient(ABC):

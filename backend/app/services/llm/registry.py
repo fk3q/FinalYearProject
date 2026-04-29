@@ -128,18 +128,39 @@ class _Registry:
 
     def list_for_user(self, tier: str) -> List[ModelInfo]:
         """
-        Models the user is allowed to *see* in the picker. Filters by:
-          1. Tier: only models whose min_tier ≤ user's tier.
-          2. Availability: providers whose API key is currently set
-             (so we don't tease a model the backend can't serve).
+        Every model in the catalogue, decorated with `available` +
+        `locked_reason` so the picker can show:
+          · usable models (available = True)
+          · models the user *could* unlock by upgrading their plan
+            (available = False, locked_reason = "Requires X plan")
+          · models gated behind a missing API key on this server
+            (available = False, locked_reason = "Unavailable on this
+            server")
+
+        We deliberately don't hide tier-locked models -- showing them
+        as disabled with an upgrade hint converts much better than
+        omitting them entirely.
         """
         user_rank = _TIER_ORDER.get((tier or "free").lower(), 0)
         out: List[ModelInfo] = []
         for info in self._catalog.values():
-            if _TIER_ORDER[info.min_tier] > user_rank:
-                continue
-            available = self._providers[info.provider].is_configured
-            # Recompute `available` -- the frozen dataclass forces a copy.
+            tier_ok = _TIER_ORDER[info.min_tier] <= user_rank
+            provider_ok = self._providers[info.provider].is_configured
+
+            available = tier_ok and provider_ok
+            locked_reason: Optional[str] = None
+            if not tier_ok:
+                # Tier message takes priority -- if we don't tell the
+                # user "upgrade to unlock this", they assume the
+                # missing-key message means it's permanently unavailable.
+                tier_label = {
+                    "regular": "Regular plan",
+                    "advanced": "Advanced plan",
+                }.get(info.min_tier, f"{info.min_tier} plan")
+                locked_reason = f"Requires {tier_label} or higher"
+            elif not provider_ok:
+                locked_reason = "Unavailable on this server"
+
             out.append(
                 ModelInfo(
                     id=info.id,
@@ -149,6 +170,7 @@ class _Registry:
                     speed_label=info.speed_label,
                     description=info.description,
                     available=available,
+                    locked_reason=locked_reason,
                 )
             )
         # Sort by speed_label ladder so the picker reads predictably:
@@ -188,6 +210,8 @@ class _Registry:
         Best available model the user is allowed to use, or None if
         nothing is reachable. Used when a request omits an explicit
         model and the configured DEFAULT_MODEL is unreachable.
+        Filters in code (not via list_for_user) because we now include
+        locked models in that response.
         """
         for info in self.list_for_user(tier):
             if info.available:

@@ -293,6 +293,7 @@ async def list_models(current_user: Dict[str, Any] = Depends(require_user)):
                 speed_label=m.speed_label,
                 description=m.description,
                 available=m.available,
+                locked_reason=m.locked_reason,
             )
             for m in models
         ],
