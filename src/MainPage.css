@@ -13,13 +13,34 @@
 }
 
 /* Header Styles */
+/* ── Sticky frosted-glass navbar ──────────────────────────────────────────
+ * Translucent white with a real backdrop blur, so as the user scrolls the
+ * page content shows softly through the bar (the same effect macOS, iOS
+ * and sites like Hazy use on their nav). The `saturate(180%)` is the
+ * extra ingredient that keeps colors lively behind the glass instead of
+ * washing them out — without it, backdrop-filter alone looks anaemic.
+ *
+ * Brand colors are unchanged — text + buttons keep their indigo/purple. */
 .header {
-  background: white;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.7);
+  -webkit-backdrop-filter: blur(14px) saturate(180%);
+  backdrop-filter: blur(14px) saturate(180%);
+  border-bottom: 1px solid rgba(102, 126, 234, 0.12);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 6px 20px -10px rgba(102, 126, 234, 0.18);
   position: sticky;
   top: 0;
   z-index: 1000;
-  padding: 16px 0;
+  padding: 14px 0;
+}
+
+/* Browsers that don't support backdrop-filter (very old Edge, Firefox <103
+   without the flag) get a more opaque fallback so the bar stays readable. */
+@supports not (
+  (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))
+) {
+  .header {
+    background: rgba(255, 255, 255, 0.96);
+  }
 }
 
 .header-content {

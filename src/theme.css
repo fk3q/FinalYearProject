@@ -52,7 +52,15 @@ html[data-theme="dark"] body { background: var(--bg-secondary); color: var(--tex
 
 /* MainPage (landing) */
 html[data-theme="dark"] .main-page { color: var(--text-primary); background: var(--bg-secondary); }
-html[data-theme="dark"] .header { background: var(--bg-elevated); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5); }
+/* Dark-mode navbar: translucent dark glass with the same blur+saturate
+   recipe as the light header, so the effect stays consistent across themes. */
+html[data-theme="dark"] .header {
+  background: rgba(15, 20, 36, 0.62);
+  -webkit-backdrop-filter: blur(14px) saturate(180%);
+  backdrop-filter: blur(14px) saturate(180%);
+  border-bottom: 1px solid rgba(138, 164, 255, 0.14);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 6px 20px -10px rgba(0, 0, 0, 0.6);
+}
 html[data-theme="dark"] .nav-links a { color: var(--text-secondary); }
 html[data-theme="dark"] .nav-links a:hover { color: var(--accent); }
 html[data-theme="dark"] .features,
