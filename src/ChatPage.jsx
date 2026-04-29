@@ -10,6 +10,7 @@ import {
   Headphones,
 } from "lucide-react";
 import AccountSidebarBlock from "./components/AccountSidebarBlock";
+import ChatIntroVideo from "./components/ChatIntroVideo";
 import { useUsageTracker } from "./hooks/useUsageTracker";
 import { authHeaders, getSessionUser } from "./api/auth";
 import {
@@ -212,6 +213,9 @@ const ChatPage = () => {
 
   return (
     <div className="cp-page">
+      {/* Cinematic intro that plays every time /chat mounts. The modal
+          self-dismisses on Skip / ESC / backdrop click / video end. */}
+      <ChatIntroVideo />
       <aside className="cp-sidebar">
         <div className="cp-brand" onClick={() => navigate("/")}>
           <img src="/laboracle-logo.png" alt="Laboracle" className="cp-brand-logo" />

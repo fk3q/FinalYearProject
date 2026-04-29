@@ -1,0 +1,159 @@
+/* ── Chat intro video modal ──────────────────────────────────────────────
+ * Full-screen dark backdrop + centred video. The backdrop itself is
+ * `cursor: pointer` to telegraph "click to dismiss"; the video sits
+ * with `cursor: default` so clicking on the video doesn't close.
+ *
+ * z-index is 9999 so it sits over everything in /chat including the
+ * sidebar nav and any Lucide hover states. */
+.chat-intro-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  /* Soft fade-in entrance so the modal doesn't appear with a hard
+     pop the instant the route mounts. */
+  animation: chat-intro-fade 0.32s ease-out;
+  /* The dark backdrop deserves a tiny bit of contrast on the video's
+     black bars in case the source video has letterboxing. */
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+}
+
+@keyframes chat-intro-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.chat-intro-video {
+  /* Comfortable maximum so the video shows large but never bleeds
+     to the very edges of the viewport, leaving a margin where Skip
+     and the mute toggle live. */
+  max-width: 90vw;
+  max-height: 90vh;
+  border-radius: 14px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+  cursor: default;
+  /* Slight scale-in to match the backdrop fade. */
+  animation: chat-intro-zoom 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes chat-intro-zoom {
+  from { transform: scale(0.96); opacity: 0; }
+  to   { transform: scale(1);    opacity: 1; }
+}
+
+/* Skip button (top-right) -- pill-shaped, frosted-glass against the
+   dark backdrop. Slightly translucent so it doesn't fight the video
+   for attention but stays unmistakably clickable. */
+.chat-intro-skip {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.92);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.chat-intro-skip:hover {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-1px);
+}
+
+.chat-intro-skip:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
+/* Mute / unmute toggle (bottom-right) -- circular icon button with
+   the same frosted treatment as the skip pill. */
+.chat-intro-mute {
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: rgba(255, 255, 255, 0.92);
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.chat-intro-mute:hover {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-1px);
+}
+
+.chat-intro-mute:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
+/* Tighter layout on phones / narrow screens. */
+@media (max-width: 640px) {
+  .chat-intro-skip {
+    top: 16px;
+    right: 16px;
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+  .chat-intro-mute {
+    bottom: 16px;
+    right: 16px;
+    width: 36px;
+    height: 36px;
+  }
+  .chat-intro-video {
+    max-width: 96vw;
+    max-height: 80vh;
+    border-radius: 10px;
+  }
+}
+
+/* prefers-reduced-motion: skip the fade and zoom on entrance. */
+@media (prefers-reduced-motion: reduce) {
+  .chat-intro-backdrop,
+  .chat-intro-video {
+    animation: none;
+  }
+  .chat-intro-skip,
+  .chat-intro-mute {
+    transition: none;
+  }
+  .chat-intro-skip:hover,
+  .chat-intro-mute:hover {
+    transform: none;
+  }
+}
