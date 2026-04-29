@@ -76,14 +76,29 @@ class ChatService:
         chosen_model = self._resolve_model(model, owner_user_id)
 
         # ── Guard: no documents at all ───────────────────────────────────────
-        # Deterministic mode is, by definition, "answer only from your
-        # uploaded documents" -- so if there's nothing to retrieve from we
-        # have to bail with an upload prompt. Exploratory mode is allowed
-        # to fall through to a general-chat path so the user can chat at
-        # any time, even before they've uploaded anything.
+        # The four modes split into two camps:
+        #   · MUST have uploaded docs: deterministic, test
+        #     (a "test on your notes" or "answer strictly from your
+        #     uploads" doesn't make sense without a corpus)
+        #   · ALLOW general-chat fallback: exploratory, research
+        #     (research mode still has utility -- "what's a lit review?",
+        #     "how do I structure a methods section?" -- without docs)
         vector_store = self._doc_service.get_vector_store()
         if vector_store is None:
-            if mode == "deterministic":
+            if mode in ("deterministic", "test"):
+                if mode == "test":
+                    return ChatResponse(
+                        answer=(
+                            "Test mode quizzes you on the documents you've "
+                            "uploaded. Head to the Upload page and add a "
+                            "document (lecture notes, a textbook chapter, "
+                            "a syllabus) and I'll generate a quiz from it."
+                        ),
+                        confidence=0,
+                        citations=[],
+                        mode=mode,
+                        retrieved_chunks=0,
+                    )
                 return ChatResponse(
                     answer=(
                         "You haven't uploaded any documents yet, and Deterministic "
@@ -119,10 +134,23 @@ class ChatService:
         )
 
         if not results:
-            # Same split as the no-documents case above: deterministic
-            # mode tells the user nothing relevant was found, exploratory
-            # mode falls through to a general-knowledge answer.
-            if mode == "deterministic":
+            # Same split as the no-documents case above: deterministic +
+            # test require docs (they say "no relevant content"), while
+            # exploratory + research fall through to a general answer.
+            if mode in ("deterministic", "test"):
+                if mode == "test":
+                    return ChatResponse(
+                        answer=(
+                            "I couldn't find anything in your uploaded "
+                            "documents that matches that topic to build a "
+                            "test from. Try a broader prompt (e.g. \"test "
+                            "me on chapter 3\") or upload more material."
+                        ),
+                        confidence=40,
+                        citations=[],
+                        mode=mode,
+                        retrieved_chunks=0,
+                    )
                 return ChatResponse(
                     answer=(
                         "I searched your uploaded documents but could not find "
@@ -287,23 +315,41 @@ class ChatService:
     @staticmethod
     def _system_prompt_general(mode: str, role: str) -> str:
         """
-        System prompt for the no-context (general-knowledge) path.
+        System prompt for the no-context (general-knowledge) path. Used
+        by the modes that *allow* a general fallback (exploratory,
+        research). Deterministic + test modes never reach this code
+        path -- they bail with an "upload first" message instead.
+
         Differs from `_system_prompt` in two ways:
           1. No "answer strictly from the context excerpts" clause --
              there are no excerpts.
-          2. Tells GPT to invite the user to upload documents if they
+          2. Tells the LLM to invite the user to upload documents if they
              want a more grounded answer, so the feature is discoverable.
         """
-        base = (
-            "You are Laboracle, a friendly AI assistant for an educational "
-            "platform. The user has not uploaded any documents that match "
-            "this question, so answer using your general knowledge. Be "
-            "helpful, accurate, and concise. If the question is the kind "
-            "of thing that would benefit from grounded sources (their own "
-            "notes, syllabus, lecture slides, textbooks), gently mention "
-            "that uploading those documents in Deterministic mode would "
-            "give a more precise, citation-backed answer."
-        )
+        if mode == "research":
+            base = (
+                "You are Laboracle in Research Mode. The user is working "
+                "academically (likely a university student or researcher) "
+                "and has not yet uploaded any documents matching this "
+                "question. Help them with the research process itself: "
+                "explaining methodologies, suggesting paper structures, "
+                "framing research questions, recommending where to look "
+                "for sources, drafting outlines, etc. Use a precise, "
+                "academic tone with appropriate hedging. Encourage the "
+                "user to upload primary sources so you can switch to "
+                "document-grounded analysis in the next turn."
+            )
+        else:
+            base = (
+                "You are Laboracle, a friendly AI assistant for an educational "
+                "platform. The user has not uploaded any documents that match "
+                "this question, so answer using your general knowledge. Be "
+                "helpful, accurate, and concise. If the question is the kind "
+                "of thing that would benefit from grounded sources (their own "
+                "notes, syllabus, lecture slides, textbooks), gently mention "
+                "that uploading those documents in Deterministic mode would "
+                "give a more precise, citation-backed answer."
+            )
 
         role_hint = (
             "You are speaking with a TEACHER. Use precise, professional "
@@ -338,14 +384,94 @@ class ChatService:
     @staticmethod
     def _system_prompt(mode: str, role: str) -> str:
         """
-        Role-aware and mode-aware system instruction sent to GPT-4o.
+        Role-aware and mode-aware system instruction sent to the LLM
+        when we have document context to ground in. Switches
+        personality + output shape per mode:
+
+          · deterministic -- fact extractor; cites and refuses to guess
+          · exploratory   -- grounded answer + curated digressions
+          · test          -- quiz-master; produces structured MCQ +
+                             short-answer + true/false batches with
+                             answer keys
+          · research      -- academic synthesist; cites every claim,
+                             produces literature-review style notes
+                             with hedged phrasing
         """
-        base = (
-            "You are Laboracle, an AI assistant for an educational platform. "
-            "You answer questions strictly based on the context excerpts provided below. "
-            "Always be accurate — if the answer is not in the context, say so clearly "
-            "instead of guessing."
-        )
+        # Per-mode "what kind of assistant am I?" preamble. Each preamble
+        # is self-contained so we never mix instructions across modes.
+        if mode == "test":
+            base = (
+                "You are Laboracle in Test Mode -- an AI quiz-master that "
+                "helps the student practise on the documents they uploaded. "
+                "Use the context excerpts as the source of truth for every "
+                "question and every answer.\n\n"
+                "When the student asks for a quiz (or just opens chat in "
+                "Test mode without specifying), produce EXACTLY this "
+                "structure in plain Markdown:\n\n"
+                "**Mini-test (5 questions)**\n"
+                "1. Multiple choice — stem + 4 options (A, B, C, D).\n"
+                "2. Multiple choice — stem + 4 options.\n"
+                "3. Multiple choice — stem + 4 options.\n"
+                "4. Short answer — expects a 1-2 sentence response.\n"
+                "5. True / False — with a one-line justification field.\n\n"
+                "Then, separated by `---`, an **Answer key** section "
+                "containing the correct answer for every item plus a "
+                "brief explanation that quotes or paraphrases the "
+                "supporting chunk (e.g. `[1] notes.pdf — chunk 3`).\n\n"
+                "If the student gives ANSWERS to a previous question set, "
+                "grade each one (✅ correct / ❌ incorrect) and explain "
+                "the right answer. If the student asks for a single "
+                "question on a specific topic, produce just one question "
+                "with its answer hidden under a `<details>` block. Stay "
+                "encouraging but honest -- never tell a student a wrong "
+                "answer is right."
+            )
+        elif mode == "research":
+            base = (
+                "You are Laboracle in Research Mode -- an AI research "
+                "assistant for university-level work. Treat the uploaded "
+                "documents as primary sources and reason about them "
+                "academically.\n\n"
+                "Default behaviours when the student asks an open "
+                "question or for a summary:\n"
+                "  · Cite every non-trivial claim inline using "
+                "`[filename — chunk N]` referencing the context block.\n"
+                "  · Use precise, hedged academic English ('the source "
+                "argues', 'according to X', 'this suggests'). Avoid "
+                "overclaiming what the source supports.\n"
+                "  · Structure long answers with clear section headings "
+                "(### Summary / ### Key claims / ### Methodology / "
+                "### Limitations / ### Open questions).\n"
+                "  · Always close with a short 'Limitations of the "
+                "source' note flagging what these documents do NOT "
+                "cover.\n\n"
+                "Capabilities the user may invoke explicitly:\n"
+                "  · 'Summarise…' -> thematic summary with citations.\n"
+                "  · 'Cornell notes for…' -> two-column cue/notes "
+                "format with a summary footer.\n"
+                "  · 'Outline…'   -> hierarchical bullet outline.\n"
+                "  · 'Key terms / definitions' -> glossary table "
+                "(term | definition | source).\n"
+                "  · 'Compare X and Y' -> side-by-side table with a "
+                "synthesis paragraph after.\n"
+                "  · 'Research questions' -> 5 follow-up questions the "
+                "documents leave open.\n"
+                "  · 'Methodology / findings' -> extract the methods "
+                "and headline findings of each cited paper.\n"
+                "  · 'Lit-review draft' -> short literature-review-style "
+                "synthesis (300-400 words) tying the documents together.\n"
+                "  · 'Citation export' -> APA-style citation lines for "
+                "the underlying source files (filename, no inferred "
+                "metadata)."
+            )
+        else:
+            # deterministic / exploratory share the same grounded base.
+            base = (
+                "You are Laboracle, an AI assistant for an educational platform. "
+                "You answer questions strictly based on the context excerpts provided below. "
+                "Always be accurate — if the answer is not in the context, say so clearly "
+                "instead of guessing."
+            )
 
         role_hint = (
             "You are speaking with a TEACHER. Use precise, professional language "
@@ -356,15 +482,27 @@ class ChatService:
             "and explain concepts simply."
         )
 
-        mode_hint = (
-            "Stick strictly to what the documents say. Do not add information from outside the context."
-            if mode == 'deterministic'
-            else
-            "After answering from the documents, you may briefly suggest related ideas "
-            "or real-world connections to enrich the student's understanding."
-        )
+        # Per-mode trailing nudge. Test and research already encoded
+        # everything they need in `base`, so the trailing hint is only
+        # used by the two original modes.
+        if mode == "deterministic":
+            mode_hint = (
+                "Stick strictly to what the documents say. Do not add "
+                "information from outside the context."
+            )
+        elif mode == "exploratory":
+            mode_hint = (
+                "After answering from the documents, you may briefly "
+                "suggest related ideas or real-world connections to "
+                "enrich the student's understanding."
+            )
+        else:
+            mode_hint = ""
 
-        return f"{base}\n\n{role_hint}\n\n{mode_hint}"
+        parts = [base, role_hint]
+        if mode_hint:
+            parts.append(mode_hint)
+        return "\n\n".join(parts)
 
     @staticmethod
     def _build_citations(docs: list, scores: list) -> List[str]:

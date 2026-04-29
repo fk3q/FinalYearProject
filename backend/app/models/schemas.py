@@ -62,9 +62,15 @@ class DocumentUploadResponse(BaseModel):
 class ChatRequest(BaseModel):
     """Request for chat query"""
     query: str = Field(..., description="User query")
-    mode: Literal["deterministic", "exploratory"] = Field(
+    mode: Literal["deterministic", "exploratory", "test", "research"] = Field(
         default="deterministic",
-        description="AI mode: deterministic or exploratory"
+        description=(
+            "AI mode driving the system prompt. "
+            "deterministic = answer strictly from uploaded docs; "
+            "exploratory   = grounded answer + broader connections; "
+            "test          = quiz the user on their uploaded docs; "
+            "research      = academic synthesis / structured notes."
+        ),
     )
     user_role: Literal["student", "teacher"] = Field(
         default="student",

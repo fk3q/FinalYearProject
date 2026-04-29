@@ -40,6 +40,23 @@ const WELCOME_MESSAGE = {
   citations: [],
 };
 
+// Pretty labels + sidebar hints for each backend mode. Keeping these
+// in a single map (instead of inline ternaries) means adding a 5th
+// mode later is a one-liner.
+const AI_MODE_LABELS = {
+  deterministic: "Deterministic",
+  exploratory:   "Exploratory",
+  test:          "Test",
+  research:      "Research",
+};
+
+const AI_MODE_HINTS = {
+  deterministic: "Answers are grounded strictly in your uploaded documents.",
+  exploratory:   "Grounded answers plus broader connections beyond the documents.",
+  test:          "Generates quizzes (MCQ, short answer, true/false) from your uploads with answer keys.",
+  research:      "Academic synthesis, Cornell notes, lit-review drafts, and citation-rich summaries.",
+};
+
 const ChatPage = () => {
   useUsageTracker();
   const navigate = useNavigate();
@@ -404,12 +421,37 @@ const ChatPage = () => {
     return "cp-conf--low";
   };
 
-  const suggestions = [
-    "What is this course about?",
-    "Summarise the key topics",
-    "What are the main objectives?",
-    "Explain the program structure",
-  ];
+  // Quick-prompt buttons under the welcome message. Tailored to the
+  // active mode so a researcher doesn't see "What is this course
+  // about?" and a quiz-taker doesn't see "Summarise the key topics".
+  const suggestionsByMode = {
+    deterministic: [
+      "What is this course about?",
+      "Summarise the key topics",
+      "What are the main objectives?",
+      "Explain the program structure",
+    ],
+    exploratory: [
+      "How does this connect to real-world examples?",
+      "What broader fields does this relate to?",
+      "Suggest related topics worth exploring",
+      "What are common misconceptions here?",
+    ],
+    test: [
+      "Test me with 5 MCQs",
+      "Quiz me on key definitions",
+      "Give me a true/false round",
+      "Generate a short-answer quiz",
+    ],
+    research: [
+      "Cornell notes for this document",
+      "Summarise the key findings",
+      "Extract methodology and limitations",
+      "Suggest 5 follow-up research questions",
+    ],
+  };
+  const suggestions =
+    suggestionsByMode[aiMode] || suggestionsByMode.deterministic;
 
   const showSuggestions =
     messages.length === 1 && messages[0]?.id === WELCOME_MESSAGE.id && !sessionId;
@@ -558,27 +600,39 @@ const ChatPage = () => {
         </div>
 
         <div className="cp-section-label">AI Mode</div>
-        <div className="cp-toggle-group">
+        <div className="cp-toggle-group cp-toggle-group--grid">
           <button
             className={`cp-toggle ${aiMode === "deterministic" ? "cp-toggle--on" : ""}`}
             onClick={() => setAiMode("deterministic")}
-            title="Factual answers from verified sources only"
+            title="Factual answers from your uploaded documents only"
           >
             Deterministic
           </button>
           <button
             className={`cp-toggle ${aiMode === "exploratory" ? "cp-toggle--on" : ""}`}
             onClick={() => setAiMode("exploratory")}
-            title="Creative connections and broader insights"
+            title="Grounded answers plus broader connections"
           >
             Exploratory
+          </button>
+          <button
+            className={`cp-toggle ${aiMode === "test" ? "cp-toggle--on" : ""}`}
+            onClick={() => setAiMode("test")}
+            title="Quizzes you on your uploaded documents (MCQ + short answer)"
+          >
+            Test
+          </button>
+          <button
+            className={`cp-toggle ${aiMode === "research" ? "cp-toggle--on" : ""}`}
+            onClick={() => setAiMode("research")}
+            title="Academic summaries, structured notes, and research workflows"
+          >
+            Research
           </button>
         </div>
 
         <div className="cp-mode-hint">
-          {aiMode === "deterministic"
-            ? "Answers are grounded strictly in your uploaded documents."
-            : "AI explores connections beyond the documents."}
+          {AI_MODE_HINTS[aiMode] || AI_MODE_HINTS.deterministic}
         </div>
       </aside>
 
@@ -589,7 +643,7 @@ const ChatPage = () => {
             <div>
               <div className="cp-header-title">Laboracle</div>
               <div className="cp-header-sub">
-                {aiMode === "deterministic" ? "Deterministic" : "Exploratory"} &bull;{" "}
+                {AI_MODE_LABELS[aiMode] || AI_MODE_LABELS.deterministic} &bull;{" "}
                 {userRole === "student" ? "Student" : "Teacher"} mode
               </div>
             </div>

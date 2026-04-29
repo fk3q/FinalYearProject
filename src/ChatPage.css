@@ -91,9 +91,18 @@
   margin-top: 4px;
 }
 
-/* Toggle group */
+/* Toggle group — default flex (used by Student/Teacher row).
+   The AI Mode toggle now has 4 options, so it opts into a 2-column
+   grid via the .cp-toggle-group--grid modifier instead of squashing
+   four buttons onto a single horizontal row. */
 .cp-toggle-group {
   display: flex;
+  gap: 6px;
+}
+
+.cp-toggle-group--grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 6px;
 }
 
