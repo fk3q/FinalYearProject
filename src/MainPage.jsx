@@ -221,6 +221,30 @@ const HeroStats = () => {
   );
 };
 
+// Ambient video sitting on the right side of the liquid-glass hero.
+// Loops silently as a decorative accent. If the asset hasn't been
+// dropped into /public yet (or fails to load for any reason), the
+// frame hides itself so the hero falls back to its previous
+// single-column layout without leaving a broken-video box.
+const HeroCompanionVideo = ({ src = "/hero-companion.mp4" }) => {
+  const [failed, setFailed] = useState(false);
+  if (failed) return null;
+  return (
+    <div className="hero-video-frame" aria-hidden="true">
+      <video
+        className="hero-video"
+        src={src}
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="metadata"
+        onError={() => setFailed(true)}
+      />
+    </div>
+  );
+};
+
 const MainPage = () => {
   const navigate = useNavigate();
   const [billing, setBilling] = useState('monthly'); // 'monthly' | 'yearly'
@@ -359,32 +383,42 @@ const MainPage = () => {
           ))}
         </div>
         <div className="hero-content">
-          <h1 className="hero-title">
-            Your Smart Learning Assistant
-          </h1>
-          <p className="hero-subtitle">
-            Ask questions about your courses, curriculum, and program details. Get accurate answers 
-            with citations powered by safe, low-hallucination AI technology.
-          </p>
-          <div className="hero-buttons">
-            <button
-              onClick={() => navigate('/signup')}
-              onMouseMove={handleSpotlight}
-              onMouseLeave={handleSpotlightLeave}
-              className="cta-primary cta-spotlight"
-            >
-              Get Started Free
-            </button>
-            <button
-              onClick={() => navigate('/upload')}
-              onMouseMove={handleSpotlight}
-              onMouseLeave={handleSpotlightLeave}
-              className="cta-secondary cta-spotlight"
-            >
-              Try Demo
-            </button>
+          <div className="hero-text">
+            <h1 className="hero-title">
+              Your Smart Learning Assistant
+            </h1>
+            <p className="hero-subtitle">
+              Ask questions about your courses, curriculum, and program details. Get accurate answers 
+              with citations powered by safe, low-hallucination AI technology.
+            </p>
+            <div className="hero-buttons">
+              <button
+                onClick={() => navigate('/signup')}
+                onMouseMove={handleSpotlight}
+                onMouseLeave={handleSpotlightLeave}
+                className="cta-primary cta-spotlight"
+              >
+                Get Started Free
+              </button>
+              <button
+                onClick={() => navigate('/upload')}
+                onMouseMove={handleSpotlight}
+                onMouseLeave={handleSpotlightLeave}
+                className="cta-secondary cta-spotlight"
+              >
+                Try Demo
+              </button>
+            </div>
+            <HeroStats />
           </div>
-          <HeroStats />
+
+          {/* Companion video sitting in a glassy frame on the right
+              column. Auto-plays muted on loop -- it's an ambient
+              accent, not a narrative video, so no controls. The
+              `onError` handler hides the frame entirely if the asset
+              isn't deployed yet, so the hero collapses to its
+              previous single-column look without a broken-video box. */}
+          <HeroCompanionVideo />
         </div>
       </section>
 
