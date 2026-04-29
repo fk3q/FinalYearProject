@@ -51,7 +51,7 @@
   position: sticky;
   top: 0;
   z-index: 1000;
-  padding: 14px 0;
+  padding: 8px 0;
 }
 
 /* Browsers that don't support backdrop-filter (very old Edge, Firefox <103
@@ -80,6 +80,7 @@
 }
 
 .logo {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -90,10 +91,123 @@
 }
 
 .logo-img {
-  height: 80px;
+  position: relative;
+  z-index: 1;
+  height: 40px;
   width: auto;
   display: block;
   object-fit: contain;
+}
+
+/* ── Bubbles drifting out of the jar ────────────────────────────────────
+ * A purely decorative layer behind/around the logo. Each bubble is a
+ * small absolutely-positioned span that rises slowly from the jar
+ * opening upward and fades out before it reaches the navbar's edges.
+ * The container has `overflow: hidden` so a stray bubble can never
+ * spill into the page below the navbar — they live and die inside the
+ * bar. Disabled for users who set `prefers-reduced-motion`. */
+.logo-bubbles {
+  position: absolute;
+  /* Stretch from just above the navbar's top padding to just below it
+     so bubbles get crisply clipped at both edges of the bar. */
+  top: -8px;
+  bottom: -8px;
+  left: -4px;
+  width: 64px;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 2;
+}
+
+.logo-bubble {
+  position: absolute;
+  /* Bubbles spawn around the jar's opening (upper portion of the logo)
+     and rise upward from there. */
+  bottom: 38%;
+  left: 50%;
+  width: var(--logo-bubble-size, 6px);
+  height: var(--logo-bubble-size, 6px);
+  border-radius: 50%;
+  opacity: 0;
+  transform: translate(-50%, 0) scale(0.4);
+  animation: logo-bubble-rise var(--logo-bubble-dur, 4.4s) ease-in-out
+    var(--logo-bubble-delay, 0s) infinite;
+  will-change: transform, opacity;
+}
+
+/* Two visual flavours, alternating: a soft fill and a clear ring. */
+.logo-bubble:nth-child(odd) {
+  background: rgba(167, 139, 250, 0.22);
+  border: 1px solid rgba(124, 58, 237, 0.5);
+  box-shadow: inset 0 -1px 1.5px rgba(255, 255, 255, 0.5);
+}
+.logo-bubble:nth-child(even) {
+  background: transparent;
+  border: 1.5px solid rgba(118, 75, 162, 0.6);
+}
+
+/* Per-bubble offsets, sizes, durations and delays so the stream looks
+   organic rather than metronomic. `left` is the horizontal centre of
+   each bubble inside the 64px-wide bubble column. */
+.logo-bubble:nth-child(1) {
+  left: 44%;
+  --logo-bubble-size: 7px;
+  --logo-bubble-dur: 4.6s;
+  --logo-bubble-delay: 0s;
+}
+.logo-bubble:nth-child(2) {
+  left: 58%;
+  --logo-bubble-size: 5px;
+  --logo-bubble-dur: 3.8s;
+  --logo-bubble-delay: 0.7s;
+}
+.logo-bubble:nth-child(3) {
+  left: 38%;
+  --logo-bubble-size: 9px;
+  --logo-bubble-dur: 5.6s;
+  --logo-bubble-delay: 1.4s;
+}
+.logo-bubble:nth-child(4) {
+  left: 64%;
+  --logo-bubble-size: 4px;
+  --logo-bubble-dur: 3.4s;
+  --logo-bubble-delay: 2.2s;
+}
+.logo-bubble:nth-child(5) {
+  left: 50%;
+  --logo-bubble-size: 6px;
+  --logo-bubble-dur: 4.8s;
+  --logo-bubble-delay: 3.0s;
+}
+.logo-bubble:nth-child(6) {
+  left: 54%;
+  --logo-bubble-size: 8px;
+  --logo-bubble-dur: 5.2s;
+  --logo-bubble-delay: 3.8s;
+}
+
+@keyframes logo-bubble-rise {
+  0% {
+    transform: translate(-50%, 4px) scale(0.4);
+    opacity: 0;
+  }
+  18% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate(-50%, -42px) scale(1.05);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo-bubble {
+    animation: none;
+    opacity: 0;
+  }
 }
 
 

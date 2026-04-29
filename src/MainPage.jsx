@@ -170,6 +170,14 @@ const MainPage = () => {
         <div className="header-content">
           <div className="logo" onClick={() => navigate('/')}>
             <img src="/laboracle-logo.png" alt="Laboracle" className="logo-img" />
+            <span className="logo-bubbles" aria-hidden="true">
+              <span className="logo-bubble" />
+              <span className="logo-bubble" />
+              <span className="logo-bubble" />
+              <span className="logo-bubble" />
+              <span className="logo-bubble" />
+              <span className="logo-bubble" />
+            </span>
           </div>
           <nav className="nav-links">
             <a href="#features">Features</a>
