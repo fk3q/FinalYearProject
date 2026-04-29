@@ -114,8 +114,30 @@ const MainPage = () => {
   // result stable across browsers and zoom levels.
   const handleSpotlight = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    e.currentTarget.style.setProperty('--mx', `${e.clientX - rect.left}px`);
-    e.currentTarget.style.setProperty('--my', `${e.clientY - rect.top}px`);
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    e.currentTarget.style.setProperty('--mx', `${x}px`);
+    e.currentTarget.style.setProperty('--my', `${y}px`);
+
+    // Normalised distance from the button's centre: 0 in the middle,
+    // ~1 at any corner. Capped to 1 because corners reach ~sqrt(2)
+    // when measured against half-width / half-height. The exponent
+    // shapes the curve -- higher values keep the centre dim for
+    // longer and only let the glow blaze near the very edges, which
+    // matches the "bright-only-at-corners" look in the reference.
+    const cx = rect.width / 2;
+    const cy = rect.height / 2;
+    const dx = (x - cx) / cx;
+    const dy = (y - cy) / cy;
+    const dist = Math.min(1, Math.hypot(dx, dy));
+    const intensity = Math.pow(dist, 1.7);
+    e.currentTarget.style.setProperty('--edge-intensity', intensity.toFixed(3));
+  };
+
+  // Snap the glow off when the cursor leaves the button so it doesn't
+  // get stuck at whatever intensity it had at the exit point.
+  const handleSpotlightLeave = (e) => {
+    e.currentTarget.style.setProperty('--edge-intensity', '0');
   };
 
   const handleSelectPlan = async (planId) => {
@@ -210,6 +232,7 @@ const MainPage = () => {
             <button
               onClick={() => navigate('/signup')}
               onMouseMove={handleSpotlight}
+              onMouseLeave={handleSpotlightLeave}
               className="cta-primary cta-spotlight"
             >
               Get Started Free
@@ -217,6 +240,7 @@ const MainPage = () => {
             <button
               onClick={() => navigate('/upload')}
               onMouseMove={handleSpotlight}
+              onMouseLeave={handleSpotlightLeave}
               className="cta-secondary cta-spotlight"
             >
               Try Demo

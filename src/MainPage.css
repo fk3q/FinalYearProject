@@ -335,23 +335,24 @@
   transform: translateY(-2px);
 }
 
-/* ── Cursor-following spotlight glow ──────────────────────────────────────
- * `--mx` and `--my` are written by the React mousemove handler in pixels
- * relative to the button. The ::before paints a soft orange radial gradient
- * centered at that point, clipped to the button's pill shape via
- * `overflow: hidden`. The outer halo is a separate orange box-shadow that
- * fades in on hover, so the effect feels like the button is sitting under
- * a warm ambient light that tracks the mouse. */
+/* ── Cursor-following spotlight glow (edge-aware) ─────────────────────────
+ * `--mx` / `--my` are written by the React mousemove handler in pixels
+ * relative to the button. `--edge-intensity` is also written by JS and
+ * runs from 0 (cursor dead-centre) to 1 (cursor in a corner), with a
+ * non-linear ramp so the centre stays dim for a long way and only the
+ * outer rim of the button lights up. Every alpha stop in the gradient
+ * is multiplied by `--edge-intensity`, so:
+ *   - cursor in the middle  -> every stop collapses to alpha 0 -> invisible
+ *   - cursor near an edge   -> bright white core + dense saturated aura
+ * That reproduces the "bright-only-at-the-corners" look in the
+ * reference button instead of the old uniform soft halo. */
 .cta-spotlight {
   position: relative;
   overflow: hidden;
   isolation: isolate;
-  /* Glow tint, written as a bare RGB tuple so the rules below can compose
-     it with any alpha via `rgba(var(--glow), <a>)`. Sky blue #38bdf8 sits
-     close to the indigo end of the hero gradient -- analogous rather than
-     complementary -- so the glow feels like a softer, friendlier extension
-     of the brand instead of a sharp pop. Easy to retint by editing this
-     one tuple. */
+  /* Glow tint as a bare RGB tuple, composed with any alpha via
+     `rgba(var(--glow), <a>)`. Sky blue #38bdf8 stays analogous to the
+     indigo hero gradient -- friendly extension of the brand. */
   --glow: 56, 189, 248;
 }
 
@@ -359,13 +360,27 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(
-    200px circle at var(--mx, 50%) var(--my, 50%),
-    rgba(var(--glow), 0.65),
-    rgba(var(--glow), 0) 70%
-  );
-  opacity: 0;
-  transition: opacity 0.35s ease;
+  /* Two stacked radial gradients sharing the same focal point:
+     1) a small near-white core that gives the glow that fierce LED
+        brightness right under the cursor when it's near an edge, and
+     2) a larger, very saturated sky-blue aura that bleeds outward.
+     Every alpha is `calc(<base> * var(--edge-intensity, 0))`, so the
+     whole effect literally cannot show up unless the cursor is far
+     enough from centre. */
+  background:
+    radial-gradient(
+      80px circle at var(--mx, 50%) var(--my, 50%),
+      rgba(255, 255, 255, calc(0.7 * var(--edge-intensity, 0))) 0%,
+      rgba(255, 255, 255, calc(0.25 * var(--edge-intensity, 0))) 35%,
+      rgba(255, 255, 255, 0) 70%
+    ),
+    radial-gradient(
+      180px circle at var(--mx, 50%) var(--my, 50%),
+      rgba(var(--glow), calc(0.95 * var(--edge-intensity, 0))) 0%,
+      rgba(var(--glow), calc(0.55 * var(--edge-intensity, 0))) 28%,
+      rgba(var(--glow), calc(0.18 * var(--edge-intensity, 0))) 55%,
+      rgba(var(--glow), 0) 75%
+    );
   pointer-events: none;
   z-index: 0;
 }
@@ -376,10 +391,9 @@
   z-index: 1;
 }
 
-.cta-spotlight:hover::before {
-  opacity: 1;
-}
-
+/* Outer ambient halo on hover -- unchanged, gives the button its
+   "lifted under coloured light" presence even when the cursor is in
+   the middle and the inner spotlight is dim. */
 .cta-spotlight:hover {
   box-shadow:
     0 0 0 1px rgba(var(--glow), 0.25),
