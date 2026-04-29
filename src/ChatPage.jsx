@@ -19,7 +19,9 @@ import {
 } from "./api/voice";
 import AccountSidebarBlock from "./components/AccountSidebarBlock";
 import ChatIntroVideo from "./components/ChatIntroVideo";
+import ModelPicker from "./components/ModelPicker";
 import { useUsageTracker } from "./hooks/useUsageTracker";
+import { useModels } from "./hooks/useModels";
 import { authHeaders, getSessionUser } from "./api/auth";
 import {
   getApiBase,
@@ -49,6 +51,18 @@ const ChatPage = () => {
   const [messages, setMessages] = useState([WELCOME_MESSAGE]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+
+  // Model picker — list, current selection, and tier metadata. The
+  // hook persists the user's choice in sessionStorage across page navs
+  // and reconciles the cached id whenever /api/models is refetched
+  // (e.g. tier changed, model retired).
+  const {
+    models,
+    selectedId: selectedModelId,
+    setSelectedId: setSelectedModelId,
+    loading: modelsLoading,
+    error: modelsError,
+  } = useModels();
 
   // Voice-input state: idle → recording → transcribing → idle.
   // `recording` toggles the mic-button styling and starts the duration
@@ -160,6 +174,7 @@ const ChatPage = () => {
         user_role: userRole,
       };
       if (sessionId) body.session_id = sessionId;
+      if (selectedModelId) body.model = selectedModelId;
 
       const res = await fetch(`${getApiBase()}/api/chat/query`, {
         method: "POST",
@@ -577,6 +592,15 @@ const ChatPage = () => {
                 {userRole === "student" ? "Student" : "Teacher"} mode
               </div>
             </div>
+          </div>
+          <div className="cp-header-right">
+            <ModelPicker
+              models={models}
+              selectedId={selectedModelId}
+              onSelect={setSelectedModelId}
+              loading={modelsLoading}
+              error={modelsError}
+            />
           </div>
         </header>
 

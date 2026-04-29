@@ -9,6 +9,11 @@ langchain==0.2.16
 langchain-openai==0.1.23
 langchain-community==0.2.16
 langchain-text-splitters==0.2.4
+# Anthropic (Claude Opus / Sonnet) and Google (Gemini) chat backends.
+# Both providers degrade gracefully when their API key is unset --
+# their models simply don't appear in the /api/models response.
+langchain-anthropic==0.1.23
+langchain-google-genai==1.0.10
 
 # OpenAI + compatible httpx
 openai==1.47.0

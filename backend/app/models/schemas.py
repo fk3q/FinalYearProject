@@ -80,6 +80,38 @@ class ChatRequest(BaseModel):
         ge=1,
         description="Existing chat session to continue; requires user_id",
     )
+    model: Optional[str] = Field(
+        default=None,
+        max_length=64,
+        description=(
+            "Public model id from /api/models (e.g. 'gpt-5', 'opus-4-7'). "
+            "Omit to use the server's DEFAULT_MODEL. The backend rejects "
+            "models the user's tier doesn't allow."
+        ),
+    )
+
+
+class ModelInfoResponse(BaseModel):
+    """One row in the model picker."""
+
+    id: str
+    label: str
+    provider: Literal["openai", "anthropic", "google"]
+    min_tier: Literal["free", "regular", "advanced"]
+    speed_label: str
+    description: str
+    available: bool
+
+
+class ModelsResponse(BaseModel):
+    """Response of GET /api/models — what the picker should display."""
+
+    models: List[ModelInfoResponse]
+    default: Optional[str] = Field(
+        default=None,
+        description="Pre-selected model id (server-recommended starting point).",
+    )
+    tier: str
 
 
 class Citation(BaseModel):

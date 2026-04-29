@@ -1,0 +1,258 @@
+/* ── ModelPicker (Cursor-style) ────────────────────────────────────────
+ *
+ * Compact pill-trigger that opens a card-style menu of models. Lives
+ * in the chat-header row next to the existing Mode toggle; sized to
+ * sit comfortably in either light or dark themes (dark theme variant
+ * applied via the [data-theme="dark"] selector at the bottom).
+ */
+
+.mp-picker {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  font-family: inherit;
+  font-size: 13px;
+}
+
+.mp-picker--loading,
+.mp-picker--error {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #f3f4f8;
+  color: #6b7280;
+  border: 1px solid #e5e7ef;
+  font-size: 12px;
+}
+
+.mp-picker--error {
+  background: #fef2f2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+/* ── Trigger pill ─────────────────────────────────────────────────── */
+.mp-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border: 1px solid #d6d9e4;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #1f2336;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+}
+
+.mp-trigger:hover {
+  border-color: #4f46e5;
+  background: #f6f7ff;
+}
+
+.mp-trigger:focus-visible {
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
+}
+
+.mp-trigger__icon {
+  color: #4f46e5;
+}
+
+.mp-trigger__label {
+  white-space: nowrap;
+}
+
+.mp-trigger__chevron {
+  transition: transform 0.18s ease;
+  color: #6b7280;
+}
+
+.mp-trigger__chevron--open {
+  transform: rotate(180deg);
+}
+
+/* ── Speed badges ─────────────────────────────────────────────────── */
+.mp-speed {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  border: 1px solid transparent;
+  background: #eef0ff;
+  color: #4338ca;
+}
+
+.mp-speed--fast {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.mp-speed--medium {
+  background: #eef0ff;
+  color: #4338ca;
+}
+
+.mp-speed--high {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.mp-speed--xhigh {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+/* ── Dropdown menu ────────────────────────────────────────────────── */
+.mp-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 30;
+  min-width: 320px;
+  max-width: 380px;
+  padding: 6px;
+  background: #ffffff;
+  border: 1px solid #e2e5f0;
+  border-radius: 12px;
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.05),
+    0 12px 28px -12px rgba(15, 23, 42, 0.22);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: mp-menu-in 0.16s ease-out both;
+}
+
+@keyframes mp-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.mp-option {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  color: #1f2336;
+  transition: background 0.12s ease;
+}
+
+.mp-option:hover:not(:disabled),
+.mp-option:focus-visible:not(:disabled) {
+  background: #f5f6fc;
+  outline: none;
+}
+
+.mp-option--active {
+  background: #eef0ff;
+}
+
+.mp-option--active:hover {
+  background: #e6e9ff;
+}
+
+.mp-option--disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.mp-option__main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mp-option__label {
+  font-weight: 700;
+  font-size: 13.5px;
+  flex: 1;
+}
+
+.mp-option__check {
+  color: #4f46e5;
+  flex-shrink: 0;
+}
+
+.mp-option__desc {
+  font-size: 12px;
+  line-height: 1.4;
+  color: #6b7280;
+}
+
+/* ── Dark theme overrides ─────────────────────────────────────────── */
+html[data-theme="dark"] .mp-trigger {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #e6e7f2;
+}
+
+html[data-theme="dark"] .mp-trigger:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: #818cf8;
+}
+
+html[data-theme="dark"] .mp-trigger__chevron {
+  color: #a1a4be;
+}
+
+html[data-theme="dark"] .mp-menu {
+  background: #1d1f2c;
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 18px 36px -12px rgba(0, 0, 0, 0.5);
+}
+
+html[data-theme="dark"] .mp-option {
+  color: #e6e7f2;
+}
+
+html[data-theme="dark"] .mp-option:hover:not(:disabled),
+html[data-theme="dark"] .mp-option:focus-visible:not(:disabled) {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+html[data-theme="dark"] .mp-option--active {
+  background: rgba(99, 102, 241, 0.18);
+}
+
+html[data-theme="dark"] .mp-option__desc {
+  color: #a1a4be;
+}
+
+html[data-theme="dark"] .mp-speed {
+  background: rgba(99, 102, 241, 0.2);
+  color: #c7c9ff;
+}
+
+html[data-theme="dark"] .mp-speed--fast {
+  background: rgba(16, 185, 129, 0.2);
+  color: #86efac;
+}
+
+html[data-theme="dark"] .mp-speed--high {
+  background: rgba(249, 115, 22, 0.2);
+  color: #fdba74;
+}
+
+html[data-theme="dark"] .mp-speed--xhigh {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+}

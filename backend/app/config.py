@@ -20,14 +20,40 @@ class Settings(BaseSettings):
     # ── OpenAI ──────────────────────────────────────────────────────────────
     OPENAI_API_KEY: str = ""
 
+    # ── Anthropic (Claude Opus / Sonnet) ────────────────────────────────────
+    # Leave blank to disable Anthropic-backed models -- they're filtered
+    # out of the /api/models response when this is empty.
+    ANTHROPIC_API_KEY: str = ""
+
+    # ── Google (Gemini) ─────────────────────────────────────────────────────
+    # Leave blank to disable Gemini-backed models. Same graceful-degradation
+    # behaviour as the Anthropic key above.
+    GOOGLE_API_KEY: str = ""
+
     # ── Embedding ────────────────────────────────────────────────────────────
     EMBEDDING_MODEL: str = "text-embedding-3-small"
     EMBEDDING_DIMENSIONS: int = 1536
 
-    # ── LLM ─────────────────────────────────────────────────────────────────
-    LLM_MODEL: str = "gpt-4o"
+    # ── LLM (legacy single-model defaults; still used for embedding-only
+    # paths and as the fallback when no model is requested explicitly) ──
+    LLM_MODEL: str = "gpt-5"
     LLM_TEMPERATURE: float = 0.0
     LLM_MAX_TOKENS: int = 1000
+
+    # ── Multi-provider model IDs ────────────────────────────────────────────
+    # Override these in .env when vendors release new versions, so we don't
+    # have to push a code change to upgrade. Each ID must match exactly
+    # what the provider's SDK accepts -- the registry uses these verbatim.
+    MODEL_ID_GPT5:           str = "gpt-5"
+    MODEL_ID_CLAUDE_OPUS:    str = "claude-opus-4-7"
+    MODEL_ID_CLAUDE_SONNET:  str = "claude-sonnet-4-6"
+    MODEL_ID_GEMINI_PRO:     str = "gemini-2.5-pro"
+
+    # The model used when a chat request omits an explicit `model` field.
+    # Defaults to GPT-5 because OPENAI_API_KEY is the only key required for
+    # day-1 deployment; Anthropic / Google keys can be added later without
+    # breaking existing clients.
+    DEFAULT_MODEL: str = "gpt-5"
 
     # ── Chunking ─────────────────────────────────────────────────────────────
     CHUNK_SIZE: int = 1000

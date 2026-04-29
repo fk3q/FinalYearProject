@@ -30,7 +30,10 @@ from app.models.schemas import (
     ChatRequest,
     ChatResponse,
     HealthResponse,
+    ModelInfoResponse,
+    ModelsResponse,
 )
+from app.services.llm import registry as model_registry
 from app.routers.auth import router as auth_router, users_router
 from app.routers.admin import router as admin_router
 from app.routers.payments import router as payments_router
@@ -216,8 +219,13 @@ async def chat_query(
             mode=body.mode,
             user_role=body.user_role,
             owner_user_id=user_id,
+            model=body.model,
         )
         logger.info("Chat success: confidence=%d, chunks=%d", result.confidence, result.retrieved_chunks)
+    except HTTPException:
+        # Tier / availability errors raised inside process_query already
+        # carry the right status + detail -- pass through unchanged.
+        raise
     except Exception as exc:
         logger.error("Chat query failed:\n%s", traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"Query error: {exc}") from exc
@@ -244,6 +252,53 @@ async def chat_query(
     if session_id_saved is not None:
         return result.model_copy(update={"session_id": session_id_saved})
     return result
+
+
+@app.get("/api/models", response_model=ModelsResponse)
+async def list_models(current_user: Dict[str, Any] = Depends(require_user)):
+    """
+    Return the model picker for the signed-in user, filtered by their
+    subscription tier and by which provider API keys are configured on
+    this server. The frontend stores the result in memory + sessionStorage
+    so the picker doesn't flash on every page nav.
+
+    `default` is a server-recommended starting point: the configured
+    DEFAULT_MODEL when reachable for this user, else the cheapest
+    available model in their tier.
+    """
+    user_id = int(current_user["id"])
+    row = user_service.get_public_user_by_id(user_id)
+    tier = str((row or {}).get("subscription_tier") or "free")
+
+    models = model_registry.list_for_user(tier)
+
+    # Compute a sensible default: prefer DEFAULT_MODEL when allowed +
+    # available, else the first available model in the user's tier.
+    default_id: str | None = None
+    default = settings.DEFAULT_MODEL
+    if default and model_registry.check_access(default, tier) is None:
+        default_id = default
+    else:
+        fallback = model_registry.fallback_for(tier)
+        if fallback is not None:
+            default_id = fallback.id
+
+    return ModelsResponse(
+        models=[
+            ModelInfoResponse(
+                id=m.id,
+                label=m.label,
+                provider=m.provider,
+                min_tier=m.min_tier,
+                speed_label=m.speed_label,
+                description=m.description,
+                available=m.available,
+            )
+            for m in models
+        ],
+        default=default_id,
+        tier=tier,
+    )
 
 
 @app.post("/api/voice/transcribe")

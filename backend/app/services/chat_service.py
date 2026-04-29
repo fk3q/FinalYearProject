@@ -10,30 +10,29 @@ Step-by-step:
 """
 
 from typing import List, Optional, Tuple
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from langchain_core.messages import HumanMessage, SystemMessage
+
+from fastapi import HTTPException
+from langchain_openai import OpenAIEmbeddings
 
 from app.config import settings
 from app.models.schemas import ChatResponse
+from app.services import user_service
 from app.services.document_service import DocumentService
+from app.services.llm import registry
 
 
 class ChatService:
-    """Full RAG pipeline: embed → FAISS search → GPT-4o answer."""
+    """Full RAG pipeline: embed → FAISS search → multi-provider answer."""
 
     def __init__(self, document_service: DocumentService):
         self._doc_service = document_service
 
-        # Same embedding model as document_service so vectors are comparable
+        # Same embedding model as document_service so vectors are comparable.
+        # Embedding stays single-provider (OpenAI) on purpose -- mixing
+        # embedding spaces across vendors would invalidate the entire FAISS
+        # index. The choice of *generation* model is what we're widening.
         self._embeddings = OpenAIEmbeddings(
             model=settings.EMBEDDING_MODEL,
-            openai_api_key=settings.OPENAI_API_KEY,
-        )
-
-        self._llm = ChatOpenAI(
-            model=settings.LLM_MODEL,
-            temperature=settings.LLM_TEMPERATURE,
-            max_tokens=settings.LLM_MAX_TOKENS,
             openai_api_key=settings.OPENAI_API_KEY,
         )
 
@@ -45,6 +44,7 @@ class ChatService:
         mode: str = 'deterministic',
         user_role: str = 'student',
         owner_user_id: Optional[int] = None,
+        model: Optional[str] = None,
     ) -> ChatResponse:
         """
         Main entry point.
@@ -70,6 +70,11 @@ class ChatService:
                 retrieved_chunks=0,
             )
 
+        # ── Resolve which model to use (tier-checked) ──────────────────────
+        # The route layer already validated `model` belongs to the user's
+        # tier, but we double-check here as a defense-in-depth measure.
+        chosen_model = self._resolve_model(model, owner_user_id)
+
         # ── Guard: no documents at all ───────────────────────────────────────
         # Deterministic mode is, by definition, "answer only from your
         # uploaded documents" -- so if there's nothing to retrieve from we
@@ -91,7 +96,9 @@ class ChatService:
                     mode=mode,
                     retrieved_chunks=0,
                 )
-            return await self._answer_without_context(query, mode, user_role)
+            return await self._answer_without_context(
+                query, mode, user_role, chosen_model,
+            )
 
         # ── Step 1: embed the user query ─────────────────────────────────────
         # Async embed so other requests aren't blocked while OpenAI responds.
@@ -129,7 +136,9 @@ class ChatService:
                     mode=mode,
                     retrieved_chunks=0,
                 )
-            return await self._answer_without_context(query, mode, user_role)
+            return await self._answer_without_context(
+                query, mode, user_role, chosen_model,
+            )
 
         docs   = [doc   for doc, _     in results]
         scores = [score for _,   score in results]
@@ -137,7 +146,7 @@ class ChatService:
         # ── Step 3: build context string ─────────────────────────────────────
         context = self._build_context(docs)
 
-        # ── Step 4: call GPT-4o ───────────────────────────────────────────────
+        # ── Step 4: dispatch to the chosen provider ─────────────────────────
         system_prompt = self._system_prompt(mode, user_role)
         user_message  = (
             f"Context from uploaded documents:\n"
@@ -145,13 +154,7 @@ class ChatService:
             f"Question: {query}"
         )
 
-        messages = [
-            SystemMessage(content=system_prompt),
-            HumanMessage(content=user_message),
-        ]
-
-        llm_response = await self._llm.ainvoke(messages)
-        answer: str  = llm_response.content.strip()
+        answer = await self._invoke_llm(chosen_model, system_prompt, user_message)
 
         if mode == 'exploratory':
             answer += (
@@ -178,22 +181,18 @@ class ChatService:
         query: str,
         mode: str,
         user_role: str,
+        model: str,
     ) -> ChatResponse:
         """
         Exploratory-mode fallback when there's nothing to retrieve from --
         either because the user hasn't uploaded any documents yet or because
-        none of their uploads matched the query. We let GPT-4o answer from
-        general knowledge so the user can keep chatting freely; citations
-        come back empty and confidence is fixed (no FAISS signal to lean on).
+        none of their uploads matched the query. We let the chosen LLM
+        answer from general knowledge so the user can keep chatting freely;
+        citations come back empty and confidence is fixed (no FAISS signal
+        to lean on).
         """
         system_prompt = self._system_prompt_general(mode, user_role)
-        messages = [
-            SystemMessage(content=system_prompt),
-            HumanMessage(content=query),
-        ]
-
-        llm_response = await self._llm.ainvoke(messages)
-        answer: str = llm_response.content.strip()
+        answer = await self._invoke_llm(model, system_prompt, query)
 
         if mode == "exploratory":
             answer += (
@@ -212,6 +211,78 @@ class ChatService:
             mode=mode,
             retrieved_chunks=0,
         )
+
+    # ── Model dispatch ────────────────────────────────────────────────
+
+    def _resolve_model(self, requested: Optional[str], user_id: Optional[int]) -> str:
+        """
+        Pick the model id we're going to send the prompt to.
+
+        Resolution order:
+          1. If `requested` is set and the user's tier permits it AND the
+             provider is configured -> use it.
+          2. Otherwise, fall back to settings.DEFAULT_MODEL if it's
+             permitted and available for this tier.
+          3. Otherwise, pick the cheapest available model for this tier.
+          4. If nothing is reachable, raise a 503 (no LLM provider
+             configured at all).
+
+        Tier validation duplicates what the route layer already enforces,
+        but defense-in-depth is cheap and prevents a buggy frontend from
+        accidentally upgrading a Free user to Opus.
+        """
+        tier = self._tier_for(user_id)
+
+        if requested:
+            err = registry.check_access(requested, tier)
+            if err:
+                # Surface as 403 so the frontend can show the upgrade
+                # prompt instead of treating it as a generic 500.
+                raise HTTPException(status_code=403, detail=err)
+            return requested
+
+        # No explicit choice -- try the configured default.
+        default_id = settings.DEFAULT_MODEL
+        if default_id and registry.check_access(default_id, tier) is None:
+            return default_id
+
+        # Default is not reachable for this user -- find any allowed
+        # model whose provider is configured.
+        fallback = registry.fallback_for(tier)
+        if fallback is None:
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "No language model is configured on this server. "
+                    "Set OPENAI_API_KEY (and optionally ANTHROPIC_API_KEY / "
+                    "GOOGLE_API_KEY) and restart."
+                ),
+            )
+        return fallback.id
+
+    async def _invoke_llm(self, model_id: str, system: str, user: str) -> str:
+        """
+        Single point through which every LLM call flows. Keeps the
+        per-vendor wiring (LangChain wrappers, API key plumbing) out of
+        the RAG/no-context paths.
+        """
+        provider = registry.provider_for(model_id)
+        vendor_model = registry.vendor_model_id(model_id)
+        return await provider.chat(
+            model_id=vendor_model,
+            system=system,
+            user=user,
+            max_tokens=settings.LLM_MAX_TOKENS,
+            temperature=settings.LLM_TEMPERATURE,
+        )
+
+    @staticmethod
+    def _tier_for(user_id: Optional[int]) -> str:
+        """Cheap tier lookup mirroring quota_service._tier_for."""
+        if not user_id:
+            return "free"
+        row = user_service.get_public_user_by_id(int(user_id))
+        return str((row or {}).get("subscription_tier") or "free")
 
     @staticmethod
     def _system_prompt_general(mode: str, role: str) -> str:
