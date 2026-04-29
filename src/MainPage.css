@@ -289,13 +289,13 @@
      .hero::after glass overlays. Without this, z-index:-1 children
      slip behind .hero entirely and become invisible. */
   isolation: isolate;
-  /* Tuned to match the violet that's baked into the companion
-     video clip -- sits between the original dark indigo->plum
-     (#4a5ac0 -> #4f3072) and the previous over-light pass
-     (#6071d4 -> #6447a0). This middle shade reads as the same
-     "purple coloured glass" as the video interior, so the frame
-     blends into the hero instead of pasting on top of it. */
-  background: linear-gradient(135deg, #5566c8 0%, #5b3f92 100%);
+  /* Pulled ~12–15% darker than the previous middle-violet pass so
+     the hero gradient now matches the deep purple baked into the
+     companion video. With the video occupying the right ~36% as a
+     z:-1 background panel, the hero -> video seam was visible
+     because the left side stayed lighter than the video interior.
+     This tighter palette removes that seam. */
+  background: linear-gradient(135deg, #4a55b8 0%, #4a3580 100%);
   color: white;
   padding: 100px 20px;
   text-align: center;
@@ -504,13 +504,15 @@
 }
 
 /* Soft fade overlay -- two stacked linear gradients that match the
- * end-stop of the hero gradient (#5b3f92):
+ * end-stop of the hero gradient (#4a3580):
  *   · Left edge -- dissolves the video into the hero gradient so
  *     there's no hard vertical seam between video and non-video.
  *   · Bottom edge -- covers the thin black letterbox baked into
  *     the bottom of the source clip, blending it into the hero
  *     colour instead of showing a hard black line.
- * Sits above the video but below the glass highlights. */
+ * Sits above the video but below the glass highlights.
+ * If the hero gradient is re-tuned, both #4a3580 references below
+ * should be updated to the new end-stop. */
 .hero-video-frame::before {
   content: "";
   position: absolute;
@@ -521,12 +523,12 @@
     linear-gradient(
       to left,
       transparent 55%,
-      #5b3f92 100%
+      #4a3580 100%
     ),
     linear-gradient(
       to bottom,
       transparent 78%,
-      #5b3f92 100%
+      #4a3580 100%
     );
 }
 
