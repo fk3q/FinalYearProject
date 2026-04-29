@@ -1,6 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
+  ArrowLeftRight,
+  BookMarked,
+  GraduationCap,
+  Heart,
+  MessageCircleQuestion,
+  ShieldCheck,
+} from 'lucide-react';
+import {
   GithubIcon,
   InstagramIcon,
   LinkedinIcon,
@@ -9,6 +17,52 @@ import {
 import './MainPage.css';
 import { getSessionUser } from './api/auth';
 import { createCheckoutSession } from './api/payments';
+
+// Bento-grid feature cards rendered in the "Powerful Features" section.
+// `accent` controls the icon-pill color via per-class CSS rules; `wide`
+// makes the card span 2 grid columns to break the rhythm and create the
+// Huly-style asymmetric bento layout. Order is meaningful — cards 1 and 6
+// are wide so each row reads as wide+narrow+narrow / narrow+narrow+wide.
+const FEATURES = [
+  {
+    icon: MessageCircleQuestion,
+    title: 'Course Q&A',
+    body: 'Get instant answers about your entrepreneurship and financial literacy curriculum with accurate citations on every reply.',
+    accent: 'indigo',
+    wide: true,
+  },
+  {
+    icon: ShieldCheck,
+    title: 'Low-Hallucination AI',
+    body: 'Safe, reliable answers with confidence scores. Only responds when it has verified information.',
+    accent: 'emerald',
+  },
+  {
+    icon: BookMarked,
+    title: 'Citation-Backed',
+    body: 'Every answer includes source citations so you can verify information and learn more.',
+    accent: 'amber',
+  },
+  {
+    icon: ArrowLeftRight,
+    title: 'Dual Modes',
+    body: 'Switch between deterministic mode for facts and exploratory mode for creative learning.',
+    accent: 'cyan',
+  },
+  {
+    icon: GraduationCap,
+    title: 'Teacher-Friendly',
+    body: 'Reduces teacher workload while keeping students engaged and on track with their missions.',
+    accent: 'violet',
+  },
+  {
+    icon: Heart,
+    title: 'Student-Safe',
+    body: 'Built with safety guardrails and age-appropriate content filtering for K-12 students, vetted against curriculum standards.',
+    accent: 'rose',
+    wide: true,
+  },
+];
 
 // Pricing plans. Regular is the free default tier — no payment, just a signup.
 // Advanced is the only paid tier and goes through Stripe Checkout.
@@ -177,34 +231,34 @@ const MainPage = () => {
         </div>
       </section>
 
-      {/* Features Section */}
+      {/* Features Section — bento-style asymmetric grid of dark cards */}
       <section id="features" className="features">
-        <h2 className="section-title">Powerful Features</h2>
-        <div className="features-grid">
-          <div className="feature-card">
-            <h3>Course Q&A</h3>
-            <p>Get instant answers about your entrepreneurship and financial literacy curriculum with accurate citations.</p>
-          </div>
-          <div className="feature-card">
-            <h3>Low-Hallucination AI</h3>
-            <p>Safe, reliable answers with confidence scores. Only responds when it has verified information.</p>
-          </div>
-          <div className="feature-card">
-            <h3>Citation-Backed</h3>
-            <p>Every answer includes source citations so you can verify information and learn more.</p>
-          </div>
-          <div className="feature-card">
-            <h3>Dual Modes</h3>
-            <p>Switch between deterministic mode for facts and exploratory mode for creative learning.</p>
-          </div>
-          <div className="feature-card">
-            <h3>Teacher-Friendly</h3>
-            <p>Reduces teacher workload while keeping students engaged and on track with their missions.</p>
-          </div>
-          <div className="feature-card">
-            <h3>Student-Safe</h3>
-            <p>Built with safety guardrails and age-appropriate content filtering for K12 students.</p>
-          </div>
+        <div className="features-head">
+          <h2 className="section-title features-title">Powerful Features</h2>
+          <p className="features-sub">
+            Everything Laboracle does to make safe, citation-backed AI
+            actually useful in a classroom.
+          </p>
+        </div>
+        <div className="features-bento">
+          {FEATURES.map(({ icon: Icon, title, body, accent, wide }) => (
+            <article
+              key={title}
+              className={[
+                'bento-card',
+                `bento-card--${accent}`,
+                wide ? 'bento-card--wide' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+            >
+              <span className="bento-icon" aria-hidden="true">
+                <Icon size={22} strokeWidth={2.2} />
+              </span>
+              <h3 className="bento-title">{title}</h3>
+              <p className="bento-body">{body}</p>
+            </article>
+          ))}
         </div>
       </section>
 

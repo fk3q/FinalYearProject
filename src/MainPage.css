@@ -263,39 +263,209 @@
   color: #333;
 }
 
-.features-grid {
+/* ── Powerful Features (bento grid) ───────────────────────────────────────
+ * Asymmetric 4-col grid where the first and last cards span 2 columns,
+ * giving the section a Huly-style rhythm of wide+narrow+narrow on each
+ * row. Cards are dark on a light section so they create a high-contrast
+ * "moment" between the lavender hero and the rest of the page. */
+.features-head {
+  max-width: 720px;
+  margin: 0 auto 48px;
+  text-align: center;
+}
+
+.features-title {
+  margin-bottom: 16px;
+}
+
+.features-sub {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.55;
+  color: #5c637a;
+}
+
+.features-bento {
   max-width: 1200px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 30px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
 }
 
-.feature-card {
-  background: white;
-  padding: 35px;
-  border-radius: 15px;
-  text-align: center;
-  transition: transform 0.3s, box-shadow 0.3s;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+.bento-card {
+  position: relative;
+  background: linear-gradient(160deg, #1a1d2e 0%, #0f1424 100%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 22px;
+  padding: 28px 28px 26px;
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 200px;
+  overflow: hidden;
+  isolation: isolate;
+  transition: transform 0.25s ease, border-color 0.25s ease,
+    box-shadow 0.3s ease;
 }
 
-.feature-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+/* Wide variant — span 2 columns to create the asymmetric bento layout. */
+.bento-card--wide {
+  grid-column: span 2;
 }
 
-
-.feature-card h3 {
-  font-size: 22px;
-  margin-bottom: 15px;
-  color: #333;
+/* Soft accent halo that bleeds in from the top edge — adds the
+   "lit by colored light" feel from the reference. */
+.bento-card::before {
+  content: "";
+  position: absolute;
+  inset: -1px -1px auto -1px;
+  height: 60%;
+  background: radial-gradient(
+    ellipse 80% 100% at 50% -20%,
+    var(--accent-rgba, rgba(102, 126, 234, 0.35)),
+    transparent 70%
+  );
+  opacity: 0.65;
+  pointer-events: none;
+  z-index: 0;
+  transition: opacity 0.3s ease;
 }
 
-.feature-card p {
-  color: #666;
+.bento-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.bento-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--accent-solid, rgba(102, 126, 234, 0.4));
+  box-shadow:
+    0 0 0 1px var(--accent-solid, rgba(102, 126, 234, 0.4)),
+    0 18px 36px -12px rgba(0, 0, 0, 0.45),
+    0 0 32px -6px var(--accent-glow, rgba(102, 126, 234, 0.4));
+}
+
+.bento-card:hover::before {
+  opacity: 1;
+}
+
+/* Icon pill — colored square with rounded corners and the lucide glyph.
+   The accent variables below feed both this and the top halo + hover glow. */
+.bento-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--accent-soft, rgba(102, 126, 234, 0.15));
+  color: var(--accent-strong, #8aa4ff);
+  border: 1px solid var(--accent-border, rgba(102, 126, 234, 0.25));
+}
+
+.bento-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.bento-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.2px;
+}
+
+.bento-body {
+  margin: 0;
+  font-size: 14.5px;
   line-height: 1.6;
-  font-size: 15px;
+  color: #b0b6cc;
+}
+
+/* ── Per-card accent palettes ─────────────────────────────────────────────
+ * Each modifier sets four custom properties that the rules above consume:
+ *   --accent-soft    — icon pill background
+ *   --accent-strong  — icon glyph color
+ *   --accent-border  — icon pill border
+ *   --accent-rgba    — top halo gradient
+ *   --accent-solid   — hover ring
+ *   --accent-glow    — hover outer glow
+ */
+.bento-card--indigo {
+  --accent-soft: rgba(102, 126, 234, 0.16);
+  --accent-strong: #a3b3ff;
+  --accent-border: rgba(102, 126, 234, 0.28);
+  --accent-rgba: rgba(102, 126, 234, 0.42);
+  --accent-solid: rgba(102, 126, 234, 0.55);
+  --accent-glow: rgba(102, 126, 234, 0.45);
+}
+
+.bento-card--emerald {
+  --accent-soft: rgba(16, 185, 129, 0.16);
+  --accent-strong: #6ee7b7;
+  --accent-border: rgba(16, 185, 129, 0.3);
+  --accent-rgba: rgba(16, 185, 129, 0.4);
+  --accent-solid: rgba(16, 185, 129, 0.55);
+  --accent-glow: rgba(16, 185, 129, 0.4);
+}
+
+.bento-card--amber {
+  --accent-soft: rgba(251, 191, 36, 0.16);
+  --accent-strong: #fcd34d;
+  --accent-border: rgba(251, 191, 36, 0.3);
+  --accent-rgba: rgba(251, 191, 36, 0.38);
+  --accent-solid: rgba(251, 191, 36, 0.55);
+  --accent-glow: rgba(251, 191, 36, 0.4);
+}
+
+.bento-card--cyan {
+  --accent-soft: rgba(34, 211, 238, 0.16);
+  --accent-strong: #67e8f9;
+  --accent-border: rgba(34, 211, 238, 0.3);
+  --accent-rgba: rgba(34, 211, 238, 0.4);
+  --accent-solid: rgba(34, 211, 238, 0.55);
+  --accent-glow: rgba(34, 211, 238, 0.4);
+}
+
+.bento-card--violet {
+  --accent-soft: rgba(167, 139, 250, 0.18);
+  --accent-strong: #c4b5fd;
+  --accent-border: rgba(167, 139, 250, 0.3);
+  --accent-rgba: rgba(167, 139, 250, 0.4);
+  --accent-solid: rgba(167, 139, 250, 0.55);
+  --accent-glow: rgba(167, 139, 250, 0.4);
+}
+
+.bento-card--rose {
+  --accent-soft: rgba(244, 114, 182, 0.18);
+  --accent-strong: #fbcfe8;
+  --accent-border: rgba(244, 114, 182, 0.3);
+  --accent-rgba: rgba(244, 114, 182, 0.4);
+  --accent-solid: rgba(244, 114, 182, 0.55);
+  --accent-glow: rgba(244, 114, 182, 0.4);
+}
+
+/* Mobile — collapse to single column so wide cards still fit. */
+@media (max-width: 880px) {
+  .features-bento {
+    grid-template-columns: 1fr;
+  }
+  .bento-card--wide {
+    grid-column: span 1;
+  }
+}
+
+/* Tablet — 2 columns; wide cards still span 2 (full row). */
+@media (min-width: 881px) and (max-width: 1100px) {
+  .features-bento {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .bento-card--wide {
+    grid-column: span 2;
+  }
 }
 
 /* How It Works Section */
