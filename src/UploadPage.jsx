@@ -1,8 +1,17 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {
+  Upload,
+  MessageSquare,
+  User,
+  Settings as SettingsIcon,
+  CreditCard,
+  LifeBuoy,
+  Headphones,
+} from 'lucide-react';
 import AccountSidebarBlock from './components/AccountSidebarBlock';
 import { useUsageTracker } from './hooks/useUsageTracker';
-import { getSessionUser } from './api/auth';
+import { authHeaders, getSessionUser } from './api/auth';
 import './UploadPage.css';
 
 // Empty string => same-origin relative paths (/api/...). nginx in the frontend
@@ -72,10 +81,10 @@ const UploadPage = () => {
       }
       const formData = new FormData();
       formData.append('file', entry.file);
-      formData.append('user_id', String(currentUser.id));
 
       const res = await fetch(`${API_BASE_URL}/api/documents/upload`, {
         method: 'POST',
+        headers: authHeaders(),
         body: formData,
       });
 
@@ -118,13 +127,49 @@ const UploadPage = () => {
 
         <nav className="up-nav">
           <button className="up-nav-item active">
-            <span className="up-nav-icon">↑</span> Upload Documents
+            <span className="up-nav-icon"><Upload /></span> Upload Documents
           </button>
           <button className="up-nav-item" onClick={() => navigate('/chat')}>
-            <span className="up-nav-icon">&#9679;</span> Chat with AI
+            <span className="up-nav-icon"><MessageSquare /></span> Chat with AI
           </button>
+        </nav>
+
+        <div className="up-section-label">Account</div>
+        <nav className="up-nav">
           <button className="up-nav-item" onClick={() => navigate('/profile')}>
-            <span className="up-nav-icon">&#9675;</span> My profile
+            <span className="up-nav-icon"><User /></span> Profile
+          </button>
+          <button
+            className="up-nav-item"
+            onClick={() => navigate('/profile#settings')}
+          >
+            <span className="up-nav-icon"><SettingsIcon /></span> Settings
+          </button>
+          <button
+            className="up-nav-item"
+            onClick={() => navigate('/profile#subscription')}
+          >
+            <span className="up-nav-icon"><CreditCard /></span> Subscription
+          </button>
+        </nav>
+
+        <div className="up-section-label">Help</div>
+        <nav className="up-nav">
+          <button
+            className="up-nav-item"
+            onClick={() => {
+              window.location.href = 'mailto:laboraclee@gmail.com?subject=Help%20centre%20enquiry';
+            }}
+          >
+            <span className="up-nav-icon"><LifeBuoy /></span> Help centre
+          </button>
+          <button
+            className="up-nav-item"
+            onClick={() => {
+              window.location.href = 'mailto:laboraclee@gmail.com?subject=Support%20request';
+            }}
+          >
+            <span className="up-nav-icon"><Headphones /></span> Support
           </button>
         </nav>
 

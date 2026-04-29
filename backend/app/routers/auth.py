@@ -3,12 +3,15 @@ Registration, login, and user profile (MySQL).
 """
 
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import pymysql
-from fastapi import APIRouter, HTTPException, Path, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Path, Request, Response
 from pymysql.err import IntegrityError
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
+from app.dependencies import get_bearer_token, require_user, require_user_matches
 from app.models.schemas import (
     AuthSuccessResponse,
     ChatHistoryMessage,
@@ -18,9 +21,11 @@ from app.models.schemas import (
     ForgotPasswordRequest,
     GoogleSignInRequest,
     MicrosoftSignInRequest,
+    QuotaCounter,
     RegisterResponse,
     ResetPasswordRequest,
     SimpleMessageResponse,
+    UsageQuotaResponse,
     UsageSecondsRequest,
     UserLoginRequest,
     UserProfilePatchRequest,
@@ -36,12 +41,18 @@ from app.services import (
     google_oauth_service,
     microsoft_oauth_service,
     password_reset_service,
+    quota_service,
+    session_service,
     user_service,
 )
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+# Per-IP throttle for unauthenticated endpoints. Stops password-spraying and
+# password-reset enumeration. Routes opt in via the @limiter.limit decorator.
+limiter = Limiter(key_func=get_remote_address, default_limits=[])
 
 
 def _db_unavailable(exc: Exception) -> HTTPException:
@@ -53,7 +64,8 @@ def _db_unavailable(exc: Exception) -> HTTPException:
 
 
 @router.post("/register", response_model=RegisterResponse, status_code=201)
-async def register(body: UserRegisterRequest, request: Request):
+@limiter.limit("5/minute")
+async def register(request: Request, body: UserRegisterRequest):
     """
     Create a new user. Email is unique; duplicate emails return 409.
     Captures the client IP and (best-effort) country/city for the admin dashboard.
@@ -91,7 +103,13 @@ async def register(body: UserRegisterRequest, request: Request):
     if not row:
         raise HTTPException(status_code=500, detail="Account created but profile could not be loaded.")
     user = UserPublic(**_normalize_user_row(row))
-    return RegisterResponse(message="Account created successfully.", user=user)
+    token, expires = session_service.issue_session(user_id)
+    return RegisterResponse(
+        message="Account created successfully.",
+        user=user,
+        token=token,
+        expires_at=expires,
+    )
 
 
 def _client_ip_from_request(request: Request) -> str | None:
@@ -108,9 +126,13 @@ def _client_ip_from_request(request: Request) -> str | None:
 
 
 @router.post("/login", response_model=AuthSuccessResponse)
-async def login(body: UserLoginRequest):
+@limiter.limit("8/minute")
+async def login(request: Request, body: UserLoginRequest):
     """
     Verify email and password. Returns public profile on success (401 if invalid).
+
+    Throttled to 8 attempts/minute per IP so an attacker can't brute-force
+    weak passwords by hammering the endpoint.
     """
     try:
         row = user_service.verify_login(body.email, body.password)
@@ -121,7 +143,13 @@ async def login(body: UserLoginRequest):
         raise HTTPException(status_code=401, detail="Invalid email or password.")
 
     user = UserPublic(**_normalize_user_row(row))
-    return AuthSuccessResponse(message="Signed in successfully.", user=user)
+    token, expires = session_service.issue_session(int(row["id"]))
+    return AuthSuccessResponse(
+        message="Signed in successfully.",
+        user=user,
+        token=token,
+        expires_at=expires,
+    )
 
 
 @router.post("/google", response_model=AuthSuccessResponse)
@@ -193,7 +221,13 @@ async def google_sign_in(body: GoogleSignInRequest, request: Request):
     if not row:
         raise HTTPException(status_code=500, detail="Signed in but profile could not be loaded.")
     user = UserPublic(**_normalize_user_row(row))
-    return AuthSuccessResponse(message="Signed in with Google.", user=user)
+    token, expires = session_service.issue_session(user_id)
+    return AuthSuccessResponse(
+        message="Signed in with Google.",
+        user=user,
+        token=token,
+        expires_at=expires,
+    )
 
 
 @router.post("/facebook", response_model=AuthSuccessResponse)
@@ -259,7 +293,13 @@ async def facebook_sign_in(body: FacebookSignInRequest, request: Request):
     if not row:
         raise HTTPException(status_code=500, detail="Signed in but profile could not be loaded.")
     user = UserPublic(**_normalize_user_row(row))
-    return AuthSuccessResponse(message="Signed in with Facebook.", user=user)
+    token, expires = session_service.issue_session(user_id)
+    return AuthSuccessResponse(
+        message="Signed in with Facebook.",
+        user=user,
+        token=token,
+        expires_at=expires,
+    )
 
 
 @router.post("/microsoft", response_model=AuthSuccessResponse)
@@ -325,11 +365,18 @@ async def microsoft_sign_in(body: MicrosoftSignInRequest, request: Request):
     if not row:
         raise HTTPException(status_code=500, detail="Signed in but profile could not be loaded.")
     user = UserPublic(**_normalize_user_row(row))
-    return AuthSuccessResponse(message="Signed in with Microsoft.", user=user)
+    token, expires = session_service.issue_session(user_id)
+    return AuthSuccessResponse(
+        message="Signed in with Microsoft.",
+        user=user,
+        token=token,
+        expires_at=expires,
+    )
 
 
 @router.post("/forgot-password", response_model=SimpleMessageResponse)
-async def forgot_password(body: ForgotPasswordRequest):
+@limiter.limit("3/minute")
+async def forgot_password(request: Request, body: ForgotPasswordRequest):
     """
     Start the password-reset flow. Always returns the same message so we don't
     reveal whether the email has an account.
@@ -346,15 +393,34 @@ async def forgot_password(body: ForgotPasswordRequest):
 
 
 @router.post("/reset-password", response_model=SimpleMessageResponse)
-async def reset_password(body: ResetPasswordRequest):
-    """Verify the 6-digit code and set the new password."""
+@limiter.limit("5/minute")
+async def reset_password(request: Request, body: ResetPasswordRequest):
+    """Verify the 6-digit code and set the new password.
+
+    On success, every other active session for this user is revoked so a
+    stolen token from before the reset can no longer be used.
+    """
     try:
         password_reset_service.reset_password(body.email, body.code, body.new_password)
     except password_reset_service.ResetError as e:
         raise HTTPException(status_code=e.status_code, detail=e.message) from e
     except pymysql.err.OperationalError as e:
         raise _db_unavailable(e) from e
+    # Best-effort: invalidate any tokens issued before the reset.
+    row = user_service.get_user_by_email(body.email)
+    if row:
+        try:
+            session_service.revoke_all_for_user(int(row["id"]))
+        except Exception:
+            logger.exception("Could not revoke sessions after password reset")
     return SimpleMessageResponse(message="Password updated. You can sign in now.")
+
+
+@router.post("/logout", response_model=SimpleMessageResponse)
+async def logout(token: Optional[str] = Depends(get_bearer_token)):
+    """Revoke the current bearer token. Safe to call without one (no-op)."""
+    session_service.revoke_session(token)
+    return SimpleMessageResponse(message="Signed out.")
 
 
 def _normalize_user_row(row: Dict[str, Any]) -> Dict[str, Any]:
@@ -391,8 +457,12 @@ def _profile_from_service(row: dict) -> UserProfileResponse:
 
 
 @users_router.get("/{user_id}/profile", response_model=UserProfileResponse)
-async def get_user_profile(user_id: int = Path(..., ge=1)):
+async def get_user_profile(
+    user_id: int = Path(..., ge=1),
+    current_user: Dict[str, Any] = Depends(require_user),
+):
     """Full profile for the signed-in user's account page."""
+    require_user_matches(user_id, current_user)
     try:
         row = user_service.get_user_profile_detail(user_id)
     except pymysql.err.OperationalError as e:
@@ -406,7 +476,9 @@ async def get_user_profile(user_id: int = Path(..., ge=1)):
 async def patch_user_profile(
     body: UserProfilePatchRequest,
     user_id: int = Path(..., ge=1),
+    current_user: Dict[str, Any] = Depends(require_user),
 ):
+    require_user_matches(user_id, current_user)
     # Profile picture is updated only if the field is explicitly present in the
     # body (Pydantic gives `None` for both "missing" and "explicit null"; we use
     # model_fields_set to tell them apart so a theme-only PATCH doesn't wipe the
@@ -442,18 +514,36 @@ async def patch_user_profile(
     return _profile_from_service(row)
 
 
+@users_router.get("/{user_id}/usage-quota", response_model=UsageQuotaResponse)
+async def get_usage_quota(
+    user_id: int = Path(..., ge=1),
+    current_user: Dict[str, Any] = Depends(require_user),
+):
+    """
+    Current calendar-month chat/upload counters and tier limits for the user.
+    Powers the "Usage this month" panel on the profile page.
+    """
+    require_user_matches(user_id, current_user)
+    try:
+        snapshot = quota_service.get_usage(user_id)
+    except pymysql.err.OperationalError as e:
+        raise _db_unavailable(e) from e
+    return UsageQuotaResponse(
+        tier=snapshot["tier"],
+        period_start=snapshot["period_start"],
+        chat=QuotaCounter(**snapshot["chat"]),
+        upload=QuotaCounter(**snapshot["upload"]),
+    )
+
+
 @users_router.post("/{user_id}/usage", status_code=204)
 async def add_usage_time(
     body: UsageSecondsRequest,
     user_id: int = Path(..., ge=1),
+    current_user: Dict[str, Any] = Depends(require_user),
 ):
     """Accumulate active time for today (client sends periodic pings while the app is open)."""
-    try:
-        row = user_service.get_public_user_by_id(user_id)
-    except pymysql.err.OperationalError as e:
-        raise _db_unavailable(e) from e
-    if not row:
-        raise HTTPException(status_code=404, detail="User not found.")
+    require_user_matches(user_id, current_user)
     try:
         user_service.add_daily_usage_seconds(user_id, body.seconds)
     except pymysql.err.OperationalError as e:
@@ -462,14 +552,12 @@ async def add_usage_time(
 
 
 @users_router.get("/{user_id}/chat-sessions", response_model=List[ChatSessionSummary])
-async def list_chat_sessions(user_id: int = Path(..., ge=1)):
+async def list_chat_sessions(
+    user_id: int = Path(..., ge=1),
+    current_user: Dict[str, Any] = Depends(require_user),
+):
     """Saved conversations for the chat sidebar."""
-    try:
-        row = user_service.get_public_user_by_id(user_id)
-    except pymysql.err.OperationalError as e:
-        raise _db_unavailable(e) from e
-    if not row:
-        raise HTTPException(status_code=404, detail="User not found.")
+    require_user_matches(user_id, current_user)
     try:
         rows = chat_history_service.list_sessions_for_user(user_id)
     except pymysql.err.OperationalError as e:
@@ -491,13 +579,9 @@ async def list_chat_sessions(user_id: int = Path(..., ge=1)):
 async def get_chat_session_detail(
     user_id: int = Path(..., ge=1),
     session_id: int = Path(..., ge=1),
+    current_user: Dict[str, Any] = Depends(require_user),
 ):
-    try:
-        urow = user_service.get_public_user_by_id(user_id)
-    except pymysql.err.OperationalError as e:
-        raise _db_unavailable(e) from e
-    if not urow:
-        raise HTTPException(status_code=404, detail="User not found.")
+    require_user_matches(user_id, current_user)
     try:
         data = chat_history_service.get_session_messages(user_id, session_id)
     except pymysql.err.OperationalError as e:
@@ -518,13 +602,9 @@ async def get_chat_session_detail(
 async def delete_chat_session(
     user_id: int = Path(..., ge=1),
     session_id: int = Path(..., ge=1),
+    current_user: Dict[str, Any] = Depends(require_user),
 ):
-    try:
-        urow = user_service.get_public_user_by_id(user_id)
-    except pymysql.err.OperationalError as e:
-        raise _db_unavailable(e) from e
-    if not urow:
-        raise HTTPException(status_code=404, detail="User not found.")
+    require_user_matches(user_id, current_user)
     try:
         ok = chat_history_service.delete_session(user_id, session_id)
     except pymysql.err.OperationalError as e:
@@ -535,10 +615,17 @@ async def delete_chat_session(
 
 
 @users_router.get("/{user_id}", response_model=UserPublic)
-async def get_user(user_id: int = Path(..., ge=1)):
+async def get_user(
+    user_id: int = Path(..., ge=1),
+    current_user: Dict[str, Any] = Depends(require_user),
+):
     """
     Retrieve stored profile for a user by id (no password returned).
+
+    Now also requires the caller to BE the user — anyone trying to enumerate
+    other accounts is rejected with 403 by `require_user_matches`.
     """
+    require_user_matches(user_id, current_user)
     try:
         row = user_service.get_public_user_by_id(user_id)
     except pymysql.err.OperationalError as e:

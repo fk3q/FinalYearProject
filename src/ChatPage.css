@@ -65,7 +65,20 @@
 
 .cp-nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
 .cp-nav-item.active { background: rgba(79,172,254,0.15); color: #4facfe; }
-.cp-nav-icon { font-size: 14px; width: 20px; text-align: center; }
+.cp-nav-icon {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: currentColor;
+}
+.cp-nav-icon svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2;
+}
 
 /* Section label */
 .cp-section-label {

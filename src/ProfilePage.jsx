@@ -1,6 +1,16 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
+  Upload,
+  MessageSquare,
+  User,
+  Settings as SettingsIcon,
+  CreditCard,
+  LifeBuoy,
+  Headphones,
+} from "lucide-react";
+import {
+  fetchUsageQuota,
   fetchUserProfile,
   patchUserProfile,
   getSessionUser,
@@ -35,8 +45,93 @@ function formatDuration(totalSeconds) {
   return `${h}h ${mm}m`;
 }
 
+/** First day of next month, formatted as "May 1, 2026". */
+function formatResetDate(periodStartIso) {
+  if (!periodStartIso) return "";
+  const start = new Date(`${periodStartIso}T00:00:00`);
+  if (Number.isNaN(start.getTime())) return "";
+  const next = new Date(start.getFullYear(), start.getMonth() + 1, 1);
+  return next.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+/** Choose a colour bucket for the bar based on % full. */
+function quotaTone(used, limit) {
+  if (limit == null || limit <= 0) return "ok";
+  const pct = (used / limit) * 100;
+  if (pct >= 100) return "full";
+  if (pct >= 80) return "warn";
+  return "ok";
+}
+
+/**
+ * Decide whether to show the "you're running low, upgrade?" CTA inside the
+ * usage panel. Returns null if no nudge is needed (e.g. Advanced tier, or
+ * both counters are well under their cap).
+ */
+function buildUpgradeNudge(usage) {
+  if (!usage) return null;
+  if (usage.tier === "advanced") return null;
+
+  const pct = (c) =>
+    c?.limit == null || c.limit <= 0 ? 0 : (c.used / c.limit) * 100;
+  const top = Math.max(pct(usage.chat), pct(usage.upload));
+  if (top < 80) return null;
+
+  const nextTier = usage.tier === "free" ? "Regular" : "Advanced";
+  const atLimit = top >= 100;
+  return {
+    tone: atLimit ? "full" : "warn",
+    title: atLimit
+      ? "You've hit your monthly limit"
+      : "You're close to your monthly limit",
+    body: atLimit
+      ? `Upgrade to ${nextTier} to keep using Laboracle without waiting for the next reset.`
+      : `Upgrade to ${nextTier} to unlock more questions and uploads before the reset.`,
+    cta: `Upgrade to ${nextTier}`,
+  };
+}
+
+/** One labelled progress bar inside the "Usage this month" panel. */
+function QuotaRow({ label, used, limit }) {
+  const unlimited = limit == null;
+  const safeUsed = Math.max(0, used || 0);
+  const pct = unlimited ? 0 : Math.min(100, (safeUsed / Math.max(1, limit)) * 100);
+  const tone = quotaTone(safeUsed, limit);
+  return (
+    <div className="pf-quota-row">
+      <div className="pf-quota-head">
+        <span className="pf-quota-label">{label}</span>
+        <span className="pf-quota-value">
+          {unlimited ? (
+            <>
+              <strong>{safeUsed}</strong>
+              <span className="pf-quota-of"> · unlimited</span>
+            </>
+          ) : (
+            <>
+              <strong>{safeUsed}</strong>
+              <span className="pf-quota-of">/ {limit}</span>
+            </>
+          )}
+        </span>
+      </div>
+      <div className="pf-quota-bar">
+        <div
+          className={`pf-quota-fill pf-quota-fill--${unlimited ? "unl" : tone}`}
+          style={{ width: unlimited ? "100%" : `${pct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
 const ProfilePage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { applyTheme } = useTheme();
   const [profile, setProfile] = useState(null);
   const [loadError, setLoadError] = useState("");
@@ -44,8 +139,21 @@ const ProfilePage = () => {
   const [picError, setPicError] = useState("");
   const [portalLoading, setPortalLoading] = useState(false);
   const [portalError, setPortalError] = useState("");
+  const [usage, setUsage] = useState(null);
+  const [usageError, setUsageError] = useState("");
 
   useUsageTracker();
+
+  // Scroll to a section if the URL has a hash (e.g. /profile#settings).
+  // Re-runs once `profile` is loaded so the target element actually exists.
+  useEffect(() => {
+    if (!location.hash) return;
+    const id = location.hash.replace("#", "");
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [location.hash, profile]);
 
   useEffect(() => {
     const session = getSessionUser();
@@ -66,6 +174,14 @@ const ProfilePage = () => {
         if (data.theme) applyTheme(data.theme);
       } catch (e) {
         if (!cancelled) setLoadError(e.message || "Could not load profile");
+      }
+      // Quota is fetched independently so a quota error doesn't block the
+      // rest of the profile (and vice-versa).
+      try {
+        const q = await fetchUsageQuota(session.id);
+        if (!cancelled) setUsage(q);
+      } catch (e) {
+        if (!cancelled) setUsageError(e.message || "Could not load usage");
       }
     })();
     return () => {
@@ -113,7 +229,7 @@ const ProfilePage = () => {
     setPortalError("");
     setPortalLoading(true);
     try {
-      const { url } = await createPortalSession({ userId: session.id });
+      const { url } = await createPortalSession();
       if (url) {
         window.location.href = url;
       } else {
@@ -151,13 +267,52 @@ const ProfilePage = () => {
 
         <nav className="pf-nav">
           <button className="pf-nav-item" onClick={() => navigate("/upload")}>
-            <span className="pf-nav-icon">↑</span> Upload Documents
+            <span className="pf-nav-icon"><Upload /></span> Upload Documents
           </button>
           <button className="pf-nav-item" onClick={() => navigate("/chat")}>
-            <span className="pf-nav-icon">●</span> Chat with AI
+            <span className="pf-nav-icon"><MessageSquare /></span> Chat with AI
           </button>
-          <button className="pf-nav-item active">
-            <span className="pf-nav-icon">◎</span> My profile
+        </nav>
+
+        <div className="pf-section-label">Account</div>
+        <nav className="pf-nav">
+          <button
+            className={`pf-nav-item ${!location.hash ? "active" : ""}`}
+            onClick={() => navigate("/profile")}
+          >
+            <span className="pf-nav-icon"><User /></span> Profile
+          </button>
+          <button
+            className={`pf-nav-item ${location.hash === "#settings" ? "active" : ""}`}
+            onClick={() => navigate("/profile#settings")}
+          >
+            <span className="pf-nav-icon"><SettingsIcon /></span> Settings
+          </button>
+          <button
+            className={`pf-nav-item ${location.hash === "#subscription" ? "active" : ""}`}
+            onClick={() => navigate("/profile#subscription")}
+          >
+            <span className="pf-nav-icon"><CreditCard /></span> Subscription
+          </button>
+        </nav>
+
+        <div className="pf-section-label">Help</div>
+        <nav className="pf-nav">
+          <button
+            className="pf-nav-item"
+            onClick={() => {
+              window.location.href = "mailto:laboraclee@gmail.com?subject=Help%20centre%20enquiry";
+            }}
+          >
+            <span className="pf-nav-icon"><LifeBuoy /></span> Help centre
+          </button>
+          <button
+            className="pf-nav-item"
+            onClick={() => {
+              window.location.href = "mailto:laboraclee@gmail.com?subject=Support%20request";
+            }}
+          >
+            <span className="pf-nav-icon"><Headphones /></span> Support
           </button>
         </nav>
 
@@ -267,7 +422,7 @@ const ProfilePage = () => {
               </dl>
             </div>
 
-            <div className="pf-section">
+            <div className="pf-section" id="subscription">
               <h3 className="pf-section-title">Subscription</h3>
               <div className="pf-sub-row">
                 <div>
@@ -302,7 +457,62 @@ const ProfilePage = () => {
               {portalError && <p className="pf-field-error">{portalError}</p>}
             </div>
 
-            <div className="pf-section">
+            <div className="pf-section" id="usage">
+              <h3 className="pf-section-title">Usage this month</h3>
+              <p className="pf-muted">
+                Caps reset on the 1st of every month. Upgrade your plan if you
+                need more headroom.
+              </p>
+
+              {usageError && (
+                <p className="pf-field-error">{usageError}</p>
+              )}
+
+              {!usage && !usageError && (
+                <p className="pf-muted">Loading usage…</p>
+              )}
+
+              {usage && (
+                <>
+                  <QuotaRow
+                    label="AI questions"
+                    used={usage.chat.used}
+                    limit={usage.chat.limit}
+                  />
+                  <QuotaRow
+                    label="Document uploads"
+                    used={usage.upload.used}
+                    limit={usage.upload.limit}
+                  />
+
+                  {(() => {
+                    const nudge = buildUpgradeNudge(usage);
+                    if (!nudge) return null;
+                    return (
+                      <div className={`pf-quota-nudge pf-quota-nudge--${nudge.tone}`}>
+                        <div className="pf-quota-nudge-text">
+                          <strong>{nudge.title}</strong>
+                          <span>{nudge.body}</span>
+                        </div>
+                        <button
+                          type="button"
+                          className="pf-quota-nudge-btn"
+                          onClick={() => navigate("/#pricing")}
+                        >
+                          {nudge.cta}
+                        </button>
+                      </div>
+                    );
+                  })()}
+
+                  <p className="pf-muted pf-quota-foot">
+                    Resets on {formatResetDate(usage.period_start)}.
+                  </p>
+                </>
+              )}
+            </div>
+
+            <div className="pf-section" id="settings">
               <h3 className="pf-section-title">Settings</h3>
               <p className="pf-muted">
                 Choose how Laboracle looks. Your preference is saved to your account

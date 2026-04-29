@@ -62,9 +62,12 @@ class Settings(BaseSettings):
     APP_NAME: str = "Laboracle"
 
     # ── Admin dashboard ───────────────────────────────────────────────────────
-    # Single hardcoded admin account. Override via env vars in production.
-    ADMIN_USERNAME: str = "fk3q"
-    ADMIN_PASSWORD: str = "123456"
+    # Single admin account. **No defaults** — both must be set explicitly via
+    # env so we can never accidentally ship a known username/password pair.
+    # Outside development the app refuses to start unless both are non-empty
+    # and the password is strong enough (see `Settings.validate_for_runtime`).
+    ADMIN_USERNAME: str = ""
+    ADMIN_PASSWORD: str = ""
     ADMIN_TOKEN_TTL_HOURS: int = 8
 
     # ── Stripe / Payments ─────────────────────────────────────────────────────
@@ -110,6 +113,71 @@ class Settings(BaseSettings):
         if isinstance(self.CORS_ORIGINS, str):
             return [o.strip() for o in self.CORS_ORIGINS.split(',') if o.strip()]
         return self.CORS_ORIGINS
+
+    # ── Runtime guards ───────────────────────────────────────────────────────
+
+    def is_production(self) -> bool:
+        return self.ENVIRONMENT.lower() in {"production", "prod"}
+
+    def validate_for_runtime(self) -> List[str]:
+        """
+        Return a list of human-readable problems that should block startup.
+        Called once at app boot — see `main.py` lifespan.
+
+        Production rules (only enforced when ENVIRONMENT=production):
+          • ADMIN_USERNAME / ADMIN_PASSWORD must both be set.
+          • ADMIN_PASSWORD must be at least 12 chars and not in a tiny
+            blocklist of obvious values.
+          • Stripe keys, if configured, must be live (`sk_live_…` / `pk_live_…`)
+            and the webhook secret must be present.
+          • CORS must not include any localhost / 127.0.0.1 origins.
+        """
+        problems: List[str] = []
+
+        if not self.ADMIN_USERNAME or not self.ADMIN_PASSWORD:
+            if self.is_production():
+                problems.append(
+                    "ADMIN_USERNAME and ADMIN_PASSWORD must both be set in production "
+                    "(both are empty in the current environment)."
+                )
+
+        if self.is_production():
+            weak_admin = {"123456", "password", "admin", "letmein", "qwerty"}
+            if (
+                self.ADMIN_PASSWORD
+                and (len(self.ADMIN_PASSWORD) < 12 or self.ADMIN_PASSWORD.lower() in weak_admin)
+            ):
+                problems.append(
+                    "ADMIN_PASSWORD is too weak for production "
+                    "(must be 12+ characters and not a common value)."
+                )
+
+            if self.STRIPE_SECRET_KEY:
+                if self.STRIPE_SECRET_KEY.startswith("sk_test_"):
+                    problems.append(
+                        "STRIPE_SECRET_KEY is a test key (sk_test_…). "
+                        "Use sk_live_… in production or unset all Stripe vars to disable payments."
+                    )
+                if self.STRIPE_PUBLISHABLE_KEY.startswith("pk_test_"):
+                    problems.append(
+                        "STRIPE_PUBLISHABLE_KEY is a test key (pk_test_…). "
+                        "Use pk_live_… in production."
+                    )
+                if not self.STRIPE_WEBHOOK_SECRET:
+                    problems.append(
+                        "STRIPE_WEBHOOK_SECRET is required when Stripe is enabled in production."
+                    )
+
+            for origin in self.get_cors_origins():
+                low = origin.lower()
+                if "localhost" in low or "127.0.0.1" in low:
+                    problems.append(
+                        f"CORS_ORIGINS includes a development origin in production: {origin!r}. "
+                        "Restrict to your real domain(s) only."
+                    )
+                    break
+
+        return problems
 
 
 settings = Settings()

@@ -105,7 +105,6 @@ const Signup = () => {
       if (pendingPlan?.plan && data.user?.id) {
         try {
           const { url } = await createCheckoutSession({
-            userId: data.user.id,
             plan: pendingPlan.plan,
             billing: pendingPlan.billing || "monthly",
           });

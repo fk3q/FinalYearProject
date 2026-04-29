@@ -7,6 +7,7 @@ turn a public IP into a country/city. It's only called during registration and
 for backfill — failures are swallowed so they never block the user.
 """
 
+import hmac
 import logging
 import secrets
 from dataclasses import dataclass
@@ -22,6 +23,11 @@ logger = logging.getLogger(__name__)
 
 
 # ── Token store ───────────────────────────────────────────────────────────────
+#
+# Persisted in `admin_sessions` (MySQL). Survives backend restarts and is
+# shared across uvicorn workers — neither was true for the previous in-memory
+# dict. Tokens are opaque random strings (token_urlsafe(32) → 43 chars).
+
 
 @dataclass
 class _AdminSession:
@@ -29,43 +35,74 @@ class _AdminSession:
     expires_at: datetime
 
 
-_ACTIVE: Dict[str, _AdminSession] = {}
-
-
 def authenticate(username: str, password: str) -> Optional[_AdminSession]:
-    """Validate the admin credentials and issue a fresh session token."""
-    if username != settings.ADMIN_USERNAME or password != settings.ADMIN_PASSWORD:
+    """Validate the admin credentials and issue a fresh session token.
+
+    Both checks use `hmac.compare_digest` so an attacker can't time the
+    response to learn the username or password one byte at a time. Empty
+    expected values (e.g. dev environment with no admin configured) are
+    refused outright instead of matching empty input.
+    """
+    expected_user = settings.ADMIN_USERNAME or ""
+    expected_pass = settings.ADMIN_PASSWORD or ""
+    if not expected_user or not expected_pass:
         return None
+
+    user_ok = hmac.compare_digest(username or "", expected_user)
+    pass_ok = hmac.compare_digest(password or "", expected_pass)
+    if not (user_ok and pass_ok):
+        return None
+
     token = secrets.token_urlsafe(32)
     expires = datetime.utcnow() + timedelta(hours=settings.ADMIN_TOKEN_TTL_HOURS)
-    sess = _AdminSession(token=token, expires_at=expires)
-    _ACTIVE[token] = sess
+    try:
+        mysql_db.execute_insert(
+            "INSERT INTO admin_sessions (token, expires_at) VALUES (%s, %s)",
+            (token, expires),
+        )
+    except Exception:
+        logger.exception("Could not persist admin session")
+        return None
     _purge_expired()
-    return sess
+    return _AdminSession(token=token, expires_at=expires)
 
 
 def is_token_valid(token: Optional[str]) -> bool:
     if not token:
         return False
-    sess = _ACTIVE.get(token)
-    if not sess:
+    row = mysql_db.fetch_one(
+        "SELECT expires_at FROM admin_sessions WHERE token = %s LIMIT 1",
+        (token,),
+    )
+    if not row:
         return False
-    if sess.expires_at < datetime.utcnow():
-        _ACTIVE.pop(token, None)
+    if row["expires_at"] < datetime.utcnow():
+        mysql_db.execute_update(
+            "DELETE FROM admin_sessions WHERE token = %s",
+            (token,),
+        )
         return False
     return True
 
 
 def revoke_token(token: Optional[str]) -> None:
-    if token:
-        _ACTIVE.pop(token, None)
+    if not token:
+        return
+    mysql_db.execute_update(
+        "DELETE FROM admin_sessions WHERE token = %s",
+        (token,),
+    )
 
 
 def _purge_expired() -> None:
-    now = datetime.utcnow()
-    for k, s in list(_ACTIVE.items()):
-        if s.expires_at < now:
-            _ACTIVE.pop(k, None)
+    """Best-effort cleanup of expired sessions; ignored on DB failure."""
+    try:
+        mysql_db.execute_update(
+            "DELETE FROM admin_sessions WHERE expires_at < %s",
+            (datetime.utcnow(),),
+        )
+    except Exception:
+        logger.debug("Admin session purge skipped (DB error)", exc_info=True)
 
 
 # ── Geo lookup ────────────────────────────────────────────────────────────────

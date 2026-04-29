@@ -6,7 +6,9 @@ endpoints protected by an in-memory bearer token.
 import logging
 
 import pymysql
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException, Request
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from app.models.schemas import (
     AdminBackfillResponse,
@@ -21,6 +23,10 @@ from app.services import admin_service
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+
+# Per-IP throttle for the admin login endpoint. Stops password-spraying attempts
+# against the single admin account.
+limiter = Limiter(key_func=get_remote_address, default_limits=[])
 
 
 def _db_unavailable(exc: Exception) -> HTTPException:
@@ -48,7 +54,8 @@ def require_admin(authorization: str | None = Header(default=None)) -> str:
 
 
 @router.post("/login", response_model=AdminLoginResponse)
-async def admin_login(body: AdminLoginRequest):
+@limiter.limit("5/minute")
+async def admin_login(request: Request, body: AdminLoginRequest):
     sess = admin_service.authenticate(body.username, body.password)
     if not sess:
         raise HTTPException(status_code=401, detail="Invalid admin credentials.")

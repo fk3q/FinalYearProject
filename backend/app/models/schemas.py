@@ -2,9 +2,45 @@
 Pydantic models for request/response validation
 """
 
-from pydantic import BaseModel, Field, EmailStr
+import re
+
+from pydantic import BaseModel, Field, EmailStr, field_validator
 from typing import List, Optional, Literal
 from datetime import datetime
+
+
+# ── Shared validators ────────────────────────────────────────────────────────
+
+# International-friendly phone format: optional leading +, then 6–18 digits.
+# Accepts spaces, dashes, dots, parentheses as separators (we strip them).
+_PHONE_DIGITS_RE = re.compile(r"^\+?\d{6,18}$")
+# Password must be 8+ chars and contain at least one letter and one digit.
+_PASSWORD_LETTER_RE = re.compile(r"[A-Za-z]")
+_PASSWORD_DIGIT_RE = re.compile(r"\d")
+
+
+def _normalize_phone(value: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError("Phone must be a string.")
+    cleaned = re.sub(r"[\s\-\.\(\)]+", "", value.strip())
+    if not _PHONE_DIGITS_RE.match(cleaned):
+        raise ValueError(
+            "Phone must be 6–18 digits, optionally starting with '+'. "
+            "Spaces, dashes, dots and parentheses are allowed."
+        )
+    return cleaned
+
+
+def _validate_strong_password(value: str) -> str:
+    if not isinstance(value, str) or len(value) < 8:
+        raise ValueError("Password must be at least 8 characters.")
+    if len(value) > 256:
+        raise ValueError("Password is too long (max 256 characters).")
+    if not _PASSWORD_LETTER_RE.search(value):
+        raise ValueError("Password must contain at least one letter.")
+    if not _PASSWORD_DIGIT_RE.search(value):
+        raise ValueError("Password must contain at least one digit.")
+    return value
 
 
 class HealthResponse(BaseModel):
@@ -110,12 +146,22 @@ class UserRegisterRequest(BaseModel):
     last_name: str = Field(..., min_length=1, max_length=100)
     phone: str = Field(..., min_length=5, max_length=32)
     email: EmailStr
-    password: str = Field(..., min_length=6, max_length=256)
+    password: str = Field(..., min_length=8, max_length=256)
     turnstile_token: Optional[str] = Field(
         default=None,
         max_length=4096,
         description="Cloudflare Turnstile challenge token from the signup form.",
     )
+
+    @field_validator("phone")
+    @classmethod
+    def _normalize_phone(cls, v: str) -> str:
+        return _normalize_phone(v)
+
+    @field_validator("password")
+    @classmethod
+    def _check_password_strength(cls, v: str) -> str:
+        return _validate_strong_password(v)
 
 
 class UserLoginRequest(BaseModel):
@@ -148,7 +194,12 @@ class ForgotPasswordRequest(BaseModel):
 class ResetPasswordRequest(BaseModel):
     email: EmailStr
     code: str = Field(..., min_length=6, max_length=6)
-    new_password: str = Field(..., min_length=6, max_length=256)
+    new_password: str = Field(..., min_length=8, max_length=256)
+
+    @field_validator("new_password")
+    @classmethod
+    def _check_password_strength(cls, v: str) -> str:
+        return _validate_strong_password(v)
 
 
 class SimpleMessageResponse(BaseModel):
@@ -171,11 +222,15 @@ class UserPublic(BaseModel):
 class AuthSuccessResponse(BaseModel):
     message: str = "ok"
     user: UserPublic
+    token: str = Field(..., description="Bearer token to send on every protected request.")
+    expires_at: datetime
 
 
 class RegisterResponse(BaseModel):
     message: str
     user: UserPublic
+    token: str = Field(..., description="Bearer token to send on every protected request.")
+    expires_at: datetime
 
 
 class UserProfileResponse(BaseModel):
@@ -205,6 +260,28 @@ class UserProfilePatchRequest(BaseModel):
 
 class UsageSecondsRequest(BaseModel):
     seconds: int = Field(..., ge=1, le=600, description="Seconds to add to today's total")
+
+
+class QuotaCounter(BaseModel):
+    """Single action's quota status for the current calendar month."""
+
+    used: int = Field(..., ge=0, description="Calls already counted this month.")
+    limit: Optional[int] = Field(
+        default=None,
+        description="Monthly cap, or null for unlimited (advanced tier).",
+    )
+
+
+class UsageQuotaResponse(BaseModel):
+    """Snapshot of the signed-in user's chat/upload usage for this month."""
+
+    tier: str
+    period_start: str = Field(
+        ...,
+        description="First day of the current quota window (YYYY-MM-DD).",
+    )
+    chat: QuotaCounter
+    upload: QuotaCounter
 
 
 # ── Admin dashboard ───────────────────────────────────────────────────────────

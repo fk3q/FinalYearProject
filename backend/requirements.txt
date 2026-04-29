@@ -17,6 +17,9 @@ httpx==0.27.2
 # FAISS (CPU)
 faiss-cpu==1.8.0
 
+# Rate limiting (per-IP throttling on auth + chat endpoints)
+slowapi==0.1.9
+
 # Document loaders
 pypdf==4.3.1
 docx2txt==0.8

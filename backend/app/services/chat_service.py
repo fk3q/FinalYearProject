@@ -85,15 +85,17 @@ class ChatService:
             )
 
         # ── Step 1: embed the user query ─────────────────────────────────────
-        # OpenAI returns a list of floats; we only have one query
-        query_embedding: List[float] = self._embeddings.embed_query(query)
+        # Async embed so other requests aren't blocked while OpenAI responds.
+        # The returned vector is unused (FAISS re-embeds inside similarity_search),
+        # but we await it explicitly so the openai call yields the event loop.
+        query_embedding: List[float] = await self._embeddings.aembed_query(query)
 
         # ── Step 2: FAISS similarity search with scores (owner-scoped) ───────
         # The `filter` callable is run against each candidate's metadata; only
         # chunks owned by the current user pass through. We over-fetch a bit
         # because FAISS post-filters and may yield fewer than k otherwise.
         owner_filter = {"owner_user_id": int(owner_user_id)}
-        results: List[Tuple] = vector_store.similarity_search_with_score(
+        results: List[Tuple] = await vector_store.asimilarity_search_with_score(
             query=query,
             k=settings.TOP_K,
             filter=owner_filter,
@@ -132,7 +134,7 @@ class ChatService:
             HumanMessage(content=user_message),
         ]
 
-        llm_response = self._llm.invoke(messages)
+        llm_response = await self._llm.ainvoke(messages)
         answer: str  = llm_response.content.strip()
 
         if mode == 'exploratory':

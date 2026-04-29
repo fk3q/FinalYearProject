@@ -50,20 +50,47 @@ def _resolve_price_id(plan: str, billing: str) -> Optional[str]:
 
 
 def _get_or_create_stripe_customer(user_row: Dict[str, Any]) -> str:
-    """Return the Stripe customer id for this user, creating one if needed."""
+    """Return the Stripe customer id for this user, creating one if needed.
+
+    Two safeguards stop us from ever creating duplicate Stripe customers for
+    the same user when checkout requests race:
+
+    1. The Stripe call uses an `idempotency_key` derived from our user id, so
+       Stripe will return the same customer object on a retry.
+    2. The DB update only writes the customer id if the column is still NULL.
+       A losing concurrent caller will see 0 rows updated and re-read the row
+       to pick up whichever customer id won.
+    """
     existing = user_row.get("stripe_customer_id")
     if existing:
         return existing
+
+    user_id = int(user_row["id"])
     name = f"{user_row.get('first_name', '')} {user_row.get('last_name', '')}".strip()
     customer = stripe.Customer.create(
         email=user_row["email"],
         name=name or None,
-        metadata={"user_id": str(user_row["id"])},
+        metadata={"user_id": str(user_id)},
+        idempotency_key=f"laboracle-customer-{user_id}",
     )
-    mysql_db.execute_update(
-        "UPDATE users SET stripe_customer_id = %s WHERE id = %s",
-        (customer.id, user_row["id"]),
+
+    affected = mysql_db.execute_update(
+        """
+        UPDATE users
+        SET stripe_customer_id = %s
+        WHERE id = %s AND stripe_customer_id IS NULL
+        """,
+        (customer.id, user_id),
     )
+    if affected == 0:
+        # A concurrent request already attached a customer id; trust that one
+        # so we don't end up with two Stripe customers per user in our DB.
+        winner = mysql_db.fetch_one(
+            "SELECT stripe_customer_id FROM users WHERE id = %s LIMIT 1",
+            (user_id,),
+        )
+        if winner and winner.get("stripe_customer_id"):
+            return str(winner["stripe_customer_id"])
     return customer.id
 
 

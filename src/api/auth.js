@@ -1,10 +1,19 @@
 /**
  * Auth API — proxied to FastAPI via Vite (`/api` → backend).
+ *
+ * As of the auth-token rollout, every protected endpoint requires
+ * `Authorization: Bearer <token>`. The token is issued by the backend on
+ * login/register/oauth and lives in sessionStorage next to the user object.
+ *
+ * Token expiry is enforced server-side; the client clears the local copy
+ * automatically on any 401 response (see `authedFetch` below).
  */
 
 const jsonHeaders = { "Content-Type": "application/json" };
 
 export const USER_STORAGE_KEY = "laboracle_user";
+export const AUTH_TOKEN_KEY = "laboracle_auth_token";
+export const AUTH_TOKEN_EXPIRES_KEY = "laboracle_auth_token_expires";
 
 export function saveSessionUser(user) {
   if (user && typeof user === "object") {
@@ -23,6 +32,7 @@ export function getSessionUser() {
 
 export function clearSessionUser() {
   sessionStorage.removeItem(USER_STORAGE_KEY);
+  clearAuthToken();
 }
 
 /** Merge fields into the stored session user (e.g. after updating profile photo). */
@@ -32,18 +42,69 @@ export function mergeSessionUser(partial) {
   saveSessionUser({ ...cur, ...partial });
 }
 
+/* ── Bearer token helpers ───────────────────────────────────────────────── */
+
+export function saveAuthToken(token, expiresAt) {
+  if (!token) return;
+  sessionStorage.setItem(AUTH_TOKEN_KEY, token);
+  if (expiresAt) sessionStorage.setItem(AUTH_TOKEN_EXPIRES_KEY, expiresAt);
+}
+
+export function getAuthToken() {
+  try {
+    const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
+    if (!token) return null;
+    const exp = sessionStorage.getItem(AUTH_TOKEN_EXPIRES_KEY);
+    if (exp && new Date(exp).getTime() < Date.now()) {
+      clearAuthToken();
+      return null;
+    }
+    return token;
+  } catch {
+    return null;
+  }
+}
+
+export function clearAuthToken() {
+  sessionStorage.removeItem(AUTH_TOKEN_KEY);
+  sessionStorage.removeItem(AUTH_TOKEN_EXPIRES_KEY);
+}
+
+export function authHeaders(extra = {}) {
+  const token = getAuthToken();
+  return token ? { ...extra, Authorization: `Bearer ${token}` } : { ...extra };
+}
+
 async function safeFetch(url, options) {
   try {
     return await fetch(url, options);
   } catch (e) {
     if (e instanceof TypeError) {
       throw new Error(
-        "Could not reach the server. If you use npm run dev, start the backend on port 8000. " +
-          "If you use Docker, open http://localhost:3000 and run: docker compose up --build."
+        "Couldn't reach the Laboracle server. Please check your connection and try again."
       );
     }
     throw e;
   }
+}
+
+/**
+ * fetch() wrapper that auto-attaches the bearer token and clears the local
+ * session on 401 so a stale token never lingers.
+ */
+export async function authedFetch(url, options = {}) {
+  const headers = authHeaders(options.headers || {});
+  const res = await safeFetch(url, { ...options, headers });
+  if (res.status === 401) {
+    clearSessionUser();
+  }
+  return res;
+}
+
+function persistAuthSuccess(data) {
+  if (data?.user) saveSessionUser(data.user);
+  if (data?.token) saveAuthToken(data.token, data.expires_at);
+  return data;
 }
 
 export async function registerUser({ firstName, lastName, phone, email, password, turnstileToken }) {
@@ -70,7 +131,7 @@ export async function registerUser({ firstName, lastName, phone, email, password
           : res.statusText;
     throw new Error(msg || "Registration failed");
   }
-  return data;
+  return persistAuthSuccess(data);
 }
 
 export async function requestPasswordReset({ email }) {
@@ -115,7 +176,22 @@ export async function loginUser({ email, password }) {
     const msg = typeof detail === "string" ? detail : "Invalid email or password";
     throw new Error(msg);
   }
-  return data;
+  return persistAuthSuccess(data);
+}
+
+export async function logoutUser() {
+  // Best-effort revoke on the server; the local clear happens regardless so
+  // the user is logged out even if the server call fails.
+  try {
+    await safeFetch("/api/auth/logout", {
+      method: "POST",
+      headers: authHeaders(),
+    });
+  } catch {
+    /* ignore */
+  } finally {
+    clearSessionUser();
+  }
 }
 
 export async function googleSignIn({ credential }) {
@@ -135,7 +211,7 @@ export async function googleSignIn({ credential }) {
           : res.statusText;
     throw new Error(msg || "Google sign-in failed");
   }
-  return data;
+  return persistAuthSuccess(data);
 }
 
 export async function facebookSignIn({ accessToken }) {
@@ -155,7 +231,7 @@ export async function facebookSignIn({ accessToken }) {
           : res.statusText;
     throw new Error(msg || "Facebook sign-in failed");
   }
-  return data;
+  return persistAuthSuccess(data);
 }
 
 export async function microsoftSignIn({ idToken }) {
@@ -175,11 +251,11 @@ export async function microsoftSignIn({ idToken }) {
           : res.statusText;
     throw new Error(msg || "Microsoft sign-in failed");
   }
-  return data;
+  return persistAuthSuccess(data);
 }
 
 export async function fetchUserById(userId) {
-  const res = await safeFetch(`/api/users/${userId}`, { method: "GET" });
+  const res = await authedFetch(`/api/users/${userId}`, { method: "GET" });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const detail = data.detail;
@@ -191,7 +267,7 @@ export async function fetchUserById(userId) {
 
 /** Full profile: name, email, stats, optional profile picture data URL. */
 export async function fetchUserProfile(userId) {
-  const res = await safeFetch(`/api/users/${userId}/profile`, { method: "GET" });
+  const res = await authedFetch(`/api/users/${userId}/profile`, { method: "GET" });
   const data = await res.json().catch(() => ({}));
   if (res.ok) return data;
 
@@ -210,9 +286,7 @@ export async function fetchUserProfile(userId) {
     } catch (fallbackErr) {
       throw fallbackErr instanceof Error
         ? fallbackErr
-        : new Error(
-            "Profile could not be loaded. Rebuild the backend (docker compose up --build) so the /api/users/…/profile API is available."
-          );
+        : new Error("Profile could not be loaded.");
     }
   }
 
@@ -232,7 +306,7 @@ export async function patchUserProfile(userId, payload) {
   if (Object.prototype.hasOwnProperty.call(payload, "theme")) {
     body.theme = payload.theme;
   }
-  const res = await safeFetch(`/api/users/${userId}/profile`, {
+  const res = await authedFetch(`/api/users/${userId}/profile`, {
     method: "PATCH",
     headers: jsonHeaders,
     body: JSON.stringify(body),
@@ -246,10 +320,28 @@ export async function patchUserProfile(userId, payload) {
   return data;
 }
 
+/**
+ * Fetch the signed-in user's chat/upload quota usage for the current
+ * calendar month. Returns
+ *   { tier, period_start, chat: {used, limit}, upload: {used, limit} }
+ * where `limit: null` means unlimited (advanced tier).
+ */
+export async function fetchUsageQuota(userId) {
+  const res = await authedFetch(`/api/users/${userId}/usage-quota`, { method: "GET" });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const detail = data.detail;
+    const msg = typeof detail === "string" ? detail : "Could not load usage";
+    throw new Error(msg);
+  }
+  return data;
+}
+
 /** Record active time for today (ignored if request fails). */
 export async function addUsageSeconds(userId, seconds) {
+  if (!getAuthToken()) return; // Skip when signed out — endpoint requires auth.
   try {
-    const res = await safeFetch(`/api/users/${userId}/usage`, {
+    const res = await authedFetch(`/api/users/${userId}/usage`, {
       method: "POST",
       headers: jsonHeaders,
       body: JSON.stringify({ seconds }),

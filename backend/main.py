@@ -6,16 +6,23 @@ import logging
 import traceback
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Query, Request
+from typing import Any, Dict
+
+from fastapi import Depends, FastAPI, UploadFile, File, Form, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from datetime import datetime
 import uvicorn
 
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 from app.config import settings
+from app.dependencies import require_user
 from app.services.document_service import DocumentService
 from app.services.chat_service import ChatService
 from app.models.schemas import (
@@ -27,11 +34,26 @@ from app.models.schemas import (
 from app.routers.auth import router as auth_router, users_router
 from app.routers.admin import router as admin_router
 from app.routers.payments import router as payments_router
-from app.services import chat_history_service, user_service
+from app.services import chat_history_service, quota_service, user_service
+from app.services.document_service import MAX_UPLOAD_BYTES
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # ── Refuse to boot with insecure config in production ────────────────────
+    problems = settings.validate_for_runtime()
+    if problems:
+        joined = "\n  - ".join(problems)
+        msg = (
+            f"Refusing to start: {len(problems)} configuration issue(s):\n  - {joined}\n"
+            "Fix the env vars and restart, or set ENVIRONMENT=development to bypass."
+        )
+        if settings.is_production():
+            # Hard fail in production — don't silently boot with weak admin
+            # creds, test Stripe keys, or open CORS.
+            raise RuntimeError(msg)
+        logger.warning(msg)
+
     try:
         from app.db.mysql_db import init_db_schema
 
@@ -44,6 +66,14 @@ async def lifespan(app: FastAPI):
     yield
 
 
+# ── Rate limiting ─────────────────────────────────────────────────────────────
+# Per-IP throttle for the noisy public endpoints (login, register, password
+# reset, captcha, chat). Quotas are tier-based and live separately in
+# `quota_service`. The limiter falls back to the connecting IP via
+# `get_remote_address`; behind nginx this is the X-Forwarded-For first hop.
+limiter = Limiter(key_func=get_remote_address, default_limits=[])
+
+
 # ── App ───────────────────────────────────────────────────────────────────────
 app = FastAPI(
     title="Laboracle API",
@@ -51,6 +81,8 @@ app = FastAPI(
     version="2.0.0",
     lifespan=lifespan,
 )
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Global exception handler — prints full traceback to docker logs
 @app.exception_handler(Exception)
@@ -91,26 +123,43 @@ async def health():
 
 @app.post("/api/documents/upload", response_model=DocumentUploadResponse)
 async def upload_document(
+    request: Request,
     file: UploadFile = File(...),
-    user_id: int = Form(..., ge=1),
+    current_user: Dict[str, Any] = Depends(require_user),
 ):
     """
-    Accept a PDF, DOCX, or TXT file uploaded by a signed-in user.
+    Accept a PDF, DOCX, or TXT file uploaded by the signed-in user.
     Splits it into paragraphs, embeds each chunk, and stores in FAISS with
-    metadata tagged to `user_id` so only that user can query it later.
+    metadata tagged to the bearer-token user so only they can query it later.
     """
+    # Cheap pre-check based on the request header so a multi-GB upload is
+    # rejected before we buffer any of it. The streaming reader inside
+    # DocumentService still enforces the same cap as a backstop in case a
+    # client lies about Content-Length.
+    content_length = request.headers.get("content-length")
+    if content_length and content_length.isdigit() and int(content_length) > MAX_UPLOAD_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail=(
+                f"File too large. Maximum allowed is "
+                f"{MAX_UPLOAD_BYTES // (1024 * 1024)} MB."
+            ),
+        )
+
+    user_id = int(current_user["id"])
     logger.info(
         "Upload request: filename=%s user_id=%s content_type=%s",
         file.filename, user_id, file.content_type,
     )
 
-    user_row = user_service.get_public_user_by_id(user_id)
-    if not user_row:
-        raise HTTPException(status_code=401, detail="Unknown user_id; please sign in again.")
+    try:
+        quota_service.check_and_increment(user_id, "upload")
+    except quota_service.QuotaExceeded as e:
+        raise HTTPException(status_code=429, detail=str(e))
 
     owner_label = (
-        user_row.get("first_name")
-        or (user_row.get("email") or "").split("@")[0]
+        current_user.get("first_name")
+        or (current_user.get("email") or "").split("@")[0]
         or f"user{user_id}"
     )
 
@@ -134,27 +183,38 @@ async def upload_document(
 
 
 @app.post("/api/chat/query", response_model=ChatResponse)
-async def chat_query(request: ChatRequest):
+@limiter.limit("20/minute")
+async def chat_query(
+    request: Request,
+    body: ChatRequest,
+    current_user: Dict[str, Any] = Depends(require_user),
+):
     """
     Embeds the user query, retrieves top-5 chunks from FAISS,
-    and generates a grounded answer with GPT-4o.
-    When `user_id` is set, the user/assistant pair is stored for later (see chat-sessions APIs).
+    and generates a grounded answer with GPT-4o. The exchange is always saved
+    against the authenticated user — `user_id` from the request body is now
+    ignored (kept in the schema only for backwards-compatible clients).
+
+    Two layers of throttling apply:
+      • slowapi: 20 calls/minute per IP — burst protection.
+      • quota_service: monthly cap per user, scaled by their subscription tier.
     """
-    if request.session_id is not None and request.user_id is None:
-        raise HTTPException(
-            status_code=400,
-            detail="user_id is required when continuing a saved chat (session_id).",
-        )
+    user_id = int(current_user["id"])
     logger.info(
         "Chat query: '%s' | mode=%s role=%s user_id=%s",
-        request.query[:80], request.mode, request.user_role, request.user_id,
+        body.query[:80], body.mode, body.user_role, user_id,
     )
+
+    try:
+        quota_service.check_and_increment(user_id, "chat")
+    except quota_service.QuotaExceeded as e:
+        raise HTTPException(status_code=429, detail=str(e))
     try:
         result = await chat_service.process_query(
-            query=request.query,
-            mode=request.mode,
-            user_role=request.user_role,
-            owner_user_id=request.user_id,
+            query=body.query,
+            mode=body.mode,
+            user_role=body.user_role,
+            owner_user_id=user_id,
         )
         logger.info("Chat success: confidence=%d, chunks=%d", result.confidence, result.retrieved_chunks)
     except Exception as exc:
@@ -162,26 +222,23 @@ async def chat_query(request: ChatRequest):
         raise HTTPException(status_code=500, detail=f"Query error: {exc}") from exc
 
     session_id_saved: int | None = None
-    if request.user_id is not None:
-        try:
-            row = user_service.get_public_user_by_id(request.user_id)
-            if row:
-                sid, err = chat_history_service.resolve_session_id(
-                    request.user_id,
-                    request.session_id,
-                    request.query,
-                )
-                if err is None and sid is not None:
-                    chat_history_service.append_exchange(
-                        sid,
-                        request.query,
-                        result.answer,
-                        result.confidence,
-                        list(result.citations),
-                    )
-                    session_id_saved = sid
-        except Exception as exc:
-            logger.warning("Chat history save skipped: %s", exc)
+    try:
+        sid, err = chat_history_service.resolve_session_id(
+            user_id,
+            body.session_id,
+            body.query,
+        )
+        if err is None and sid is not None:
+            chat_history_service.append_exchange(
+                sid,
+                body.query,
+                result.answer,
+                result.confidence,
+                list(result.citations),
+            )
+            session_id_saved = sid
+    except Exception as exc:
+        logger.warning("Chat history save skipped: %s", exc)
 
     if session_id_saved is not None:
         return result.model_copy(update={"session_id": session_id_saved})
@@ -189,31 +246,30 @@ async def chat_query(request: ChatRequest):
 
 
 @app.get("/api/documents/count")
-async def chunk_count(user_id: int | None = Query(default=None, ge=1)):
-    """
-    Return the FAISS chunk count.
-    When `user_id` is provided, only that user's chunks are counted.
-    """
+async def chunk_count(current_user: Dict[str, Any] = Depends(require_user)):
+    """Return the FAISS chunk count for the signed-in user only."""
+    user_id = int(current_user["id"])
     count = await document_service.get_chunk_count(owner_user_id=user_id)
     return {"total_chunks": count, "user_id": user_id, "status": "success"}
 
 
 @app.get("/api/documents")
-async def list_documents(user_id: int = Query(..., ge=1)):
-    """List documents owned by `user_id`. Other users' files are never returned."""
-    if not user_service.get_public_user_by_id(user_id):
-        raise HTTPException(status_code=401, detail="Unknown user_id; please sign in again.")
+async def list_documents(current_user: Dict[str, Any] = Depends(require_user)):
+    """List documents owned by the signed-in user. Other users' files are never returned."""
+    user_id = int(current_user["id"])
     return {"documents": document_service.list_user_documents(user_id)}
 
 
 @app.delete("/api/documents/{document_id}")
-async def delete_document(document_id: str, user_id: int = Query(..., ge=1)):
+async def delete_document(
+    document_id: str,
+    current_user: Dict[str, Any] = Depends(require_user),
+):
     """
     Delete a document. The caller must own it; otherwise 403 is returned so
     that one user can never wipe another user's uploads.
     """
-    if not user_service.get_public_user_by_id(user_id):
-        raise HTTPException(status_code=401, detail="Unknown user_id; please sign in again.")
+    user_id = int(current_user["id"])
     try:
         return await document_service.delete_document(document_id, owner_user_id=user_id)
     except PermissionError as exc:

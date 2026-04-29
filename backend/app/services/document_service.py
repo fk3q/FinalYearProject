@@ -6,6 +6,7 @@ Document processing service
 - Persists chunks + embeddings + metadata in a local FAISS index
 """
 
+import asyncio
 import os
 import json
 import re
@@ -30,6 +31,10 @@ from app.models.schemas import DocumentUploadResponse
 FAISS_DIR      = os.path.join(os.path.dirname(__file__), '../../faiss_store')
 FAISS_INDEX    = os.path.join(FAISS_DIR, 'index')          # FAISS saves index.faiss / index.pkl
 METADATA_FILE  = os.path.join(FAISS_DIR, 'metadata.json')  # per-chunk metadata
+
+# Hard upload cap. Prevents memory bombs and runaway OpenAI embedding bills.
+# 25 MB matches what most "free" plan tiers allow for a single document.
+MAX_UPLOAD_BYTES = 25 * 1024 * 1024  # 25 MB
 
 
 def load_all_document_metadata() -> List[Dict[str, Any]]:
@@ -102,6 +107,10 @@ class DocumentService:
         self._vector_store: FAISS | None = self._load_index()
         # per-chunk metadata list (parallel order to FAISS internal IDs)
         self._metadata: List[Dict[str, Any]] = self._load_metadata()
+        # Serialise mutating operations (uploads + deletes). Both rebuild the
+        # FAISS index and the in-memory metadata list, so concurrent calls
+        # would race on `_vector_store` and corrupt `metadata.json`.
+        self._write_lock = asyncio.Lock()
 
     # ── Public API ───────────────────────────────────────────────────────────
 
@@ -137,12 +146,25 @@ class DocumentService:
         tmp_path      = ''
 
         try:
-            # Save upload to a temp file so loaders can open it by path
+            # Stream the upload to a temp file in 1 MB chunks. Stop hard at
+            # MAX_UPLOAD_BYTES so a malicious client cannot OOM the worker
+            # or run up an unbounded OpenAI embedding bill.
+            bytes_written = 0
+            chunk_size = 1024 * 1024
             with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
-                content = await file.read()
-                file_size_kb = round(len(content) / 1024, 2)
-                tmp.write(content)
+                while True:
+                    chunk_bytes = await file.read(chunk_size)
+                    if not chunk_bytes:
+                        break
+                    bytes_written += len(chunk_bytes)
+                    if bytes_written > MAX_UPLOAD_BYTES:
+                        raise ValueError(
+                            f"File too large. Maximum allowed is "
+                            f"{MAX_UPLOAD_BYTES // (1024 * 1024)} MB."
+                        )
+                    tmp.write(chunk_bytes)
                 tmp_path = tmp.name
+            file_size_kb = round(bytes_written / 1024, 2)
 
             # Load document pages
             docs = self._load_document(tmp_path, ext)
@@ -177,23 +199,24 @@ class DocumentService:
                 chunk_texts.append(chunk.page_content)
                 chunk_metas.append(meta)
 
-            # Embed + insert into FAISS
-            if self._vector_store is None:
-                self._vector_store = FAISS.from_texts(
-                    texts=chunk_texts,
-                    embedding=self.embeddings,
-                    metadatas=chunk_metas,
-                )
-            else:
-                self._vector_store.add_texts(
-                    texts=chunk_texts,
-                    metadatas=chunk_metas,
-                )
+            # Embed + insert into FAISS, then persist. The lock keeps parallel
+            # uploads from corrupting `_vector_store` and `metadata.json`.
+            async with self._write_lock:
+                if self._vector_store is None:
+                    self._vector_store = FAISS.from_texts(
+                        texts=chunk_texts,
+                        embedding=self.embeddings,
+                        metadatas=chunk_metas,
+                    )
+                else:
+                    self._vector_store.add_texts(
+                        texts=chunk_texts,
+                        metadatas=chunk_metas,
+                    )
 
-            # Persist to disk
-            self._vector_store.save_local(FAISS_INDEX)
-            self._metadata.extend(chunk_metas)
-            self._save_metadata()
+                self._vector_store.save_local(FAISS_INDEX)
+                self._metadata.extend(chunk_metas)
+                self._save_metadata()
 
             return DocumentUploadResponse(
                 document_id=document_id,
@@ -254,25 +277,26 @@ class DocumentService:
         When `owner_user_id` is given, the caller must own the document or a
         PermissionError is raised (so users can't delete each other's files).
         """
-        targeted = [m for m in self._metadata if m.get("document_id") == document_id]
-        if not targeted:
-            return {"status": "not_found", "document_id": document_id, "deleted_chunks": 0}
+        async with self._write_lock:
+            targeted = [m for m in self._metadata if m.get("document_id") == document_id]
+            if not targeted:
+                return {"status": "not_found", "document_id": document_id, "deleted_chunks": 0}
 
-        if owner_user_id is not None:
-            owners = {m.get("owner_user_id") for m in targeted}
-            if owners != {int(owner_user_id)}:
-                raise PermissionError(
-                    "You do not have permission to delete this document."
-                )
+            if owner_user_id is not None:
+                owners = {m.get("owner_user_id") for m in targeted}
+                if owners != {int(owner_user_id)}:
+                    raise PermissionError(
+                        "You do not have permission to delete this document."
+                    )
 
-        remaining_meta = [m for m in self._metadata if m.get("document_id") != document_id]
-        removed = len(self._metadata) - len(remaining_meta)
+            remaining_meta = [m for m in self._metadata if m.get("document_id") != document_id]
+            removed = len(self._metadata) - len(remaining_meta)
 
-        # Rebuild the FAISS index without the deleted document's chunks so the
-        # vectors can no longer surface in similarity search.
-        self._rebuild_index_excluding(document_id)
-        self._metadata = remaining_meta
-        self._save_metadata()
+            # Rebuild the FAISS index without the deleted document's chunks so the
+            # vectors can no longer surface in similarity search.
+            self._rebuild_index_excluding(document_id)
+            self._metadata = remaining_meta
+            self._save_metadata()
 
         return {
             "status": "success",

@@ -1,8 +1,17 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  Upload,
+  MessageSquare,
+  User,
+  Settings as SettingsIcon,
+  CreditCard,
+  LifeBuoy,
+  Headphones,
+} from "lucide-react";
 import AccountSidebarBlock from "./components/AccountSidebarBlock";
 import { useUsageTracker } from "./hooks/useUsageTracker";
-import { getSessionUser } from "./api/auth";
+import { authHeaders, getSessionUser } from "./api/auth";
 import {
   getApiBase,
   listChatSessions,
@@ -126,14 +135,11 @@ const ChatPage = () => {
         mode: aiMode,
         user_role: userRole,
       };
-      if (user?.id) {
-        body.user_id = user.id;
-        if (sessionId) body.session_id = sessionId;
-      }
+      if (sessionId) body.session_id = sessionId;
 
       const res = await fetch(`${getApiBase()}/api/chat/query`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify(body),
       });
 
@@ -213,13 +219,49 @@ const ChatPage = () => {
 
         <nav className="cp-nav">
           <button className="cp-nav-item" onClick={() => navigate("/upload")}>
-            <span className="cp-nav-icon">↑</span> Upload Documents
+            <span className="cp-nav-icon"><Upload /></span> Upload Documents
           </button>
           <button className="cp-nav-item active">
-            <span className="cp-nav-icon">&#9679;</span> Chat with AI
+            <span className="cp-nav-icon"><MessageSquare /></span> Chat with AI
           </button>
+        </nav>
+
+        <div className="cp-section-label">Account</div>
+        <nav className="cp-nav">
           <button className="cp-nav-item" onClick={() => navigate("/profile")}>
-            <span className="cp-nav-icon">&#9675;</span> My profile
+            <span className="cp-nav-icon"><User /></span> Profile
+          </button>
+          <button
+            className="cp-nav-item"
+            onClick={() => navigate("/profile#settings")}
+          >
+            <span className="cp-nav-icon"><SettingsIcon /></span> Settings
+          </button>
+          <button
+            className="cp-nav-item"
+            onClick={() => navigate("/profile#subscription")}
+          >
+            <span className="cp-nav-icon"><CreditCard /></span> Subscription
+          </button>
+        </nav>
+
+        <div className="cp-section-label">Help</div>
+        <nav className="cp-nav">
+          <button
+            className="cp-nav-item"
+            onClick={() => {
+              window.location.href = "mailto:laboraclee@gmail.com?subject=Help%20centre%20enquiry";
+            }}
+          >
+            <span className="cp-nav-icon"><LifeBuoy /></span> Help centre
+          </button>
+          <button
+            className="cp-nav-item"
+            onClick={() => {
+              window.location.href = "mailto:laboraclee@gmail.com?subject=Support%20request";
+            }}
+          >
+            <span className="cp-nav-icon"><Headphones /></span> Support
           </button>
         </nav>
 

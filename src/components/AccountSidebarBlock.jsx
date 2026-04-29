@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { clearSessionUser, getSessionUser } from "../api/auth";
+import { getSessionUser, logoutUser } from "../api/auth";
 import "./AccountSidebarBlock.css";
 
 function initialsFrom(user) {
@@ -26,8 +26,8 @@ export default function AccountSidebarBlock({ variant = "up" }) {
   const displayName =
     [user.first_name, user.last_name].filter(Boolean).join(" ").trim() || user.email;
 
-  const logout = () => {
-    clearSessionUser();
+  const logout = async () => {
+    await logoutUser();
     navigate("/login");
   };
 

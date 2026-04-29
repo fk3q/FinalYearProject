@@ -178,6 +178,51 @@ def init_db_schema() -> None:
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
                 """
             )
+            # Persisted admin dashboard sessions. Survives backend restarts and
+            # is shared across uvicorn workers, unlike the previous in-memory dict.
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS admin_sessions (
+                    token VARCHAR(64) NOT NULL PRIMARY KEY,
+                    expires_at TIMESTAMP NOT NULL,
+                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    KEY idx_admin_sessions_expires (expires_at)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+                """
+            )
+            # Persisted user sessions — replaces "send user_id in the body" with
+            # a real opaque bearer token tied to the authenticated user.
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS user_sessions (
+                    token VARCHAR(64) NOT NULL PRIMARY KEY,
+                    user_id INT UNSIGNED NOT NULL,
+                    expires_at TIMESTAMP NOT NULL,
+                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    last_used_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    KEY idx_user_sessions_user (user_id),
+                    KEY idx_user_sessions_expires (expires_at),
+                    CONSTRAINT fk_user_sessions_user
+                        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+                """
+            )
+            # Per-user, per-month counters for tier-based quotas (chat, upload).
+            # Keyed by (user_id, period_start) so we never accidentally
+            # double-count across months.
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS user_quota_usage (
+                    user_id INT UNSIGNED NOT NULL,
+                    period_start DATE NOT NULL,
+                    chat_count INT UNSIGNED NOT NULL DEFAULT 0,
+                    upload_count INT UNSIGNED NOT NULL DEFAULT 0,
+                    PRIMARY KEY (user_id, period_start),
+                    CONSTRAINT fk_user_quota_user
+                        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+                """
+            )
         conn.commit()
         logger.info("MySQL users table ready.")
     except Exception:

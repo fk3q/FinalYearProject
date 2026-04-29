@@ -76,7 +76,6 @@ const MainPage = () => {
     setCheckoutLoading(planId);
     try {
       const { url } = await createCheckoutSession({
-        userId: user.id,
         plan: planId,
         billing,
       });

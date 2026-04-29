@@ -1,6 +1,11 @@
 /**
  * Saved chat sessions — proxied to FastAPI (`/api` → backend).
+ *
+ * All endpoints here require `Authorization: Bearer <token>` (the backend
+ * `require_user` dependency rejects missing tokens with 401).
  */
+
+import { authHeaders, clearSessionUser } from "./auth";
 
 export function getApiBase() {
   return import.meta.env.VITE_API_URL ?? "";
@@ -12,13 +17,14 @@ function apiBase() {
 
 async function safeFetch(path, options) {
   const url = `${apiBase()}${path.startsWith("/") ? path : `/${path}`}`;
+  const headers = authHeaders(options?.headers || {});
   try {
-    return await fetch(url, options);
+    const res = await fetch(url, { ...options, headers });
+    if (res.status === 401) clearSessionUser();
+    return res;
   } catch (e) {
     if (e instanceof TypeError) {
-      throw new Error(
-        "Could not reach the server. Start the backend or open the app via the dev server with API proxy."
-      );
+      throw new Error("Couldn't reach the Laboracle server. Please try again.");
     }
     throw e;
   }
