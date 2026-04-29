@@ -326,9 +326,9 @@ def get_all_users_detailed() -> Dict[str, Any]:
             u.signup_city,
             u.signup_ip,
             u.created_at,
-            COALESCE(usage.total_seconds, 0)       AS total_seconds,
-            COALESCE(usage.active_days, 0)          AS active_days,
-            usage.last_active_date                  AS last_active_date,
+            COALESCE(usage_sub.total_seconds, 0)   AS total_seconds,
+            COALESCE(usage_sub.active_days, 0)      AS active_days,
+            usage_sub.last_active_date              AS last_active_date,
             COALESCE(sess.session_count, 0)         AS chat_sessions,
             COALESCE(msg.message_count, 0)          AS chat_messages
         FROM users u
@@ -339,7 +339,7 @@ def get_all_users_detailed() -> Dict[str, Any]:
                    MAX(usage_date)     AS last_active_date
             FROM user_usage_daily
             GROUP BY user_id
-        ) usage ON usage.user_id = u.id
+        ) usage_sub ON usage_sub.user_id = u.id
         LEFT JOIN (
             SELECT user_id, COUNT(*) AS session_count
             FROM chat_sessions
