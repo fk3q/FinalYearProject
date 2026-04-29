@@ -472,36 +472,39 @@
   margin: 0 auto;
 }
 
-/* ── Companion video, lower-right corner ────────────────────────────────
- * Pinned to the bottom-right of the hero section so the character
- * appears to be "leaning" against the right edge of the page.
- * Sibling of `.hero-content` -- positioned against `.hero` itself,
- * not the centred text column, so it stays flush against the
- * viewport's right edge regardless of how narrow the copy column is.
+/* ── Companion video, very-bottom-right of the hero ─────────────────────
+ * Pinned flush to the corner where the hero's bottom and right
+ * borders meet -- the figure "sits" exactly at the seam between the
+ * hero section and whatever comes below it. Sibling of
+ * `.hero-content`, so positioning is relative to `.hero` itself,
+ * not the centred text column.
  *
- * Small footprint (clamp 180–240 px) so it reads as a decorative
- * accent, never competing with the headline or stats. Auto-hides
- * below 640 px to keep mobile uncluttered. */
+ * Footprint kept small (clamp 150–190 px) so it reads as a quiet
+ * decorative accent and never crowds the headline / stats row.
+ * Auto-hides below 640 px to keep mobile uncluttered. */
 .hero-video-frame {
   position: absolute;
-  right: 18px;
-  bottom: 18px;
-  width: clamp(180px, 18vw, 240px);
+  right: 0;
+  bottom: 0;
+  width: clamp(150px, 14vw, 190px);
   z-index: 3;
-  border-radius: 22px;
+  /* Round only the inner corners (top-left and top-right) so the
+     bottom and right edges sit cleanly against the hero borders --
+     no half-frame floating in the corner. */
+  border-top-left-radius: 22px;
+  border-top-right-radius: 22px;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  /* Stroke only the inner edges for the same reason: bottom + right
+     should look like they merge with the hero edge, not float on
+     top of it. */
+  border-top: 1px solid rgba(255, 255, 255, 0.22);
+  border-left: 1px solid rgba(255, 255, 255, 0.22);
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
     inset 0 1px 0 rgba(255, 255, 255, 0.32),
-    0 24px 50px -18px rgba(0, 0, 0, 0.55),
-    0 0 60px rgba(167, 139, 250, 0.24);
+    -16px -16px 40px -22px rgba(0, 0, 0, 0.45),
+    0 0 50px rgba(167, 139, 250, 0.22);
   -webkit-backdrop-filter: saturate(120%);
   backdrop-filter: saturate(120%);
-  /* Subtle "leaning" tilt -- gives the impression the figure is
-     resting against the right edge rather than floating squarely. */
-  transform: rotate(-1.2deg);
-  transform-origin: bottom right;
 }
 
 /* Specular sheen on the upper edge of the frame -- mirrors the
@@ -530,9 +533,7 @@
 /* Tablet: shrink the corner accent so it doesn't crowd the stats row. */
 @media (max-width: 920px) {
   .hero-video-frame {
-    width: clamp(150px, 22vw, 200px);
-    right: 12px;
-    bottom: 12px;
+    width: clamp(120px, 18vw, 160px);
   }
 }
 
