@@ -22,13 +22,35 @@
   font-weight: 500;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   cursor: pointer;
-  transition: background 0.2s, border-color 0.2s, opacity 0.2s, box-shadow 0.2s;
+  /* Animate `color` too so the label transitions to white when the
+     button itself transitions to Facebook blue on hover. */
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease,
+    color 0.25s ease,
+    opacity 0.2s,
+    box-shadow 0.25s ease;
 }
 
+/* Hover: paint the whole button Facebook blue (#1877f2 is the
+   official brand colour, same as the SVG fill) and flip the label
+   to white. The icon swaps via the descendant rule below. */
 .fb-signin-btn:hover:not(:disabled) {
-  background: #f9fafb;
-  border-color: #b6bcc7;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+  background: #1877f2;
+  border-color: #1877f2;
+  color: #ffffff;
+  box-shadow: 0 6px 18px -4px rgba(24, 119, 242, 0.45);
+}
+
+/* Repaint the Facebook glyph white on hover so it contrasts against
+   the new blue fill. Targets the `<path>` directly because the SVG
+   has its colour baked in via `fill="#1877f2"`. */
+.fb-signin-btn:hover:not(:disabled) .fb-signin-btn__icon path {
+  fill: #ffffff;
+}
+
+.fb-signin-btn__icon path {
+  transition: fill 0.25s ease;
 }
 
 .fb-signin-btn:focus-visible {

@@ -32,24 +32,97 @@ body {
   isolation: isolate;
 }
 
-/* Subtle grain so the panel feels textured (echoes the Webflow Conf hero). */
+/* ── Hazy boundary between blue panel and white form ─────────────────────
+ * `::before` paints a soft white-fading gradient on the right edge of
+ * the auth promo, so the line where blue meets white reads as a slow
+ * haze rather than a sharp seam. `backdrop-filter: blur` blurs the
+ * dotted background and the drifting motifs *behind* the gradient,
+ * doubling the "vague" feel asked for. The gradient is transparent on
+ * the inner side and fades to ~85% white on the seam-side, so blue
+ * still shows through softly until the very last few pixels.
+ *
+ * The matching @supports fallback drops the blur on browsers that
+ * lack `backdrop-filter` (older Firefox prior to v103) so the haze
+ * still functions, just without the depth blur. */
 .auth-promo::before {
   content: '';
   position: absolute;
-  inset: 0;
-  background-image:
-    radial-gradient(circle at 25% 15%, rgba(255, 255, 255, 0.18) 1px, transparent 2px),
-    radial-gradient(circle at 75% 30%, rgba(255, 255, 255, 0.14) 1px, transparent 2px),
-    radial-gradient(circle at 40% 65%, rgba(255, 255, 255, 0.16) 1px, transparent 2px),
-    radial-gradient(circle at 85% 80%, rgba(255, 255, 255, 0.12) 1px, transparent 2px);
-  background-size: 24px 24px, 32px 32px, 28px 28px, 36px 36px;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 110px;
   pointer-events: none;
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.35) 55%,
+    rgba(255, 255, 255, 0.85) 100%
+  );
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  z-index: 2;
+}
+
+@supports not (
+  (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))
+) {
+  .auth-promo::before {
+    background: linear-gradient(
+      to right,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.45) 55%,
+      rgba(255, 255, 255, 0.92) 100%
+    );
+  }
+}
+
+/* Z-index ladder for the auth-promo:
+ *   ::before haze       z 2  (right-edge fade, on top of dots+icons)
+ *   .auth-promo__icons  z 1  (drifting motifs)
+ *   .auth-promo-dots    z 0  (cursor-fleeing dots, lowest)
+ *   > everything else   z 3  (brand / hero / CTA / footer copy)
+ *
+ * The base `.auth-promo > *` rule sets every direct child to z 3;
+ * the more specific `.auth-promo > .auth-promo-dots` /
+ * `.auth-promo > .auth-promo__icons` selectors then knock the dot +
+ * icon layers back down beneath the haze. */
+.auth-promo > * {
+  position: relative;
+  z-index: 3;
+}
+
+/* ── Cursor-fleeing dot field ────────────────────────────────────────────
+ * Replaces the previous CSS `::before` dot-pattern. Real DOM dots are
+ * required because each one needs its own transform driven by
+ * `<AuthPromoDots>`'s mousemove handler. Layer sits beneath the
+ * drifting motifs and the right-edge haze. */
+.auth-promo > .auth-promo-dots {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  /* `overflow: hidden` clips dots that get pushed off the panel by
+     the cursor instead of letting them spill into the form column. */
+  overflow: hidden;
   z-index: 0;
 }
 
-.auth-promo > * {
-  position: relative;
-  z-index: 1;
+.auth-promo-dot {
+  position: absolute;
+  display: block;
+  background: #ffffff;
+  border-radius: 50%;
+  transform: translate(0, 0);
+  /* Snappy spring back when the cursor leaves a dot's range. Short
+     duration keeps the dots feeling responsive while a tight
+     out-cubic ease takes the buzz out of rapid mousemoves. */
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-promo-dot {
+    transition: none;
+  }
 }
 
 /* ── Drifting educational motifs ─────────────────────────────────────────
@@ -58,16 +131,15 @@ body {
  * panel and drift sideways across it on long loops. Same effect as
  * the marketing hero, just sized down for the narrower column.
  *
- * The container needs `z-index: 0` (and the higher-specificity
- * `> .auth-promo__icons` selector to beat the `.auth-promo > *`
- * z-index: 1 rule above) so motifs render *above* the dotted
- * `::before` background but *below* the headline / brand / form. */
+ * Container z-index is 1 so motifs render *above* the cursor-fleeing
+ * dot field but *below* the right-edge haze (z 2) and the headline
+ * copy (z 3). */
 .auth-promo > .auth-promo__icons {
   position: absolute;
   inset: 0;
   pointer-events: none;
   overflow: hidden;
-  z-index: 0;
+  z-index: 1;
 }
 
 .auth-promo__icon {

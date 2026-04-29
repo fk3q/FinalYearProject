@@ -13,6 +13,7 @@ import GoogleSignInButton from "./components/GoogleSignInButton";
 import MicrosoftSignInButton from "./components/MicrosoftSignInButton";
 import FacebookSignInButton from "./components/FacebookSignInButton";
 import AuthPromoMotifs from "./components/AuthPromoMotifs";
+import AuthPromoDots from "./components/AuthPromoDots";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -129,6 +130,7 @@ const Login = () => {
   return (
     <div className="auth-shell">
       <aside className="auth-promo">
+        <AuthPromoDots />
         <AuthPromoMotifs />
         <div>
           <div className="auth-promo__brand">

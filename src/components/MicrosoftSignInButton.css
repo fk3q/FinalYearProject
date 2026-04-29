@@ -7,6 +7,12 @@
 }
 
 .ms-signin-btn {
+  /* `position: relative` + `overflow: hidden` so the four colored
+     squares can fly past the SVG bounds on hover and get cleanly
+     clipped at the button's right edge instead of overflowing into
+     the form below. */
+  position: relative;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -29,6 +35,53 @@
   background: #f9fafb;
   border-color: #b6bcc7;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+
+/* ── Squares migrate to the right end on hover ─────────────────────────
+ * Each `<rect>` inside the Microsoft logo SVG gets translated to the
+ * far right of the button on hover, with a staggered delay so the
+ * four colours march one after the other instead of teleporting in
+ * unison. The SVG's `overflow: visible` lets them escape the icon
+ * box; the parent button's `overflow: hidden` then clips them at the
+ * right edge. On un-hover the transform reverses (same staggered
+ * delays, so they file back into their 2x2 formation in order).
+ * ~310 px is comfortably less than the rendered button width (~400 px)
+ * so the squares stay visible but pinned to the right end while the
+ * cursor is on the button. */
+.ms-signin-btn__icon {
+  overflow: visible;
+}
+
+.ms-signin-btn__icon rect {
+  transition: transform 0.55s cubic-bezier(0.65, 0, 0.35, 1);
+  transform-origin: center;
+}
+
+.ms-signin-btn:hover:not(:disabled) .ms-signin-btn__icon rect:nth-child(1) {
+  transform: translateX(310px);
+  transition-delay: 0s;
+}
+.ms-signin-btn:hover:not(:disabled) .ms-signin-btn__icon rect:nth-child(2) {
+  transform: translateX(310px);
+  transition-delay: 0.08s;
+}
+.ms-signin-btn:hover:not(:disabled) .ms-signin-btn__icon rect:nth-child(3) {
+  transform: translateX(310px);
+  transition-delay: 0.16s;
+}
+.ms-signin-btn:hover:not(:disabled) .ms-signin-btn__icon rect:nth-child(4) {
+  transform: translateX(310px);
+  transition-delay: 0.24s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ms-signin-btn__icon rect {
+    transition: none;
+  }
+  .ms-signin-btn:hover:not(:disabled) .ms-signin-btn__icon rect {
+    transform: none;
+    transition-delay: 0s;
+  }
 }
 
 .ms-signin-btn:focus-visible {

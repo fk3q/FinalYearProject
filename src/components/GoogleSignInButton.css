@@ -1,8 +1,27 @@
+/* Wrap GIS's button in our own bordered shell so the Google button
+   reads visually identical to the Microsoft + Facebook buttons
+   (same 1px border, 8px radius, 44 px min-height, hover lift). The
+   inner button GIS renders has a slightly different default border
+   colour and a 4 px corner radius; `overflow: hidden` on the wrapper
+   clips its corners so only our 8 px outer corners are visible. */
 .google-signin-mount {
   display: flex;
   justify-content: center;
+  align-items: center;
   width: 100%;
   min-height: 44px;
+  padding: 0;
+  border-radius: 8px;
+  border: 1px solid #d0d5dd;
+  background: #ffffff;
+  overflow: hidden;
+  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.google-signin-mount:hover {
+  background: #f9fafb;
+  border-color: #b6bcc7;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
 }
 
 .google-signin-mount > div {
@@ -12,6 +31,12 @@
 .google-signin-mount iframe {
   width: 100% !important;
   max-width: 380px;
+  /* GIS draws its own 1px border inside the rendered button. Our
+     outer wrapper now provides the visible border, so we suppress
+     the inner one. Best-effort -- iframes rendered cross-origin
+     ignore this, but in practice the GIS button is rendered
+     same-origin and the override holds. */
+  border: 0 !important;
 }
 
 .google-signin-mount--disabled {
