@@ -52,6 +52,65 @@ body {
   z-index: 1;
 }
 
+/* ── Drifting educational motifs ─────────────────────────────────────────
+ * Six lucide icons (BookOpen, Library, GraduationCap, BookMarked,
+ * Lightbulb, Notebook) sit on independent rails inside the promo
+ * panel and drift sideways across it on long loops. Same effect as
+ * the marketing hero, just sized down for the narrower column.
+ *
+ * The container needs `z-index: 0` (and the higher-specificity
+ * `> .auth-promo__icons` selector to beat the `.auth-promo > *`
+ * z-index: 1 rule above) so motifs render *above* the dotted
+ * `::before` background but *below* the headline / brand / form. */
+.auth-promo > .auth-promo__icons {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.auth-promo__icon {
+  position: absolute;
+  /* Color baked at low alpha so motifs read as ambient texture
+     against the blue gradient, not as decoration competing with the
+     headline. */
+  color: rgba(255, 255, 255, 0.12);
+  display: inline-flex;
+  animation:
+    auth-promo-drift-ltr var(--promo-icon-dur, 30s) linear
+      var(--promo-icon-delay, 0s) infinite;
+  will-change: transform, opacity;
+}
+
+.auth-promo__icon--rtl {
+  animation-name: auth-promo-drift-rtl;
+}
+
+@keyframes auth-promo-drift-ltr {
+  0%   { left: -10%; opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { left: 110%; opacity: 0; }
+}
+
+@keyframes auth-promo-drift-rtl {
+  0%   { left: 110%; opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { left: -10%; opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-promo__icon {
+    animation: none;
+  }
+  /* Park each rail at a stable position so all six don't pile up at
+     left:0 (their starting frame) when motion is reduced. */
+  .auth-promo__icon--ltr { left: 18%; opacity: 1; }
+  .auth-promo__icon--rtl { left: 78%; opacity: 1; }
+}
+
 .auth-promo__brand {
   display: flex;
   align-items: center;

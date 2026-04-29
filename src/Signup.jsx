@@ -13,6 +13,7 @@ import { useTheme } from "./contexts/ThemeContext";
 import GoogleSignInButton from "./components/GoogleSignInButton";
 import MicrosoftSignInButton from "./components/MicrosoftSignInButton";
 import FacebookSignInButton from "./components/FacebookSignInButton";
+import AuthPromoMotifs from "./components/AuthPromoMotifs";
 
 // Public site key. Cloudflare provides "always-passes" dummy keys so local dev
 // works without an account. Override with VITE_TURNSTILE_SITE_KEY for production.
@@ -269,6 +270,7 @@ const Signup = () => {
   return (
     <div className="auth-shell">
       <aside className="auth-promo">
+        <AuthPromoMotifs />
         <div>
           <div className="auth-promo__brand">
             <div className="auth-promo__logo">

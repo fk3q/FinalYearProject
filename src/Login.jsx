@@ -12,6 +12,7 @@ import { useTheme } from "./contexts/ThemeContext";
 import GoogleSignInButton from "./components/GoogleSignInButton";
 import MicrosoftSignInButton from "./components/MicrosoftSignInButton";
 import FacebookSignInButton from "./components/FacebookSignInButton";
+import AuthPromoMotifs from "./components/AuthPromoMotifs";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -128,6 +129,7 @@ const Login = () => {
   return (
     <div className="auth-shell">
       <aside className="auth-promo">
+        <AuthPromoMotifs />
         <div>
           <div className="auth-promo__brand">
             <div className="auth-promo__logo">
@@ -135,11 +137,7 @@ const Login = () => {
             </div>
             <span className="auth-promo__brandname">Laboracle</span>
           </div>
-          <p className="auth-promo__date">
-            Smart learning assistant
-            <br />
-            K-12 · Online &amp; classroom
-          </p>
+          <p className="auth-promo__date">Smart learning assistant</p>
         </div>
 
         <div className="auth-promo__hero">
