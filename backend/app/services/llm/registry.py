@@ -75,8 +75,7 @@ class _Registry:
                 provider="openai",
                 min_tier="free",
                 speed_label="Fast",
-                description="OpenAI's everyday model — fast, capable, "
-                "and available on every plan.",
+                description="OpenAI's everyday model — fast and capable.",
             ),
             MODEL_GEMINI: ModelInfo(
                 id=MODEL_GEMINI,
@@ -84,8 +83,7 @@ class _Registry:
                 provider="google",
                 min_tier="free",
                 speed_label="Fast",
-                description="Google's flagship — fast and inexpensive. "
-                "Great daily-driver for everyday questions.",
+                description="Google's flagship — fast and inexpensive.",
             ),
             MODEL_SONNET: ModelInfo(
                 id=MODEL_SONNET,
@@ -93,8 +91,7 @@ class _Registry:
                 provider="anthropic",
                 min_tier="regular",
                 speed_label="Medium",
-                description="Anthropic's mid-tier — strong writing and "
-                "reasoning at a moderate price.",
+                description="Anthropic's mid-tier — strong reasoning.",
             ),
             MODEL_GPT5: ModelInfo(
                 id=MODEL_GPT5,
@@ -102,8 +99,7 @@ class _Registry:
                 provider="openai",
                 min_tier="advanced",
                 speed_label="High",
-                description="OpenAI's flagship — broadest capability, "
-                "premium tier only.",
+                description="OpenAI's flagship — broadest capability.",
             ),
             MODEL_OPUS: ModelInfo(
                 id=MODEL_OPUS,
@@ -111,8 +107,7 @@ class _Registry:
                 provider="anthropic",
                 min_tier="advanced",
                 speed_label="Extra High",
-                description="Anthropic's most powerful model — deep "
-                "reasoning, slowest and priciest.",
+                description="Anthropic's most powerful — deepest reasoning.",
             ),
         }
 
@@ -165,17 +160,27 @@ class _Registry:
 
             available = tier_ok and provider_ok
             locked_reason: Optional[str] = None
+            # Always frame the message in upgrade terms when min_tier is
+            # paid (regular/advanced), regardless of *why* the row is
+            # locked. Free users converting to a paid plan is the goal,
+            # so we'd rather say "Available for Advanced subscribers"
+            # than expose internal "API key not configured" errors.
+            tier_phrase = {
+                "regular":  "Available for Regular subscribers",
+                "advanced": "Available for Advanced subscribers",
+            }.get(info.min_tier)
             if not tier_ok:
-                # Tier message takes priority -- if we don't tell the
-                # user "upgrade to unlock this", they assume the
-                # missing-key message means it's permanently unavailable.
-                tier_label = {
-                    "regular": "Regular plan",
-                    "advanced": "Advanced plan",
-                }.get(info.min_tier, f"{info.min_tier} plan")
-                locked_reason = f"Requires {tier_label} or higher"
+                # Tier-locked: copy comes from min_tier directly.
+                locked_reason = tier_phrase or f"Requires {info.min_tier} plan"
             elif not provider_ok:
-                locked_reason = "Unavailable on this server"
+                # User's tier *would* allow this, but the provider key
+                # isn't configured. For paid models we still show the
+                # upgrade-style copy (rare edge case anyway -- only
+                # affects paid users when an admin forgot to set the
+                # API key). For free models we show a generic
+                # "Coming soon" so we don't promise something the
+                # server can't deliver yet.
+                locked_reason = tier_phrase or "Coming soon"
 
             out.append(
                 ModelInfo(

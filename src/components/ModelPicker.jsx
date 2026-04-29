@@ -112,13 +112,20 @@ const ModelPicker = ({
           {models.map((m) => {
             const isActive = m.id === selectedId;
             const isDisabled = !m.available;
-            // Backend tells us *why* a model is locked (tier vs missing
-            // key). Falls back to a generic message for older builds.
+            // Prefer the backend's locked_reason, but derive a friendly
+            // tier-based fallback locally so we never display a raw
+            // "Unavailable" error -- even when talking to an older
+            // backend that doesn't know about locked_reason yet.
+            const tierFallback =
+              m.min_tier === "advanced"
+                ? "Available for Advanced subscribers"
+                : m.min_tier === "regular"
+                ? "Available for Regular subscribers"
+                : "Coming soon";
             const lockedReason =
-              m.locked_reason ||
-              (isDisabled ? "Unavailable on this server" : null);
+              m.locked_reason || (isDisabled ? tierFallback : null);
             const isTierLocked =
-              isDisabled && /requires/i.test(lockedReason || "");
+              isDisabled && /available for|requires/i.test(lockedReason || "");
             return (
               <button
                 key={m.id}

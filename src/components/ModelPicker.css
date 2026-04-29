@@ -121,8 +121,10 @@
   right: 0;
   left: auto;
   z-index: 30;
-  min-width: 320px;
-  max-width: min(380px, calc(100vw - 24px));
+  /* Narrowed so the description never spills outside on smaller
+     viewports. Long copy wraps onto two lines instead of clipping. */
+  width: 280px;
+  max-width: calc(100vw - 24px);
   padding: 6px;
   background: #ffffff;
   border: 1px solid #e2e5f0;
@@ -222,6 +224,11 @@
   font-size: 12px;
   line-height: 1.4;
   color: #6b7280;
+  /* Allow the description to wrap inside the narrow 280px menu so
+     "Available for Advanced subscribers" / "OpenAI's everyday model"
+     never truncate against the menu's right edge. */
+  white-space: normal;
+  word-wrap: break-word;
 }
 
 /* ── Dark theme overrides ─────────────────────────────────────────── */
