@@ -184,7 +184,11 @@
   position: relative;
   overflow: hidden;
   isolation: isolate;
-  --glow: 255, 107, 0; /* warm orange (#ff6b00). Comma-separated for rgba(). */
+  /* Glow tint, written as a bare RGB tuple so the rules below can compose
+     it with any alpha via `rgba(var(--glow), <a>)`. Cyan #22d3ee is the
+     visual complement to the purple/indigo hero gradient, so the glow
+     pops against the background while feeling premium and on-brand. */
+  --glow: 34, 211, 238;
 }
 
 .cta-spotlight::before {
@@ -192,8 +196,8 @@
   position: absolute;
   inset: 0;
   background: radial-gradient(
-    180px circle at var(--mx, 50%) var(--my, 50%),
-    rgba(var(--glow), 0.55),
+    200px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(var(--glow), 0.65),
     rgba(var(--glow), 0) 70%
   );
   opacity: 0;
