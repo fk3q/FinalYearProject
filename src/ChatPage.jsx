@@ -670,7 +670,15 @@ const ChatPage = () => {
 
                 {m.type === "bot" && m.confidence > 0 && (
                   <div className="cp-meta">
-                    <span className={`cp-conf ${confidenceColor(m.confidence)}`}>
+                    <span
+                      className={`cp-conf ${confidenceColor(m.confidence)}`}
+                      title={
+                        "Calculated from how strongly your answer is " +
+                        "grounded in the cited sources, the answer's " +
+                        "length, and any hedging language. Higher = the " +
+                        "documents directly support the reply."
+                      }
+                    >
                       Confidence: {m.confidence}%
                     </span>
                     {m.citations && m.citations.length > 0 && (

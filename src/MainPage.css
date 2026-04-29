@@ -999,7 +999,7 @@
   --accent-glow: rgba(118, 75, 162, 0.5);
 }
 
-/* 6. Student-Safe — pink-leaning purple (#c084fc), the warmest tone. */
+/* 6. Voice Input — pink-leaning purple (#c084fc), the warmest tone. */
 .bento-card--rose {
   --accent-soft: rgba(192, 132, 252, 0.2);
   --accent-strong: #e9d5ff;
@@ -1007,6 +1007,39 @@
   --accent-rgba: rgba(192, 132, 252, 0.42);
   --accent-solid: rgba(192, 132, 252, 0.6);
   --accent-glow: rgba(192, 132, 252, 0.5);
+}
+
+/* 7. Multi-Model AI — bright fuchsia (#d946ef), the punchy outlier
+   that makes this card pop on the second row of the bento. */
+.bento-card--fuchsia {
+  --accent-soft: rgba(217, 70, 239, 0.18);
+  --accent-strong: #f0abfc;
+  --accent-border: rgba(217, 70, 239, 0.32);
+  --accent-rgba: rgba(217, 70, 239, 0.4);
+  --accent-solid: rgba(217, 70, 239, 0.6);
+  --accent-glow: rgba(217, 70, 239, 0.45);
+}
+
+/* 8. Research Toolkit — deep indigo (#6366f1), pulls the eye back
+   toward the cool side of the gradient for visual rhythm. */
+.bento-card--sky {
+  --accent-soft: rgba(99, 102, 241, 0.18);
+  --accent-strong: #c7d2fe;
+  --accent-border: rgba(99, 102, 241, 0.32);
+  --accent-rgba: rgba(99, 102, 241, 0.4);
+  --accent-solid: rgba(99, 102, 241, 0.6);
+  --accent-glow: rgba(99, 102, 241, 0.45);
+}
+
+/* 9. Student-Safe — soft pink (#f472b6), closes the bento on the
+   warmest, friendliest tone of the brand spectrum. */
+.bento-card--pink {
+  --accent-soft: rgba(244, 114, 182, 0.18);
+  --accent-strong: #fbcfe8;
+  --accent-border: rgba(244, 114, 182, 0.32);
+  --accent-rgba: rgba(244, 114, 182, 0.4);
+  --accent-solid: rgba(244, 114, 182, 0.6);
+  --accent-glow: rgba(244, 114, 182, 0.45);
 }
 
 /* Mobile — collapse to single column so wide cards still fit. */

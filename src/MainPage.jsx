@@ -8,62 +8,88 @@ import {
   Heart,
   Library,
   Lightbulb,
+  ListChecks,
   MessageCircleQuestion,
+  Mic,
   Notebook,
   ShieldCheck,
+  Sparkles,
 } from 'lucide-react';
 import {
   GithubIcon,
   InstagramIcon,
   LinkedinIcon,
-  TwitterIcon,
+  XIcon,
 } from './components/SocialIcons';
 import './MainPage.css';
 import { getSessionUser } from './api/auth';
 import { createCheckoutSession } from './api/payments';
 
 // Bento-grid feature cards rendered in the "Powerful Features" section.
-// `accent` controls the icon-pill color via per-class CSS rules; `wide`
-// makes the card span 2 grid columns to break the rhythm and create the
-// Huly-style asymmetric bento layout. Order is meaningful — cards 1 and 6
-// are wide so each row reads as wide+narrow+narrow / narrow+narrow+wide.
+// `accent` controls the icon-pill colour via per-class CSS rules; `wide`
+// makes the card span 2 grid columns to break the rhythm. With 9 cards
+// the layout reads as three rows of (wide + narrow + narrow), with the
+// wide card sliding from left → right → right across the rows to keep
+// the rhythm interesting:
+//   row 1: wide   | narrow | narrow
+//   row 2: narrow | narrow | wide
+//   row 3: narrow | narrow | wide
 const FEATURES = [
   {
     icon: MessageCircleQuestion,
     title: 'Course Q&A',
-    body: 'Get instant answers about your entrepreneurship and financial literacy curriculum with accurate citations on every reply.',
+    body: 'Ask anything about your uploaded notes, lecture slides or textbook chapters. Every answer comes back with citations pointing to the exact page.',
     accent: 'indigo',
     wide: true,
   },
   {
     icon: ShieldCheck,
     title: 'Low-Hallucination AI',
-    body: 'Safe, reliable answers with confidence scores. Only responds when it has verified information.',
+    body: 'A confidence score on every reply, dynamically calculated from how strongly the answer is grounded in your documents.',
     accent: 'emerald',
   },
   {
     icon: BookMarked,
-    title: 'Citation-Backed',
-    body: 'Every answer includes source citations so you can verify information and learn more.',
+    title: 'Page-Level Citations',
+    body: 'Citations link back to the exact passage and page number in your file, so you can verify any claim in seconds.',
     accent: 'amber',
   },
   {
     icon: ArrowLeftRight,
-    title: 'Dual Modes',
-    body: 'Switch between deterministic mode for facts and exploratory mode for creative learning.',
+    title: 'Four AI Modes',
+    body: 'Deterministic for facts, Exploratory for connections, Test for quizzes, Research for academic synthesis — switch in one click.',
     accent: 'cyan',
   },
   {
-    icon: GraduationCap,
-    title: 'Teacher-Friendly',
-    body: 'Reduces teacher workload while keeping students engaged and on track with their missions.',
+    icon: ListChecks,
+    title: 'Test Yourself',
+    body: 'Generate MCQ, short-answer and true/false quizzes from your own uploads, complete with answer keys and explanations.',
     accent: 'violet',
+  },
+  {
+    icon: Mic,
+    title: 'Voice Input',
+    body: 'Tap the mic and speak your question — Whisper transcribes it into the chat box, perfect for hands-busy revision sessions.',
+    accent: 'rose',
+    wide: true,
+  },
+  {
+    icon: Sparkles,
+    title: 'Multi-Model AI',
+    body: 'Choose between GPT-4o, GPT-5, Claude Opus 4.7, Claude Sonnet 4.6 and Gemini 2.5 Pro for the answer style you need.',
+    accent: 'fuchsia',
+  },
+  {
+    icon: Notebook,
+    title: 'Research Toolkit',
+    body: 'Cornell notes, lit-review drafts, methodology extraction and follow-up research questions for university-level work.',
+    accent: 'sky',
   },
   {
     icon: Heart,
     title: 'Student-Safe',
-    body: 'Built with safety guardrails and age-appropriate content filtering for K-12 students, vetted against curriculum standards.',
-    accent: 'rose',
+    body: 'Built with safety guardrails and appropriate content filtering, vetted against curriculum standards.',
+    accent: 'pink',
     wide: true,
   },
 ];
@@ -580,14 +606,18 @@ const MainPage = () => {
         <div className="about-content">
           <h2 className="section-title">About Laboracle</h2>
           <p>
-            Laboracle is a safe, intelligent learning assistant designed specifically 
-            for K12 students (ages 9-17). Built for entrepreneurship accelerator and gamified financial 
-            literacy courses, it helps students stay on track during online missions and classroom blocks.
+            Laboracle is a safe, intelligent learning assistant designed for
+            students at every level — from school through university research.
+            Built for entrepreneurship, financial-literacy and academic
+            workflows, it helps learners stay on track during online sessions
+            and study blocks.
           </p>
           <p>
-            Using advanced RAG technology with citation verification and low-hallucination safeguards, 
-            Laboracle reduces teacher workload while ensuring students get accurate, age-appropriate 
-            answers to their course questions. Every answer includes source citations for transparency and trust.
+            Using advanced RAG technology with citation verification and
+            low-hallucination safeguards, Laboracle reduces teacher workload
+            while ensuring students get accurate, appropriate answers to their
+            course questions. Every answer includes source citations for
+            transparency and trust.
           </p>
         </div>
       </section>
@@ -617,16 +647,16 @@ const MainPage = () => {
               >
                 <InstagramIcon />
               </a>
-              {/* Twitter placeholder — replace href when an account exists.
-                  Until then it's wired to "#" intentionally so the icon
-                  stays in the row for visual balance with the other three. */}
+              {/* X (formerly Twitter) — placeholder href until an
+                  account exists. Wired to "#" intentionally so the
+                  icon stays in the row for visual balance. */}
               <a
                 href="#"
                 className="social-icon social-icon--placeholder"
-                aria-label="Twitter (coming soon)"
+                aria-label="X (coming soon)"
                 title="Coming soon"
               >
-                <TwitterIcon />
+                <XIcon />
               </a>
               <a
                 href="https://www.linkedin.com/in/furqan-zedani-1717a5406/"

@@ -507,16 +507,51 @@ class ChatService:
     @staticmethod
     def _build_citations(docs: list, scores: list) -> List[str]:
         """
-        Return de-duplicated citation strings for each unique source chunk.
-        Format: 'filename — chunk N (score: X.XX)'
-        Lower L2 score = more relevant.
+        Return de-duplicated, human-readable citation strings -- one per
+        unique source chunk, ordered by relevance.
+
+        Format choices, by priority:
+          · PDF with a real page number      -> "notes.pdf — page 5"
+          · DOCX/TXT or PDFs without pages   -> "notes.docx — passage 3 of 17"
+
+        We deliberately:
+          · prefer `original_filename` over `filename`, because the
+            stored filename is prefixed with an internal owner slug
+            (e.g. ``user42__notes.pdf``) that students shouldn't see.
+          · drop the FAISS L2 distance from the visible string -- it's
+            an internal debugging signal, not a citation. Confidence
+            score on the message bubble already conveys "how grounded
+            is this answer" to the user.
         """
-        seen, out = set(), []
-        for doc, score in zip(docs, scores):
-            meta     = doc.metadata
-            filename = meta.get('filename', 'Unknown')
-            chunk_n  = meta.get('chunk_index', 0) + 1
-            cit      = f"{filename} — chunk {chunk_n} (score: {score:.3f})"
+        seen: set = set()
+        out: List[str] = []
+        for doc, _score in zip(docs, scores):
+            meta = doc.metadata
+            display_name = (
+                meta.get('original_filename')
+                or meta.get('filename')
+                or 'Unknown source'
+            )
+            page = meta.get('page', 0)
+            chunk_n = int(meta.get('chunk_index', 0)) + 1
+            total = int(meta.get('total_chunks', 0))
+
+            # Page numbers from langchain's PDF loader are 0-based, but
+            # only when the doc actually came from a paged source. For
+            # non-paged formats `page` defaults to 0 in our metadata, so
+            # we treat any value > 0 as "real page info".
+            try:
+                page_int = int(page)
+            except (TypeError, ValueError):
+                page_int = 0
+
+            if page_int > 0:
+                cit = f"{display_name} — page {page_int}"
+            elif total > 0:
+                cit = f"{display_name} — passage {chunk_n} of {total}"
+            else:
+                cit = f"{display_name} — passage {chunk_n}"
+
             if cit not in seen:
                 out.append(cit)
                 seen.add(cit)
@@ -525,28 +560,71 @@ class ChatService:
     @staticmethod
     def _calculate_confidence(scores: list, answer: str) -> int:
         """
-        Heuristic confidence score (0-100) based on:
-          - FAISS L2 similarity scores (lower = better)
-          - Number of retrieved chunks
-          - Presence of hedging language in the answer
+        Heuristic confidence score (0-100) shown next to bot replies.
+
+        Inputs and weights:
+          · FAISS L2 similarity (top retrieved chunks)  -> up to 75 pts
+            (each chunk's L2 distance is mapped to a 0-1 similarity
+            assuming ~2.0 is "no match"; the average of all retrieved
+            chunks is used so a single great hit + several mediocre
+            ones reads as "moderately confident", not "confident").
+          · Answer length sanity                         -> up to 15 pts
+            (very short answers usually mean the model gave up; very
+            long answers without grounding shouldn't pad the score
+            either, so the curve plateaus around 80 words).
+          · Hedging language penalty                     -> -5 each
+          · "I cannot find / not in the context" detection -> hard
+            cap at 35 (overrides everything; the model is explicitly
+            telling the user the docs don't answer the question).
+
+        Range is clamped to [20, 95] -- never 0 (we always have some
+        grounding) and never 100 (heuristics shouldn't claim certainty).
         """
         if not scores:
-            return 40
+            # No retrieval at all -- this path only runs for the
+            # general-knowledge fallback in exploratory/research modes.
+            return 60
 
-        # Convert L2 distance to a 0–1 similarity (assumes scores < 2 for good matches)
+        lower = answer.lower()
+
+        # Hard cap when the model itself is admitting no answer. These
+        # phrases come from our own deterministic-mode "no relevant
+        # results" copy as well as from the LLM when it can't ground
+        # an answer in the provided context.
+        bail_phrases = (
+            "i cannot find",
+            "i could not find",
+            "could not find information",
+            "not in the context",
+            "no relevant",
+            "the documents do not",
+            "the documents don't",
+        )
+        if any(p in lower for p in bail_phrases):
+            return 25
+
+        # Convert L2 distance to 0-1 similarity (FAISS L2 with
+        # OpenAI text-embedding-3-small lands ~0.4-1.5 for genuine
+        # matches; ~2.0+ means unrelated content).
         similarities = [max(0.0, 1.0 - (s / 2.0)) for s in scores]
-        avg_sim      = sum(similarities) / len(similarities)
+        avg_sim = sum(similarities) / len(similarities)
 
-        # Base: up to 70 from similarity, up to 20 from answer length
-        base   = int(avg_sim * 70)
-        length = min(len(answer.split()) / 80, 1.0) * 20
+        # Base contribution from retrieval similarity.
+        base = int(avg_sim * 75)
 
-        # Deduct for hedging words
-        hedges  = sum(
-            1 for w in ['might', 'maybe', 'perhaps', 'unclear', 'not sure', 'possibly', 'i think']
-            if w in answer.lower()
+        # Length bonus: rewards substantive answers without padding
+        # for verbose-but-empty replies. Plateaus at ~80 words.
+        length_bonus = int(min(len(answer.split()) / 80, 1.0) * 15)
+
+        # Hedge penalty -- each hedging phrase deducts 5 points.
+        hedges = sum(
+            1 for w in (
+                "might", "maybe", "perhaps", "unclear", "not sure",
+                "possibly", "i think", "i'm not sure",
+            )
+            if w in lower
         )
         penalty = hedges * 5
 
-        score = int(base + length - penalty)
-        return max(45, min(95, score))
+        score = base + length_bonus - penalty
+        return max(20, min(95, int(score)))
