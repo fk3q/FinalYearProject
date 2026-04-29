@@ -89,22 +89,24 @@
   font-weight: 700;
   color: #667eea;
   cursor: pointer;
-  /* Reserve enough box for the bigger logo. The image itself is
-     centred via flex; the round disc and bubble stream are absolute
-     children positioned against this container. */
+  /* Same proportions as the chat sidebar's `.cp-brand-circle` (72px
+     disc with a 56px logo inside, ~78% of the disc) but scaled up
+     for the marketing nav so the mark reads at a glance. */
   width: 96px;
   height: 96px;
 }
 
-/* Round white badge behind the logo image. Slightly smaller than the
-   image so the artwork's square corners peek out around the circle
-   -- a deliberate hybrid look the marketing nav had requested. */
+/* Round white badge behind the logo image. The disc is the FULL size
+   of the container and the image sits comfortably inside it, so the
+   round shape is visible -- previously the image was bigger than the
+   disc and the white square corners made the whole thing read as a
+   square. */
 .logo-disc {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 76px;
-  height: 76px;
+  width: 96px;
+  height: 96px;
   transform: translate(-50%, -50%);
   border-radius: 50%;
   background: #fff;
@@ -116,8 +118,11 @@
 .logo-img {
   position: relative;
   z-index: 1;
-  height: 96px;
-  width: 96px;
+  /* 75 / 96 ≈ 78%, matching the 56 / 72 ratio used on the chat
+     sidebar so the visible white ring around the artwork looks
+     consistent across both surfaces. */
+  height: 75px;
+  width: 75px;
   display: block;
   object-fit: contain;
 }
