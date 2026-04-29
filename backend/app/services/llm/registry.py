@@ -26,6 +26,7 @@ from .openai_client import OpenAIProvider
 # sessionStorage and posts back; the underlying vendor model_id (e.g.
 # "claude-opus-4-7") lives separately in settings so we can rotate
 # vendor versions without forcing every client to clear their cache.
+MODEL_GPT4O   = "gpt-4o"
 MODEL_GPT5    = "gpt-5"
 MODEL_OPUS    = "opus-4-7"
 MODEL_SONNET  = "sonnet-4-6"
@@ -53,6 +54,7 @@ class _Registry:
         # Mapping: public model_id → vendor model_id (read from settings
         # so it can be rotated via env var without a code change).
         self._vendor_id: Dict[str, str] = {
+            MODEL_GPT4O:   settings.MODEL_ID_GPT4O,
             MODEL_GPT5:    settings.MODEL_ID_GPT5,
             MODEL_OPUS:    settings.MODEL_ID_CLAUDE_OPUS,
             MODEL_SONNET:  settings.MODEL_ID_CLAUDE_SONNET,
@@ -62,6 +64,20 @@ class _Registry:
         # The static catalogue. `available` is recomputed per request
         # in list_for_user() based on which API keys are populated.
         self._catalog: Dict[str, ModelInfo] = {
+            # GPT-4o is the "everyday OpenAI" option -- it's the same
+            # model the chat backend used before the multi-provider
+            # refactor, so any deployment with an OPENAI_API_KEY can
+            # offer it for free without needing the Anthropic or
+            # Google keys.
+            MODEL_GPT4O: ModelInfo(
+                id=MODEL_GPT4O,
+                label="GPT-4o",
+                provider="openai",
+                min_tier="free",
+                speed_label="Fast",
+                description="OpenAI's everyday model — fast, capable, "
+                "and available on every plan.",
+            ),
             MODEL_GEMINI: ModelInfo(
                 id=MODEL_GEMINI,
                 label="Gemini 2.5 Pro",

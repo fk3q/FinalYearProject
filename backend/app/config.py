@@ -44,16 +44,17 @@ class Settings(BaseSettings):
     # Override these in .env when vendors release new versions, so we don't
     # have to push a code change to upgrade. Each ID must match exactly
     # what the provider's SDK accepts -- the registry uses these verbatim.
+    MODEL_ID_GPT4O:          str = "gpt-4o"
     MODEL_ID_GPT5:           str = "gpt-5"
     MODEL_ID_CLAUDE_OPUS:    str = "claude-opus-4-7"
     MODEL_ID_CLAUDE_SONNET:  str = "claude-sonnet-4-6"
     MODEL_ID_GEMINI_PRO:     str = "gemini-2.5-pro"
 
     # The model used when a chat request omits an explicit `model` field.
-    # Defaults to GPT-5 because OPENAI_API_KEY is the only key required for
-    # day-1 deployment; Anthropic / Google keys can be added later without
-    # breaking existing clients.
-    DEFAULT_MODEL: str = "gpt-5"
+    # Defaults to GPT-4o because it's free-tier and OPENAI_API_KEY is the
+    # only key required for day-1 deployment -- Anthropic / Google keys
+    # can be added later without breaking existing clients.
+    DEFAULT_MODEL: str = "gpt-4o"
 
     # ── Chunking ─────────────────────────────────────────────────────────────
     CHUNK_SIZE: int = 1000

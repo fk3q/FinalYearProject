@@ -114,10 +114,15 @@
 .mp-menu {
   position: absolute;
   top: calc(100% + 6px);
-  left: 0;
+  /* Anchor to the right edge of the trigger so the menu grows
+     leftward into the chat header instead of clipping past the
+     right side of the viewport (the picker sits in the top-right
+     of the chat page). */
+  right: 0;
+  left: auto;
   z-index: 30;
   min-width: 320px;
-  max-width: 380px;
+  max-width: min(380px, calc(100vw - 24px));
   padding: 6px;
   background: #ffffff;
   border: 1px solid #e2e5f0;
