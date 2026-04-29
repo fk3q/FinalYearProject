@@ -473,87 +473,77 @@
   margin: 0 auto;
 }
 
-/* ── Companion video, very-bottom-right of the hero ─────────────────────
- * Pinned flush to the corner where the hero's bottom and right
- * borders meet -- the figure "sits" exactly at the seam between the
- * hero section and whatever comes below it. Sibling of
- * `.hero-content`, so positioning is relative to `.hero` itself,
- * not the centred text column.
+/* ── Companion video, right-anchored background panel ────────────────────
+ * No frame, no border, no shadow -- the video plays directly behind
+ * the liquid-glass surface. `z-index: -1` sits above the hero's
+ * base gradient but BELOW the `.hero::before` and `.hero::after`
+ * glass overlays (both at z-index: 0), so all the rim-light /
+ * specular catch / convex glow that treat the gradient now treat
+ * the video too. The character ends up looking like she's *inside*
+ * the same coloured glass surface as everything else, which fixes
+ * the colour-mismatch problem entirely (no separate frame to tune).
  *
- * Footprint kept small (clamp 150–190 px) so it reads as a quiet
- * decorative accent and never crowds the headline / stats row.
- * Auto-hides below 640 px to keep mobile uncluttered. */
+ * Occupies the right ~36% of the hero. Headline / CTAs / stats sit
+ * in the left two-thirds and remain perfectly legible. Auto-hides
+ * on phones so the copy can own the small screen. */
 .hero-video-frame {
   position: absolute;
-  /* Flush against the hero's right edge. The top-right corner is
-     left as a sharp 90° (no `border-top-right-radius` set), so it
-     meets the page edge cleanly without a half-rounded curl
-     poking inward. The streetlight + full character stay visible. */
+  top: 0;
   right: 0;
   bottom: 0;
-  width: clamp(160px, 15vw, 200px);
-  /* Slightly-wider-than-tall aspect ratio + `object-position:
-     center top` on the video crops the black letterbox baked into
-     the bottom of the source clip. Tweak to 10/9 (less crop) or
-     5/4 (more crop) if needed. */
-  aspect-ratio: 7 / 6;
-  z-index: 3;
-  /* Only the top-left corner is rounded -- the top-right is now
-     off-screen, and bottom edges sit flush against the hero
-     borders. */
-  border-top-left-radius: 22px;
+  width: clamp(280px, 36%, 480px);
+  z-index: -1;
   overflow: hidden;
-  /* Stroke only the visible (top + left) edges. The right edge is
-     past the viewport, the bottom merges with the hero seam. */
-  border-top: 1px solid rgba(255, 255, 255, 0.22);
-  border-left: 1px solid rgba(255, 255, 255, 0.22);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.32),
-    -16px -16px 40px -22px rgba(0, 0, 0, 0.45),
-    0 0 50px rgba(167, 139, 250, 0.22);
-  -webkit-backdrop-filter: saturate(120%);
-  backdrop-filter: saturate(120%);
 }
 
-/* Specular sheen on the upper edge of the frame -- mirrors the
-   hero's own "lip of glass" highlight. */
+/* Soft fade overlay -- two stacked linear gradients that match the
+ * end-stop of the hero gradient (#5b3f92):
+ *   · Left edge -- dissolves the video into the hero gradient so
+ *     there's no hard vertical seam between video and non-video.
+ *   · Bottom edge -- covers the thin black letterbox baked into
+ *     the bottom of the source clip, blending it into the hero
+ *     colour instead of showing a hard black line.
+ * Sits above the video but below the glass highlights. */
 .hero-video-frame::before {
   content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
-  border-radius: inherit;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.18) 0%,
-    rgba(255, 255, 255, 0) 28%
-  );
   z-index: 1;
+  background:
+    linear-gradient(
+      to left,
+      transparent 55%,
+      #5b3f92 100%
+    ),
+    linear-gradient(
+      to bottom,
+      transparent 78%,
+      #5b3f92 100%
+    );
 }
 
 .hero-video {
   display: block;
   width: 100%;
-  /* `height: 100%` lets the video fill the aspect-ratio'd frame; the
-     `cover` + `object-position: center top` combo anchors the
-     character to the top of the frame so the black letterbox at the
-     bottom of the source clip overflows past the frame's bottom edge
-     and gets clipped by the parent's `overflow: hidden`. */
   height: 100%;
   object-fit: cover;
-  object-position: center top;
+  /* Anchor the visible crop to the right side of the source clip
+     (where the character actually sits), so she stays in frame
+     even as the panel narrows on smaller viewports. */
+  object-position: right center;
 }
 
-/* Tablet: shrink the corner accent so it doesn't crowd the stats row. */
+/* Tablet: shrink the panel slightly so the copy column has more
+   breathing room. */
 @media (max-width: 920px) {
   .hero-video-frame {
-    width: clamp(130px, 18vw, 170px);
-    right: 0;
+    width: clamp(220px, 34%, 360px);
   }
 }
 
-/* Mobile: hide the decorative video entirely so the hero copy and
-   stats own the screen. */
+/* Mobile: hide the decorative video panel entirely so the hero
+   copy and stats own the small screen. */
 @media (max-width: 640px) {
   .hero-video-frame {
     display: none;
