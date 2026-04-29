@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Github, Instagram, Linkedin, Twitter } from 'lucide-react';
+import {
+  GithubIcon,
+  InstagramIcon,
+  LinkedinIcon,
+  TwitterIcon,
+} from './components/SocialIcons';
 import './MainPage.css';
 import { getSessionUser } from './api/auth';
 import { createCheckoutSession } from './api/payments';
@@ -334,7 +339,7 @@ const MainPage = () => {
                 className="social-icon"
                 aria-label="Laboracle on GitHub"
               >
-                <Github size={18} strokeWidth={2} />
+                <GithubIcon />
               </a>
               <a
                 href="https://www.instagram.com/lab_oracle/"
@@ -343,7 +348,7 @@ const MainPage = () => {
                 className="social-icon"
                 aria-label="Laboracle on Instagram"
               >
-                <Instagram size={18} strokeWidth={2} />
+                <InstagramIcon />
               </a>
               {/* Twitter placeholder — replace href when an account exists.
                   Until then it's wired to "#" intentionally so the icon
@@ -354,7 +359,7 @@ const MainPage = () => {
                 aria-label="Twitter (coming soon)"
                 title="Coming soon"
               >
-                <Twitter size={18} strokeWidth={2} />
+                <TwitterIcon />
               </a>
               <a
                 href="https://www.linkedin.com/in/furqan-zedani-1717a5406/"
@@ -363,7 +368,7 @@ const MainPage = () => {
                 className="social-icon"
                 aria-label="Laboracle founder on LinkedIn"
               >
-                <Linkedin size={18} strokeWidth={2} />
+                <LinkedinIcon />
               </a>
             </div>
           </div>
