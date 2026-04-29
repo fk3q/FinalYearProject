@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeftRight,
@@ -100,6 +100,107 @@ const PLANS = [
     ],
   },
 ];
+
+// requestAnimationFrame counter that ticks `from` up to `to` once `active`
+// flips true. `easing` shapes the curve: 'linear' keeps the cadence steady
+// (used for "850 -> 1000" so each tick covers the same number of students),
+// 'easeOut' decelerates near the end (used for "50 -> 95%" so the last
+// few percent crawl in like the user wanted). Honours
+// prefers-reduced-motion by snapping straight to the final value.
+const useAnimatedCounter = (active, from, to, duration, easing = 'linear') => {
+  const [value, setValue] = useState(from);
+  useEffect(() => {
+    if (!active) return undefined;
+    const reduce =
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) {
+      setValue(to);
+      return undefined;
+    }
+    const start = performance.now();
+    let raf;
+    const tick = (now) => {
+      const t = Math.min(1, (now - start) / duration);
+      const eased = easing === 'easeOut' ? 1 - Math.pow(1 - t, 3) : t;
+      setValue(Math.round(from + (to - from) * eased));
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [active, from, to, duration, easing]);
+  return value;
+};
+
+// Hero numbers strip with entrance animations. An IntersectionObserver
+// flips `active` once the strip scrolls into view (~35% visible) and
+// disconnects so the entrance only plays once per page load. Three
+// stats:
+//   - 1000+: counts 850 -> 1000 linearly, then "+" fades in.
+//   - 95%:   counts 50  -> 95  with ease-out so it slows toward 95.
+//   - 24/7:  "24" slides down from above, "7" slides up from below,
+//            with the divider fading in last.
+const HeroStats = () => {
+  const ref = useRef(null);
+  const [active, setActive] = useState(false);
+
+  useEffect(() => {
+    const node = ref.current;
+    if (!node || typeof IntersectionObserver === 'undefined') {
+      setActive(true);
+      return undefined;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            setActive(true);
+            observer.disconnect();
+            break;
+          }
+        }
+      },
+      { threshold: 0.35 },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  const students = useAnimatedCounter(active, 850, 1000, 1800, 'linear');
+  const accuracy = useAnimatedCounter(active, 50, 95, 2400, 'easeOut');
+  const studentsDone = students >= 1000;
+
+  return (
+    <div ref={ref} className="hero-stats">
+      <div className="stat">
+        <span className="stat-number">
+          {students}
+          <span className={`stat-plus${studentsDone ? ' is-shown' : ''}`}>+</span>
+        </span>
+        <span className="stat-label">Students Helped</span>
+      </div>
+      <div className="stat">
+        <span className="stat-number">
+          {accuracy}
+          <span className="stat-percent">%</span>
+        </span>
+        <span className="stat-label">Citation Accuracy</span>
+      </div>
+      <div className="stat">
+        <span
+          className={`stat-number stat-clock${active ? ' is-active' : ''}`}
+          aria-label="24 / 7 always available"
+        >
+          <span className="stat-clock-num stat-clock-num--top" aria-hidden="true">24</span>
+          <span className="stat-clock-divider" aria-hidden="true">/</span>
+          <span className="stat-clock-num stat-clock-num--bottom" aria-hidden="true">7</span>
+        </span>
+        <span className="stat-label">Always Available</span>
+      </div>
+    </div>
+  );
+};
 
 const MainPage = () => {
   const navigate = useNavigate();
@@ -246,20 +347,7 @@ const MainPage = () => {
               Try Demo
             </button>
           </div>
-          <div className="hero-stats">
-            <div className="stat">
-              <span className="stat-number">1000+</span>
-              <span className="stat-label">Students Helped</span>
-            </div>
-            <div className="stat">
-              <span className="stat-number">95%</span>
-              <span className="stat-label">Citation Accuracy</span>
-            </div>
-            <div className="stat">
-              <span className="stat-number">24/7</span>
-              <span className="stat-label">Always Available</span>
-            </div>
-          </div>
+          <HeroStats />
         </div>
       </section>
 

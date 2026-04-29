@@ -266,7 +266,10 @@
 
 /* Hero Section */
 .hero {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  /* Slightly darker / richer purple gradient. Same hue family as the
+     original (#667eea -> #764ba2) just pulled ~12-15% deeper so white
+     text reads with more contrast and the stats strip looks denser. */
+  background: linear-gradient(135deg, #5363cf 0%, #5a3879 100%);
   color: white;
   padding: 100px 20px;
   text-align: center;
@@ -417,12 +420,95 @@
 .stat-number {
   font-size: 40px;
   font-weight: 800;
+  /* Tabular figures keep digit width constant so the number doesn't
+     visibly jitter while it's counting up (e.g. 999 -> 1000). */
+  font-variant-numeric: tabular-nums;
+  display: inline-flex;
+  align-items: baseline;
 }
 
 .stat-label {
   font-size: 14px;
   opacity: 0.9;
   margin-top: 5px;
+}
+
+/* "+" suffix on the students counter -- hidden until the count
+   actually reaches 1000, then fades in for the final "1000+" reveal. */
+.stat-plus {
+  margin-left: 2px;
+  opacity: 0;
+  transition: opacity 0.45s ease;
+}
+.stat-plus.is-shown {
+  opacity: 1;
+}
+
+.stat-percent {
+  margin-left: 2px;
+}
+
+/* ── 24 / 7 sliding chip ─────────────────────────────────────────────────
+ * The whole stat-number is set up as an inline-flex line-height-1 box
+ * with `overflow: hidden`, so each digit can be pre-translated outside
+ * the box and then transition into place once `.is-active` is added:
+ *   .stat-clock-num--top   starts above (translateY(-110%)) -> slides DOWN
+ *   .stat-clock-num--bottom starts below (translateY(110%)) -> slides UP
+ *   the divider just fades in last, after both numbers settle.
+ * `prefers-reduced-motion` users get the final state instantly. */
+.stat-clock {
+  overflow: hidden;
+  line-height: 1;
+  gap: 2px;
+}
+
+.stat-clock-num,
+.stat-clock-divider {
+  display: inline-block;
+  opacity: 0;
+}
+
+.stat-clock-num--top {
+  transform: translateY(-110%);
+  transition:
+    transform 0.85s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.65s ease;
+}
+
+.stat-clock-num--bottom {
+  transform: translateY(110%);
+  transition:
+    transform 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.1s,
+    opacity 0.65s ease 0.1s;
+}
+
+.stat-clock-divider {
+  margin: 0 1px;
+  transition: opacity 0.5s ease 0.55s;
+}
+
+.stat-clock.is-active .stat-clock-num--top,
+.stat-clock.is-active .stat-clock-num--bottom {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.stat-clock.is-active .stat-clock-divider {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stat-clock-num--top,
+  .stat-clock-num--bottom,
+  .stat-clock-divider {
+    transform: none;
+    opacity: 1;
+    transition: none;
+  }
+  .stat-plus {
+    opacity: 1;
+    transition: none;
+  }
 }
 
 /* Features Section */
