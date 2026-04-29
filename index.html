@@ -2,11 +2,75 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#4E3D8C" />
+
+    <!-- Favicons. The .png covers everything modern; apple-touch-icon
+         is the home-screen tile on iOS. Update both whenever the brand
+         mark changes. -->
     <link rel="icon" type="image/png" href="/laboracle-logo.png" />
     <link rel="apple-touch-icon" href="/laboracle-logo.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Laboracle — Smart Learning Assistant</title>
-    <meta name="description" content="Laboracle — a safe, low-hallucination Q&A assistant for K12 students. Get accurate answers about your course curriculum with citations." />
+    <link rel="shortcut icon" type="image/png" href="/laboracle-logo.png" />
+
+    <!-- Primary SEO. The title and description shown directly in
+         Google's blue link + snippet line on the search results page.
+         Google caches these aggressively, so updates here only show
+         up after a fresh crawl (request one in Search Console). -->
+    <title>Laboracle — Smart AI Study & Research Assistant</title>
+    <meta
+      name="description"
+      content="Laboracle is an AI learning assistant for students and researchers. Ask questions about your uploaded notes and get accurate, cited answers backed by GPT-4o, Claude, and Gemini."
+    />
+    <meta
+      name="keywords"
+      content="Laboracle, AI study assistant, AI tutor, RAG, study notes, research assistant, citation, OpenAI GPT-4o, Claude, Gemini, university, students"
+    />
+    <meta name="author" content="Laboracle" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://laboracle.com/" />
+
+    <!-- Open Graph (Facebook, LinkedIn, WhatsApp, Slack link previews) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Laboracle" />
+    <meta property="og:title" content="Laboracle — Smart AI Study & Research Assistant" />
+    <meta
+      property="og:description"
+      content="Upload your notes, ask anything, and get cited answers from GPT-4o, Claude, and Gemini. Built for students and researchers."
+    />
+    <meta property="og:url" content="https://laboracle.com/" />
+    <meta property="og:image" content="https://laboracle.com/laboracle-logo.png" />
+    <meta property="og:image:alt" content="Laboracle logo" />
+    <meta property="og:locale" content="en_GB" />
+
+    <!-- X / Twitter card. summary_large_image gives the rich preview
+         when somebody pastes laboracle.com into a tweet. -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Laboracle — Smart AI Study & Research Assistant" />
+    <meta
+      name="twitter:description"
+      content="Upload your notes, ask anything, and get cited answers from GPT-4o, Claude, and Gemini."
+    />
+    <meta name="twitter:image" content="https://laboracle.com/laboracle-logo.png" />
+
+    <!-- Structured data so Google can show a rich result (logo, name,
+         search box) for "laboracle". JSON-LD is the format Google
+         prefers; keep one block per entity. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Laboracle",
+        "url": "https://laboracle.com/",
+        "description": "AI study and research assistant. Ask questions about your uploaded notes and get cited answers backed by GPT-4o, Claude, and Gemini.",
+        "publisher": {
+          "@type": "Organization",
+          "name": "Laboracle",
+          "url": "https://laboracle.com/",
+          "logo": "https://laboracle.com/laboracle-logo.png"
+        }
+      }
+    </script>
+
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <!-- Cloudflare Turnstile (signup CAPTCHA) -->

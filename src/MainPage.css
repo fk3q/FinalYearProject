@@ -89,24 +89,22 @@
   font-weight: 700;
   color: #667eea;
   cursor: pointer;
-  /* Same proportions as the chat sidebar's `.cp-brand-circle` (72px
-     disc with a 56px logo inside, ~78% of the disc) but scaled up
-     for the marketing nav so the mark reads at a glance. */
-  width: 96px;
-  height: 96px;
+  /* Compact navbar logo. Same 78% image-to-disc ratio as the chat
+     sidebar so the look stays consistent; the disc itself is just
+     scaled down so the navbar height drops to ~76px instead of 110+. */
+  width: 60px;
+  height: 60px;
 }
 
-/* Round white badge behind the logo image. The disc is the FULL size
-   of the container and the image sits comfortably inside it, so the
-   round shape is visible -- previously the image was bigger than the
-   disc and the white square corners made the whole thing read as a
-   square. */
+/* Round white badge behind the logo image. Disc is the FULL size of
+   the container so the circle shape is always visible; the image sits
+   comfortably inside it. */
 .logo-disc {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 96px;
-  height: 96px;
+  width: 60px;
+  height: 60px;
   transform: translate(-50%, -50%);
   border-radius: 50%;
   background: #fff;
@@ -118,11 +116,9 @@
 .logo-img {
   position: relative;
   z-index: 1;
-  /* 75 / 96 ≈ 78%, matching the 56 / 72 ratio used on the chat
-     sidebar so the visible white ring around the artwork looks
-     consistent across both surfaces. */
-  height: 75px;
-  width: 75px;
+  /* 47 / 60 ≈ 78%, matching the 56 / 72 ratio on the chat sidebar. */
+  height: 47px;
+  width: 47px;
   display: block;
   object-fit: contain;
 }
@@ -140,11 +136,11 @@
      up past the top of the navbar so the trail fades naturally. We
      keep overflow hidden so bubbles never spill into the page below
      the bar. */
-  top: -16px;
-  bottom: -8px;
+  top: -10px;
+  bottom: -6px;
   left: 50%;
   transform: translateX(-50%);
-  width: 96px;
+  width: 64px;
   pointer-events: none;
   overflow: hidden;
   z-index: 2;

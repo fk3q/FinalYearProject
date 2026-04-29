@@ -1,0 +1,10 @@
+# Allow all reputable crawlers to index Laboracle's public pages.
+# Authenticated routes (`/chat`, `/admin`) require login so they
+# render an empty shell to crawlers anyway -- no need to block them
+# explicitly, but we keep the API path off-limits since it returns
+# JSON and would just clutter the index.
+User-agent: *
+Allow: /
+Disallow: /api/
+
+Sitemap: https://laboracle.com/sitemap.xml
