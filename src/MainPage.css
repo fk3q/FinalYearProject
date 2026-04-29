@@ -282,6 +282,13 @@
 .hero {
   position: relative;
   overflow: hidden;
+  /* `isolation: isolate` forces .hero to create its own stacking
+     context so children with negative z-index (the right-anchored
+     video panel at z-index: -1) stay trapped inside .hero --
+     above the gradient background but below the .hero::before /
+     .hero::after glass overlays. Without this, z-index:-1 children
+     slip behind .hero entirely and become invisible. */
+  isolation: isolate;
   /* Tuned to match the violet that's baked into the companion
      video clip -- sits between the original dark indigo->plum
      (#4a5ac0 -> #4f3072) and the previous over-light pass
