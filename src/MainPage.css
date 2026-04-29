@@ -22,17 +22,26 @@
  *
  * Brand colors are unchanged — text + buttons keep their indigo/purple. */
 .header {
-  /* Slightly indigo-tinted off-white at 78% opacity. Even when the body
-     behind the navbar is plain white (i.e. at scroll-position 0), the
-     bar still reads as "cool / cooler than pure white" so the
-     translucency is obvious before the user scrolls. As soon as the
-     user scrolls and the purple hero passes underneath, the colour
-     blooms through the glass via the backdrop-filter below. */
-  background: rgba(247, 248, 255, 0.78);
-  -webkit-backdrop-filter: blur(14px) saturate(180%);
-  backdrop-filter: blur(14px) saturate(180%);
-  border-bottom: 1px solid rgba(102, 126, 234, 0.16);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 6px 20px -10px rgba(102, 126, 234, 0.22);
+  /* Indigo-tinted glass that's *clearly* different from solid white,
+     even at scroll-position 0. As the user scrolls, backdrop-filter
+     also pulls the colour of whatever's behind the navbar (purple
+     hero, dark bento cards, etc.) through the glass for the full
+     frosted-pane effect. We layer a faint vertical gradient on top of
+     the tinted base so the bar always reads as a bevelled translucent
+     panel rather than a flat fill. */
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.55) 0%,
+      rgba(102, 126, 234, 0.1) 100%
+    ),
+    rgba(232, 236, 255, 0.78);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  backdrop-filter: blur(16px) saturate(180%);
+  border-bottom: 1px solid rgba(102, 126, 234, 0.28);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 8px 24px -10px rgba(102, 126, 234, 0.3);
   position: sticky;
   top: 0;
   z-index: 1000;
@@ -45,7 +54,13 @@
   (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))
 ) {
   .header {
-    background: rgba(247, 248, 255, 0.97);
+    background:
+      linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.7) 0%,
+        rgba(102, 126, 234, 0.12) 100%
+      ),
+      rgba(232, 236, 255, 0.97);
   }
 }
 
