@@ -45,7 +45,10 @@ from app.services import (
     user_service,
     voice_service,
 )
-from app.services.document_service import MAX_UPLOAD_BYTES
+from app.services.document_service import (
+    MAX_UPLOAD_BYTES,
+    get_upload_limit_for_tier,
+)
 from app.services.voice_service import MAX_AUDIO_BYTES
 
 
@@ -163,16 +166,22 @@ async def upload_document(
     metadata tagged to the bearer-token user so only they can query it later.
     """
     # Cheap pre-check based on the request header so a multi-GB upload is
-    # rejected before we buffer any of it. The streaming reader inside
-    # DocumentService still enforces the same cap as a backstop in case a
-    # client lies about Content-Length.
+    # rejected before we buffer any of it. We use the per-tier soft cap here
+    # so Advanced subscribers can upload bigger files than Free users; the
+    # streaming reader inside DocumentService still re-enforces the global
+    # MAX_UPLOAD_BYTES ceiling as a backstop in case a client lies about
+    # Content-Length.
+    user_tier = (current_user.get("subscription_tier") or "free").strip().lower()
+    tier_limit_bytes = get_upload_limit_for_tier(user_tier)
     content_length = request.headers.get("content-length")
-    if content_length and content_length.isdigit() and int(content_length) > MAX_UPLOAD_BYTES:
+    if content_length and content_length.isdigit() and int(content_length) > tier_limit_bytes:
+        tier_label = user_tier.capitalize() or "Free"
         raise HTTPException(
             status_code=413,
             detail=(
-                f"File too large. Maximum allowed is "
-                f"{MAX_UPLOAD_BYTES // (1024 * 1024)} MB."
+                f"File too large. {tier_label} plan uploads are capped at "
+                f"{tier_limit_bytes // (1024 * 1024)} MB. Upgrade your plan "
+                f"for higher per-file limits."
             ),
         )
 

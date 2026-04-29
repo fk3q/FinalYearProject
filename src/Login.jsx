@@ -30,6 +30,14 @@ const Login = () => {
         saveSessionUser(data.user);
         if (data.user.theme) applyTheme(data.user.theme);
       }
+      // One-shot flag: tells ChatPage to play the AI-modes flash-card
+      // walkthrough right after the cinematic intro video closes.
+      // ChatPage clears the flag on mount so a refresh doesn't replay.
+      try {
+        sessionStorage.setItem("laboracle_show_modes_intro", "1");
+      } catch {
+        /* private mode / disabled storage -- silently skip the tour */
+      }
       // Land returning users straight in the chat workspace; the
       // ChatPage mount triggers the cinematic intro on every visit.
       // Account / billing / settings remain accessible from the chat

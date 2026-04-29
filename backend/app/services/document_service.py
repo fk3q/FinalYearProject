@@ -32,9 +32,30 @@ FAISS_DIR      = os.path.join(os.path.dirname(__file__), '../../faiss_store')
 FAISS_INDEX    = os.path.join(FAISS_DIR, 'index')          # FAISS saves index.faiss / index.pkl
 METADATA_FILE  = os.path.join(FAISS_DIR, 'metadata.json')  # per-chunk metadata
 
-# Hard upload cap. Prevents memory bombs and runaway OpenAI embedding bills.
-# 25 MB matches what most "free" plan tiers allow for a single document.
-MAX_UPLOAD_BYTES = 25 * 1024 * 1024  # 25 MB
+# Hard upload ceiling shared by every tier. Acts as a backstop so a malicious
+# client cannot trick us into buffering a multi-GB body even if they spoof
+# their tier. Per-tier soft limits live in `get_upload_limit_for_tier()` and
+# are enforced at the route layer before we buffer any bytes.
+MAX_UPLOAD_BYTES = 100 * 1024 * 1024  # 100 MB
+
+# Per-tier upload size caps. The router consults these BEFORE accepting the
+# request; the streaming reader still re-enforces MAX_UPLOAD_BYTES below.
+# Keep these in sync with the user-facing copy on the pricing page.
+_TIER_UPLOAD_LIMITS_MB = {
+    "free":     25,
+    "regular":  50,
+    "advanced": 100,
+}
+
+
+def get_upload_limit_for_tier(tier: Optional[str]) -> int:
+    """
+    Return the byte limit allowed for a single upload at the given tier.
+    Unknown / missing tiers fall back to the free-tier cap.
+    """
+    key = (tier or "free").strip().lower()
+    mb = _TIER_UPLOAD_LIMITS_MB.get(key, _TIER_UPLOAD_LIMITS_MB["free"])
+    return mb * 1024 * 1024
 
 
 def load_all_document_metadata() -> List[Dict[str, Any]]:

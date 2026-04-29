@@ -1,0 +1,562 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Laboracle — Tech Stack, Tools & Pipelines</title>
+<style>
+  :root {
+    --fg: #1a1a1a;
+    --fg-2: #444;
+    --fg-3: #6b6b6b;
+    --bg: #ffffff;
+    --bg-2: #f6f6f8;
+    --bg-3: #efeff3;
+    --accent: #4E3D8C;
+    --accent-2: #6f5cc7;
+    --border: #d8d8df;
+    --border-strong: #b8b8c2;
+    --info-bg: #eef0fb;
+    --info-border: #c6c8e6;
+    --success-bg: #e9f5ee;
+    --success-border: #b9dcc6;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 12pt;
+    line-height: 1.45;
+  }
+  body { padding: 28pt 32pt; }
+  h1 {
+    font-size: 22pt;
+    margin: 0 0 4pt 0;
+    color: var(--accent);
+    letter-spacing: -0.2px;
+  }
+  h2 {
+    font-size: 15pt;
+    margin: 22pt 0 8pt 0;
+    color: var(--fg);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 4pt;
+  }
+  h3 {
+    font-size: 12pt;
+    margin: 14pt 0 6pt 0;
+    color: var(--fg-2);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+  }
+  p { margin: 0 0 8pt 0; color: var(--fg-2); }
+  .lead { color: var(--fg-3); margin-bottom: 14pt; }
+  code, .code {
+    font-family: "Consolas", "Menlo", "Courier New", monospace;
+    font-size: 0.92em;
+    background: var(--bg-3);
+    padding: 0 4pt;
+    border-radius: 3px;
+  }
+  ul { margin: 0 0 8pt 16pt; padding: 0; }
+  li { margin: 2pt 0; }
+
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8pt;
+    margin: 12pt 0 16pt 0;
+  }
+  .stat {
+    border: 1px solid var(--border);
+    padding: 10pt;
+    text-align: left;
+  }
+  .stat .v {
+    font-size: 18pt;
+    font-weight: 600;
+    color: var(--accent);
+  }
+  .stat .l {
+    font-size: 9.5pt;
+    color: var(--fg-3);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 2pt;
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 6pt 0 10pt 0;
+    font-size: 10.5pt;
+  }
+  th, td {
+    border: 1px solid var(--border);
+    padding: 6pt 8pt;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background: var(--bg-2);
+    color: var(--fg-2);
+    font-weight: 600;
+    font-size: 10pt;
+  }
+  tr:nth-child(even) td { background: #fafafd; }
+
+  .phase-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10pt;
+    margin: 8pt 0 14pt 0;
+  }
+  .phase {
+    border: 1px solid var(--border);
+    padding: 10pt 12pt;
+    page-break-inside: avoid;
+  }
+  .phase .head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6pt;
+  }
+  .phase .head .title {
+    font-weight: 600;
+    color: var(--fg);
+    font-size: 11pt;
+  }
+  .phase .head .pill {
+    background: var(--accent);
+    color: white;
+    padding: 1pt 6pt;
+    border-radius: 999px;
+    font-size: 9pt;
+    letter-spacing: 0.4px;
+  }
+  .phase .body { color: var(--fg-2); font-size: 10.5pt; margin-bottom: 4pt; }
+  .phase .out { color: var(--fg-3); font-size: 10pt; font-style: italic; }
+
+  .service-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8pt;
+  }
+  .service {
+    border: 1px solid var(--border);
+    padding: 8pt 10pt;
+    page-break-inside: avoid;
+  }
+  .service .name {
+    font-family: "Consolas", "Menlo", "Courier New", monospace;
+    font-size: 10pt;
+    font-weight: 600;
+    color: var(--fg);
+    margin-bottom: 3pt;
+  }
+  .service .desc { font-size: 9.5pt; color: var(--fg-3); }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14pt;
+    margin: 8pt 0;
+  }
+  .panel {
+    border: 1px solid var(--border);
+    padding: 10pt 12pt;
+    page-break-inside: avoid;
+  }
+  .panel .ph {
+    font-weight: 600;
+    color: var(--fg);
+    font-size: 11pt;
+    margin-bottom: 6pt;
+  }
+
+  .callout {
+    border: 1px solid var(--info-border);
+    background: var(--info-bg);
+    padding: 10pt 12pt;
+    margin: 10pt 0;
+    page-break-inside: avoid;
+  }
+  .callout.success {
+    border-color: var(--success-border);
+    background: var(--success-bg);
+  }
+  .callout .title { font-weight: 600; margin-bottom: 4pt; }
+
+  /* Page break controls for printing */
+  .page-break { page-break-before: always; }
+  table, .phase, .service, .panel, .callout { page-break-inside: avoid; }
+
+  @media print {
+    body { padding: 14mm 14mm; font-size: 10.5pt; }
+    h1 { font-size: 20pt; }
+    h2 { font-size: 14pt; }
+    .stat-grid { grid-template-columns: repeat(6, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<h1>Laboracle — Tech Stack, Tools &amp; Pipelines</h1>
+<p class="lead">
+  Full architecture inventory from day one to today: every framework, library,
+  service, table, pipeline, and feature, with the user-facing benefit each one
+  delivers.
+</p>
+
+<div class="stat-grid">
+  <div class="stat"><div class="v">2</div><div class="l">Top-level apps</div></div>
+  <div class="stat"><div class="v">11</div><div class="l">MySQL tables</div></div>
+  <div class="stat"><div class="v">5</div><div class="l">LLM models</div></div>
+  <div class="stat"><div class="v">4</div><div class="l">AI modes</div></div>
+  <div class="stat"><div class="v">3</div><div class="l">OAuth providers</div></div>
+  <div class="stat"><div class="v">3</div><div class="l">Subscription tiers</div></div>
+</div>
+
+<h2>Project journey, in order</h2>
+<p>How the codebase grew from a single FastAPI prototype into the current
+multi-provider, multi-mode, subscription-gated platform.</p>
+
+<div class="phase-grid">
+  <div class="phase">
+    <div class="head"><div class="title">Foundation — Q&amp;A on documents</div><div class="pill">Phase 1</div></div>
+    <div class="body">FastAPI backend, React + Vite frontend, single OpenAI model (GPT-4o), FAISS vector store, RAG pipeline with <code>text-embedding-3-small</code>.</div>
+    <div class="out">Outcome: students upload PDFs/DOCX/TXT and get cited answers.</div>
+  </div>
+  <div class="phase">
+    <div class="head"><div class="title">Accounts, sessions, deployment</div><div class="pill">Phase 2</div></div>
+    <div class="body">MySQL 8 user accounts, bcrypt passwords, bearer-token sessions, Docker Compose + AWS EC2 + nginx, phpMyAdmin for ops.</div>
+    <div class="out">Outcome: real users, persistent chat history, production deploy.</div>
+  </div>
+  <div class="phase">
+    <div class="head"><div class="title">Payments &amp; tiers</div><div class="pill">Phase 3</div></div>
+    <div class="body">Stripe Checkout + Customer Portal + webhooks, Free / Regular / Advanced tiers, monthly quotas for chat, uploads, and voice.</div>
+    <div class="out">Outcome: monetisation, usage governance, upgrade path.</div>
+  </div>
+  <div class="phase">
+    <div class="head"><div class="title">Auth providers &amp; safety</div><div class="pill">Phase 4</div></div>
+    <div class="body">Google / Facebook / Microsoft Sign-In, Cloudflare Turnstile CAPTCHA, slowapi rate limiting, password reset emails, IDOR hardening, file-size and MIME guards.</div>
+    <div class="out">Outcome: lower signup friction, abuse protection.</div>
+  </div>
+  <div class="phase">
+    <div class="head"><div class="title">Admin dashboard</div><div class="pill">Phase 5</div></div>
+    <div class="body">Card-based dashboard with KPI strip, charts (signups, MRR, tier mix), user table with search &amp; ban, AdGuard-proof CSS class names (<code>.adm-*</code>).</div>
+    <div class="out">Outcome: ops visibility without a third-party BI tool.</div>
+  </div>
+  <div class="phase">
+    <div class="head"><div class="title">Visual identity</div><div class="pill">Phase 6</div></div>
+    <div class="body">Sticky frosted-glass navbar, hero with cyberpunk companion video on solid <code>#4E3D8C</code>, animated counters, conveyor-belt "How It Works" cards, bento-grid features, mouse-fleeing dot motif on auth.</div>
+    <div class="out">Outcome: a marketing front page that actually converts.</div>
+  </div>
+  <div class="phase">
+    <div class="head"><div class="title">Voice input</div><div class="pill">Phase 7</div></div>
+    <div class="body">Browser MediaRecorder → multipart upload → OpenAI Whisper → transcript fills the chat box. Per-tier monthly transcription quota.</div>
+    <div class="out">Outcome: hands-free Q&amp;A, accessibility, faster long prompts.</div>
+  </div>
+  <div class="phase">
+    <div class="head"><div class="title">Multi-provider LLM</div><div class="pill">Phase 8</div></div>
+    <div class="body">Provider-agnostic registry (OpenAI / Anthropic / Google), tier-gated picker, graceful degradation when keys are missing, Cursor-style dropdown with locked-state hints.</div>
+    <div class="out">Outcome: students pick the right brain for the job.</div>
+  </div>
+  <div class="phase">
+    <div class="head"><div class="title">Notifications &amp; reminders</div><div class="pill">Phase 9</div></div>
+    <div class="body">APScheduler cron (Mon + Thu 09:00 UTC), HTML email + in-app bell with unread badge, opt-out preferences, idempotent multi-worker lock.</div>
+    <div class="out">Outcome: re-engagement and upgrade nudges without spam.</div>
+  </div>
+  <div class="phase">
+    <div class="head"><div class="title">Test &amp; Research modes + clearer trust signals</div><div class="pill">Phase 10</div></div>
+    <div class="body">Two new AI modes (quiz me / research synthesis), revamped confidence heuristic with bail-phrase detection, page-level citations, X icon, refreshed feature bento.</div>
+    <div class="out">Outcome: turns a chatbot into a study + research toolkit.</div>
+  </div>
+</div>
+
+<h2>Frontend stack</h2>
+<table>
+  <thead><tr><th>Tool / library</th><th>Where it lives</th><th>What it does for users</th></tr></thead>
+  <tbody>
+    <tr><td>React 18</td><td>src/*.jsx</td><td>Component model behind every page and widget.</td></tr>
+    <tr><td>Vite 5</td><td>vite.config.js</td><td>Instant dev reload, optimised production bundle.</td></tr>
+    <tr><td>React Router 6</td><td>src/App.jsx</td><td>Client-side routing — no full page reloads when navigating.</td></tr>
+    <tr><td>Bootstrap 5 + react-bootstrap</td><td>Profile, Auth pages</td><td>Form layouts and modals for account flows.</td></tr>
+    <tr><td>lucide-react</td><td>icons everywhere</td><td>Consistent line icons; replaced with custom SVG for brand marks.</td></tr>
+    <tr><td>Custom SVG (SocialIcons)</td><td>src/components/SocialIcons.jsx</td><td>Stable Instagram / LinkedIn / GitHub / X icons unaffected by lib changes.</td></tr>
+    <tr><td>@azure/msal-browser</td><td>MicrosoftSignInButton.jsx</td><td>Microsoft Sign-In popup flow.</td></tr>
+    <tr><td>Google Identity Services</td><td>GoogleSignInButton.jsx</td><td>One-tap Google login.</td></tr>
+    <tr><td>Facebook SDK</td><td>FacebookSignInButton.jsx</td><td>Facebook OAuth login.</td></tr>
+    <tr><td>Stripe.js (Checkout redirect)</td><td>ProfilePage.jsx</td><td>PCI-safe upgrade flow without handling card data ourselves.</td></tr>
+    <tr><td>MediaRecorder API</td><td>ChatPage.jsx</td><td>Records mic audio in the browser for voice input.</td></tr>
+    <tr><td>sessionStorage</td><td>useModels.js, theme</td><td>Remembers picked model and theme across reloads.</td></tr>
+    <tr><td>Custom CSS animation</td><td>MainPage.css, ChatPage.css</td><td>Frosted navbar, conveyor belts, fleeing dots, glow CTA, animated counters.</td></tr>
+  </tbody>
+</table>
+
+<h3>Frontend pages</h3>
+<table>
+  <thead><tr><th>Page</th><th>Purpose</th></tr></thead>
+  <tbody>
+    <tr><td>MainPage.jsx</td><td>Marketing front page — hero, features, footer.</td></tr>
+    <tr><td>Login.jsx / Signup.jsx</td><td>Auth with email/password + 3 OAuth providers, Turnstile captcha.</td></tr>
+    <tr><td>ForgotPassword.jsx</td><td>Email-code password reset.</td></tr>
+    <tr><td>ChatPage.jsx</td><td>Core RAG chat with mode picker, model picker, voice, citations.</td></tr>
+    <tr><td>UploadPage.jsx</td><td>Drag-and-drop document upload.</td></tr>
+    <tr><td>ProfilePage.jsx</td><td>Plan, usage meters, billing portal, upgrade CTA, account.</td></tr>
+    <tr><td>PaymentReturn.jsx</td><td>Stripe success/cancel landing page.</td></tr>
+    <tr><td>AdminLogin.jsx / AdminDashboard.jsx</td><td>Operator console — KPIs, charts, user search, ban.</td></tr>
+  </tbody>
+</table>
+
+<h2>Backend stack</h2>
+<table>
+  <thead><tr><th>Tool / library</th><th>Version</th><th>What it does for users</th></tr></thead>
+  <tbody>
+    <tr><td>FastAPI</td><td>0.109.0</td><td>Async HTTP API serving every chat / upload / auth call.</td></tr>
+    <tr><td>Uvicorn</td><td>0.27.0</td><td>ASGI process running FastAPI in the Docker container.</td></tr>
+    <tr><td>Pydantic + pydantic-settings</td><td>2.9 / 2.5</td><td>Request/response validation, typed env config.</td></tr>
+    <tr><td>python-multipart</td><td>0.0.6</td><td>File and audio upload parsing.</td></tr>
+    <tr><td>LangChain</td><td>0.2.16</td><td>Glue between docs, embeddings, vector store, and LLMs.</td></tr>
+    <tr><td>langchain-openai / -anthropic / -google-genai</td><td>0.1.x</td><td>Provider clients used by the LLM registry.</td></tr>
+    <tr><td>FAISS-cpu</td><td>1.8.0</td><td>Per-user vector index for fast semantic search over uploads.</td></tr>
+    <tr><td>pypdf, docx2txt, TextLoader</td><td>—</td><td>PDF / Word / TXT parsing for the upload pipeline.</td></tr>
+    <tr><td>tiktoken</td><td>0.7.0</td><td>Counts tokens before each LLM call, prevents context overflow.</td></tr>
+    <tr><td>numpy</td><td>1.26.4</td><td>Backbone for FAISS vectors and similarity math.</td></tr>
+    <tr><td>PyMySQL + cryptography</td><td>1.1 / 42.0</td><td>MySQL 8 driver with caching_sha2_password support.</td></tr>
+    <tr><td>bcrypt</td><td>4.1.2</td><td>Password hashing for email/password accounts.</td></tr>
+    <tr><td>PyJWT[crypto]</td><td>2.9</td><td>Verifies Microsoft ID tokens against Microsoft's JWKS.</td></tr>
+    <tr><td>google-auth</td><td>2.36</td><td>Verifies Google Sign-In ID tokens.</td></tr>
+    <tr><td>stripe</td><td>9.11</td><td>Subscription, customer, webhook, and portal calls.</td></tr>
+    <tr><td>slowapi</td><td>0.1.9</td><td>Per-IP rate limits on auth and chat endpoints.</td></tr>
+    <tr><td>APScheduler</td><td>3.10.4</td><td>Cron triggers for the bi-weekly reminder fan-out.</td></tr>
+    <tr><td>httpx</td><td>0.27.2</td><td>Async HTTP client used by SDKs and OAuth verification.</td></tr>
+    <tr><td>python-dotenv</td><td>1.0.0</td><td>Loads backend/.env in dev and inside the container.</td></tr>
+  </tbody>
+</table>
+
+<h3>Backend services (one file each, single responsibility)</h3>
+<div class="service-grid">
+  <div class="service"><div class="name">chat_service.py</div><div class="desc">RAG pipeline — retrieval, prompt build, LLM dispatch, confidence, citations.</div></div>
+  <div class="service"><div class="name">document_service.py</div><div class="desc">Upload → chunk → embed → FAISS write.</div></div>
+  <div class="service"><div class="name">chat_history_service.py</div><div class="desc">Persists sessions and messages to MySQL.</div></div>
+  <div class="service"><div class="name">user_service.py</div><div class="desc">Email/password signup, lookup, profile updates.</div></div>
+  <div class="service"><div class="name">session_service.py</div><div class="desc">Bearer token issue / verify / revoke.</div></div>
+  <div class="service"><div class="name">password_reset_service.py</div><div class="desc">Reset code email + verification.</div></div>
+  <div class="service"><div class="name">google_oauth_service.py</div><div class="desc">Google ID-token verification + auto-signup.</div></div>
+  <div class="service"><div class="name">facebook_oauth_service.py</div><div class="desc">Facebook OAuth code exchange + auto-signup.</div></div>
+  <div class="service"><div class="name">microsoft_oauth_service.py</div><div class="desc">Microsoft ID-token JWKS verification.</div></div>
+  <div class="service"><div class="name">captcha_service.py</div><div class="desc">Cloudflare Turnstile token verification.</div></div>
+  <div class="service"><div class="name">payment_service.py</div><div class="desc">Stripe Checkout / Portal / webhooks / tier flips.</div></div>
+  <div class="service"><div class="name">quota_service.py</div><div class="desc">Monthly counters: chat, uploads, voice.</div></div>
+  <div class="service"><div class="name">voice_service.py</div><div class="desc">Whisper transcription with size + MIME guards.</div></div>
+  <div class="service"><div class="name">email_service.py</div><div class="desc">SMTP wrapper used for resets, receipts, reminders.</div></div>
+  <div class="service"><div class="name">notification_service.py</div><div class="desc">In-app notifications + preferences CRUD.</div></div>
+  <div class="service"><div class="name">reminder_scheduler.py</div><div class="desc">APScheduler cron fan-out (study + upgrade).</div></div>
+  <div class="service"><div class="name">reminder_templates.py</div><div class="desc">HTML + plaintext bodies for reminders.</div></div>
+  <div class="service"><div class="name">admin_service.py</div><div class="desc">Admin dashboard queries + user management.</div></div>
+  <div class="service"><div class="name">llm/registry.py</div><div class="desc">Source of truth for model catalog, tier gating, key checks.</div></div>
+</div>
+
+<h2>AI / ML stack</h2>
+<p>Five chat models behind one provider-agnostic interface, plus Whisper for
+voice and OpenAI embeddings for retrieval.</p>
+<table>
+  <thead><tr><th>Model</th><th>Provider</th><th>Tier</th><th>Role</th><th>User benefit</th></tr></thead>
+  <tbody>
+    <tr><td>GPT-4o</td><td>OpenAI</td><td>Free</td><td>Default chat brain</td><td>Fast, capable answers for everyday Q&amp;A.</td></tr>
+    <tr><td>GPT-5</td><td>OpenAI</td><td>Advanced</td><td>Top-tier reasoning</td><td>Hardest research and synthesis questions.</td></tr>
+    <tr><td>Claude Opus 4.7</td><td>Anthropic</td><td>Advanced</td><td>Long-context / nuance</td><td>Careful reasoning over big documents.</td></tr>
+    <tr><td>Claude Sonnet 4.6</td><td>Anthropic</td><td>Regular</td><td>Balanced workhorse</td><td>Quality close to Opus, cheaper response.</td></tr>
+    <tr><td>Gemini 2.5 Pro</td><td>Google</td><td>Free</td><td>Free-tier alt brain</td><td>Strong free option when OpenAI is rate-limited.</td></tr>
+    <tr><td>Whisper (whisper-1)</td><td>OpenAI</td><td>Free → Advanced</td><td>Speech-to-text</td><td>Voice input → text in the chat box.</td></tr>
+    <tr><td>text-embedding-3-small</td><td>OpenAI</td><td>All tiers</td><td>Doc embeddings</td><td>Powers semantic search inside uploads.</td></tr>
+  </tbody>
+</table>
+
+<div class="callout">
+  <div class="title">How tier gating works</div>
+  The catalog in <code>app/services/llm/registry.py</code> marks every model
+  with a <code>min_tier</code> and a provider key. The
+  <code>/api/models</code> endpoint returns the full list to every user with
+  <code>available</code> + <code>locked_reason</code>, so locked models stay
+  visible (greyed out) and act as built-in upsells.
+</div>
+
+<h2>Data layer</h2>
+<div class="two-col">
+  <div class="panel">
+    <div class="ph">MySQL 8.0 (relational state)</div>
+    <table>
+      <thead><tr><th>Table</th><th>What it stores</th></tr></thead>
+      <tbody>
+        <tr><td>users</td><td>Account, password hash, tier, OAuth provider link.</td></tr>
+        <tr><td>user_sessions</td><td>Bearer tokens, last-seen, expiry.</td></tr>
+        <tr><td>admin_sessions</td><td>Operator login tokens (DB-backed, not in-memory).</td></tr>
+        <tr><td>password_reset_codes</td><td>Time-boxed reset codes.</td></tr>
+        <tr><td>chat_sessions</td><td>Per-user conversation threads.</td></tr>
+        <tr><td>chat_messages</td><td>Every Q/A turn with model, mode, citations.</td></tr>
+        <tr><td>user_usage_daily</td><td>Per-day rollups for the admin charts.</td></tr>
+        <tr><td>user_quota_usage</td><td>Per-month chat / upload / voice counters.</td></tr>
+        <tr><td>notifications</td><td>In-app bell items with kind, title, link, read_at.</td></tr>
+        <tr><td>notification_preferences</td><td>User opt-outs for study + upgrade emails.</td></tr>
+        <tr><td>reminder_runs</td><td>Idempotent lock so multi-worker deploys don't double-send.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="panel">
+    <div class="ph">FAISS (vector state)</div>
+    <p>One FAISS index per user under <code>backend/faiss_store/</code>,
+    persisted via the <code>faiss_data</code> Docker volume so uploads
+    survive container restarts.</p>
+    <p>Stores 1536-dim embeddings of every uploaded chunk, with the source
+    filename, page number, and original passage attached as metadata so
+    citations point at "page X" instead of "chunk 42".</p>
+    <h3>File storage</h3>
+    <p>Raw uploads live alongside the FAISS volume, isolated per user so
+    <code>document_service.py</code> can rebuild the index on demand.</p>
+  </div>
+</div>
+
+<h2>Pipelines</h2>
+<p>Each major user action is implemented as a documented pipeline with guard
+rails.</p>
+<div class="phase-grid">
+  <div class="phase">
+    <div class="head"><div class="title">RAG query pipeline</div></div>
+    <div class="body">request → auth check → quota check → mode dispatch → embed query → FAISS top-K → build prompt with grounding → call selected LLM via registry → calculate confidence → format page-level citations → save to <code>chat_messages</code> → respond.</div>
+    <div class="out">Benefit: low-hallucination answers with the page they came from.</div>
+  </div>
+  <div class="phase">
+    <div class="head"><div class="title">Document upload pipeline</div></div>
+    <div class="body">upload → MIME + size guard (<code>MAX_UPLOAD_BYTES</code>) → loader (pypdf / docx2txt / text) → chunk (<code>CHUNK_SIZE / CHUNK_OVERLAP</code>) → embed (<code>text-embedding-3-small</code>) → write to per-user FAISS index → bump quota counter.</div>
+    <div class="out">Benefit: students can drop in lecture notes and start asking.</div>
+  </div>
+  <div class="phase">
+    <div class="head"><div class="title">Voice input pipeline</div></div>
+    <div class="body">MediaRecorder blob → multipart POST <code>/api/voice/transcribe</code> → <code>MAX_AUDIO_BYTES</code> guard → MIME whitelist → AsyncOpenAI Whisper → transcript JSON → fills the chat input → quota counter bump.</div>
+    <div class="out">Benefit: hands-free, accessibility-friendly Q&amp;A.</div>
+  </div>
+  <div class="phase">
+    <div class="head"><div class="title">Auth pipeline</div></div>
+    <div class="body">signup form → Turnstile verify → bcrypt hash → users row → bearer token → session row → response. OAuth variant: ID-token verify → upsert user → same session issuance.</div>
+    <div class="out">Benefit: low-friction signup, abuse protection, single token everywhere.</div>
+  </div>
+  <div class="phase">
+    <div class="head"><div class="title">Payment pipeline</div></div>
+    <div class="body">upgrade click → backend creates Stripe Checkout session → redirect → Stripe webhook → update tier on <code>users</code> row → reset quotas. Customer Portal link for self-service downgrade / cancel / payment update.</div>
+    <div class="out">Benefit: PCI-safe upgrades, no card data ever hits our servers.</div>
+  </div>
+  <div class="phase">
+    <div class="head"><div class="title">Reminder pipeline</div></div>
+    <div class="body">APScheduler cron (Mon + Thu 09:00 UTC) → <code>claim_run()</code> on <code>reminder_runs</code> → paginate users → respect <code>notification_preferences</code> → SMTP HTML email + insert into <code>notifications</code> → <code>mark_run_finished</code>.</div>
+    <div class="out">Benefit: gentle re-engagement + Advanced upsell, never duplicated.</div>
+  </div>
+</div>
+
+<h2>Auth, security &amp; infra</h2>
+<div class="two-col">
+  <div class="panel">
+    <div class="ph">Auth &amp; security</div>
+    <table>
+      <thead><tr><th>Layer</th><th>User benefit</th></tr></thead>
+      <tbody>
+        <tr><td>bcrypt password hashing</td><td>Compromised DB ≠ compromised passwords.</td></tr>
+        <tr><td>Bearer-token sessions in MySQL</td><td>Sign out on one device kills only that token.</td></tr>
+        <tr><td>Google / Facebook / Microsoft OAuth</td><td>Skip password hassle, faster signup.</td></tr>
+        <tr><td>Cloudflare Turnstile CAPTCHA</td><td>Blocks bot signups without captcha pain.</td></tr>
+        <tr><td>slowapi rate limiting</td><td>Per-IP throttling on auth + chat = spam shield.</td></tr>
+        <tr><td>MAX_UPLOAD_BYTES + MAX_AUDIO_BYTES</td><td>Stops giant uploads from degrading service.</td></tr>
+        <tr><td>IDOR-hardened admin queries</td><td>Operators can't read another user's data accidentally.</td></tr>
+        <tr><td>AdGuard-proof admin CSS classnames (.adm-*)</td><td>Dashboard renders even with ad blockers.</td></tr>
+        <tr><td>Strong password policy + phone validation</td><td>Common-password rejection at signup.</td></tr>
+        <tr><td>Per-user FAISS isolation</td><td>One student never sees another's documents.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="panel">
+    <div class="ph">Infrastructure</div>
+    <table>
+      <thead><tr><th>Component</th><th>Role</th></tr></thead>
+      <tbody>
+        <tr><td>AWS EC2</td><td>Single VM hosting docker compose.</td></tr>
+        <tr><td>Docker + docker-compose</td><td>Reproducible 4-service stack.</td></tr>
+        <tr><td>MySQL 8 container</td><td>Persistent state, healthchecked.</td></tr>
+        <tr><td>phpMyAdmin container</td><td>Browser DB admin (port 8080).</td></tr>
+        <tr><td>FastAPI backend container</td><td>Healthchecked on /health.</td></tr>
+        <tr><td>nginx + React frontend container</td><td>Static SPA + same-origin /api proxy.</td></tr>
+        <tr><td>faiss_data + mysql_data volumes</td><td>Survive rebuilds and container restarts.</td></tr>
+        <tr><td>env_file + per-service env vars</td><td>Secrets out of git, reusable across envs.</td></tr>
+        <tr><td>Git + GitHub</td><td>Source of truth, branch-based deploy.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<h2>User-facing features</h2>
+<table>
+  <thead><tr><th>Feature</th><th>Tier</th><th>User benefit</th></tr></thead>
+  <tbody>
+    <tr><td>Document Q&amp;A with citations</td><td>All</td><td>Get the answer + the page it came from.</td></tr>
+    <tr><td>Deterministic AI mode</td><td>All</td><td>Strict, no-hallucination answers from your docs.</td></tr>
+    <tr><td>Exploratory AI mode</td><td>All</td><td>Grounded answer + broader context, even with no uploads.</td></tr>
+    <tr><td>Test mode (quizzes from docs)</td><td>All</td><td>Self-quiz with MCQ / short-answer / true-false.</td></tr>
+    <tr><td>Research mode (academic synthesis)</td><td>All</td><td>Structured notes and inline citations for university work.</td></tr>
+    <tr><td>Multi-model picker</td><td>All (gated)</td><td>Pick GPT-4o, Gemini, Sonnet, Opus, GPT-5 by tier.</td></tr>
+    <tr><td>Voice input</td><td>All (quota)</td><td>Speak instead of type — Whisper transcription.</td></tr>
+    <tr><td>Confidence chip with tooltip</td><td>All</td><td>See how sure the model is, and why.</td></tr>
+    <tr><td>Page-level citations (filename — page X)</td><td>All</td><td>Trust + verifiability; no scary chunk indices.</td></tr>
+    <tr><td>Per-user document isolation</td><td>All</td><td>Privacy by default.</td></tr>
+    <tr><td>Stripe-managed subscriptions</td><td>Regular / Advanced</td><td>Self-service upgrade, downgrade, cancel.</td></tr>
+    <tr><td>Profile usage meters</td><td>All</td><td>Live remaining quota for chat / uploads / voice.</td></tr>
+    <tr><td>Notifications bell + dropdown</td><td>All</td><td>Reminders and account events without leaving the app.</td></tr>
+    <tr><td>Bi-weekly study reminders (email + in-app)</td><td>Free</td><td>Gentle nudge to keep using the platform.</td></tr>
+    <tr><td>Bi-weekly upgrade reminders (email + in-app)</td><td>Free</td><td>Surface the Advanced plan twice a week.</td></tr>
+    <tr><td>Notification preferences page</td><td>All</td><td>Opt out per channel + per kind.</td></tr>
+    <tr><td>Password reset by email code</td><td>All</td><td>Self-service recovery.</td></tr>
+    <tr><td>3 OAuth providers</td><td>All</td><td>One-click signup with Google / Facebook / Microsoft.</td></tr>
+    <tr><td>Light + dark theme toggle</td><td>All</td><td>Comfortable reading day or night.</td></tr>
+    <tr><td>Sticky frosted navbar + animated hero</td><td>Visitors</td><td>Front page that converts.</td></tr>
+    <tr><td>Admin dashboard (KPIs, charts, search, ban)</td><td>Operators</td><td>Run the platform without SSHing into MySQL.</td></tr>
+  </tbody>
+</table>
+
+<h2>API surface (high level)</h2>
+<table>
+  <thead><tr><th>Endpoint</th><th>Purpose</th></tr></thead>
+  <tbody>
+    <tr><td>GET /health</td><td>Container healthcheck for Docker.</td></tr>
+    <tr><td>POST /api/auth/signup, /login, /oauth/*</td><td>Account creation + sign-in (email + 3 OAuth).</td></tr>
+    <tr><td>POST /api/auth/forgot-password, /reset-password</td><td>Email-code password recovery.</td></tr>
+    <tr><td>GET /api/auth/me</td><td>Current user + tier.</td></tr>
+    <tr><td>POST /api/documents/upload</td><td>Upload PDF / DOCX / TXT into FAISS.</td></tr>
+    <tr><td>GET /api/documents, /api/documents/count</td><td>List + count user's docs.</td></tr>
+    <tr><td>DELETE /api/documents/{id}</td><td>Remove a document and its vectors.</td></tr>
+    <tr><td>POST /api/chat/query</td><td>RAG turn — accepts mode + model fields.</td></tr>
+    <tr><td>GET /api/chat/sessions, /api/chat/sessions/{id}</td><td>Chat history.</td></tr>
+    <tr><td>GET /api/models</td><td>Tier-aware model catalog for the picker.</td></tr>
+    <tr><td>POST /api/voice/transcribe</td><td>Whisper speech-to-text endpoint.</td></tr>
+    <tr><td>GET /api/usage/quota</td><td>Per-month chat / upload / voice counters.</td></tr>
+    <tr><td>GET /api/notifications, /unread-count, /preferences</td><td>Bell dropdown data + opt-out.</td></tr>
+    <tr><td>POST /api/notifications/{id}/read, /read-all</td><td>Mark items read.</td></tr>
+    <tr><td>POST /api/payments/checkout, /portal</td><td>Stripe Checkout + Customer Portal redirects.</td></tr>
+    <tr><td>POST /api/payments/webhook</td><td>Stripe webhook → tier flip.</td></tr>
+    <tr><td>GET /api/admin/*</td><td>Admin KPIs, charts, user search, ban.</td></tr>
+  </tbody>
+</table>
+
+<div class="callout success">
+  <div class="title">Bottom line</div>
+  From a single-model RAG demo, Laboracle has grown into a 4-service Docker
+  deployment with 5 LLMs behind one registry, voice input, four AI modes,
+  three OAuth providers, Stripe subscriptions, an admin console, and a
+  notification system. Every layer was added behind a feature flag or
+  graceful-degradation guard, so the app keeps running even when individual
+  provider keys are missing.
+</div>
+
+</body>
+</html>

@@ -143,9 +143,16 @@ def upsert_google_user(
 
     - If `google_sub` already exists → return that id (refresh google_email).
     - Else if email exists:
-        - If that row has no password (Google-only stub) → attach google_sub.
-        - Else if already linked to this google_sub → return id.
-        - Else → 409-style conflict is handled by the router (email/password account).
+        - If linked to a different google_sub → 409 (google_account_mismatch).
+        - If linked to a different OAuth provider (Facebook / Microsoft) →
+          409 (cross-provider conflict, requires explicit linking flow).
+        - Otherwise (including rows that already have a password_hash):
+          attach this google_sub to the existing row. We trust Google's
+          `email_verified` claim — it was already enforced in
+          `verify_google_id_token` — so the user demonstrably owns the
+          email address. This gives the "sign in with Google any time"
+          UX users expect on first try, while password-based login keeps
+          working unchanged.
     - Else insert a new Google-only user (password_hash = NULL, phone = placeholder).
     """
     email_norm = email.strip().lower()
@@ -160,23 +167,26 @@ def upsert_google_user(
     by_email = get_user_by_email(email_norm)
     if by_email:
         uid = int(by_email["id"])
-        ph = by_email.get("password_hash")
         existing_gs = by_email.get("google_sub")
         existing_fb = by_email.get("facebook_id")
         existing_ms = by_email.get("microsoft_sub")
         if existing_gs and str(existing_gs) != google_sub:
             raise ValueError("google_account_mismatch")
-        if ph:
-            raise ValueError("email_password_exists")
         if existing_fb:
             raise ValueError("facebook_account_exists")
         if existing_ms:
             raise ValueError("microsoft_account_exists")
+        # Auto-link Google to an existing email/password account. We don't
+        # overwrite first_name / last_name here because the user may have
+        # customised them in the profile page; we only fill in fields that
+        # are currently blank.
         mysql_db.execute_update(
             """
             UPDATE users
-            SET google_sub = %s, google_email = %s,
-                first_name = %s, last_name = %s
+            SET google_sub   = %s,
+                google_email = %s,
+                first_name   = CASE WHEN COALESCE(first_name, '') = '' THEN %s ELSE first_name END,
+                last_name    = CASE WHEN COALESCE(last_name,  '') = '' THEN %s ELSE last_name  END
             WHERE id = %s
             """,
             (google_sub, email_norm, first_name.strip(), last_name.strip(), uid),
@@ -241,22 +251,25 @@ def upsert_facebook_user(
     by_email = get_user_by_email(email_norm)
     if by_email:
         uid = int(by_email["id"])
-        ph = by_email.get("password_hash")
         existing_fb = by_email.get("facebook_id")
         if existing_fb and str(existing_fb) != facebook_id:
             raise ValueError("facebook_account_mismatch")
-        if ph:
-            raise ValueError("email_password_exists")
         google_sub = by_email.get("google_sub")
         if google_sub:
             raise ValueError("google_account_exists")
         if by_email.get("microsoft_sub"):
             raise ValueError("microsoft_account_exists")
+        # Auto-link Facebook to an existing email/password account.
+        # Facebook returns an email only when the user has confirmed it on
+        # their Facebook profile, so this is consistent with Google's
+        # email_verified policy. Existing names aren't overwritten.
         mysql_db.execute_update(
             """
             UPDATE users
-            SET facebook_id = %s, facebook_email = %s,
-                first_name = %s, last_name = %s
+            SET facebook_id    = %s,
+                facebook_email = %s,
+                first_name     = CASE WHEN COALESCE(first_name, '') = '' THEN %s ELSE first_name END,
+                last_name      = CASE WHEN COALESCE(last_name,  '') = '' THEN %s ELSE last_name  END
             WHERE id = %s
             """,
             (facebook_id, email_norm, first_name.strip(), last_name.strip(), uid),
@@ -315,10 +328,13 @@ def upsert_microsoft_user(
     - If `microsoft_sub` already exists → return that id (refresh microsoft_email).
     - Else if email exists:
         - If linked to a different microsoft_sub → 409 (microsoft_account_mismatch).
-        - If has a password → 409 (email_password_exists).
         - If linked to Google → 409 (google_account_exists).
         - If linked to Facebook → 409 (facebook_account_exists).
-        - Otherwise attach microsoft_sub to the existing row.
+        - Otherwise (including rows that already have a password_hash):
+          attach this microsoft_sub to the existing row. Microsoft Entra
+          ID tokens come from a JWKS-verified issuer, so the email claim
+          can be trusted in the same way we trust Google's
+          `email_verified` claim — the user owns the address.
     - Else insert a new Microsoft-only user (password_hash = NULL, phone placeholder).
     """
     email_norm = email.strip().lower()
@@ -333,21 +349,22 @@ def upsert_microsoft_user(
     by_email = get_user_by_email(email_norm)
     if by_email:
         uid = int(by_email["id"])
-        ph = by_email.get("password_hash")
         existing_ms = by_email.get("microsoft_sub")
         if existing_ms and str(existing_ms) != microsoft_sub:
             raise ValueError("microsoft_account_mismatch")
-        if ph:
-            raise ValueError("email_password_exists")
         if by_email.get("google_sub"):
             raise ValueError("google_account_exists")
         if by_email.get("facebook_id"):
             raise ValueError("facebook_account_exists")
+        # Auto-link Microsoft to an existing email/password account.
+        # Existing names aren't overwritten.
         mysql_db.execute_update(
             """
             UPDATE users
-            SET microsoft_sub = %s, microsoft_email = %s,
-                first_name = %s, last_name = %s
+            SET microsoft_sub  = %s,
+                microsoft_email = %s,
+                first_name     = CASE WHEN COALESCE(first_name, '') = '' THEN %s ELSE first_name END,
+                last_name      = CASE WHEN COALESCE(last_name,  '') = '' THEN %s ELSE last_name  END
             WHERE id = %s
             """,
             (microsoft_sub, email_norm, first_name.strip(), last_name.strip(), uid),

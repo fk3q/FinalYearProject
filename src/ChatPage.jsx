@@ -18,6 +18,7 @@ import {
   MAX_RECORDING_SECONDS,
 } from "./api/voice";
 import AccountSidebarBlock from "./components/AccountSidebarBlock";
+import AIModesIntro from "./components/AIModesIntro";
 import ChatIntroVideo from "./components/ChatIntroVideo";
 import ModelPicker from "./components/ModelPicker";
 import NotificationBell from "./components/NotificationBell";
@@ -95,6 +96,24 @@ const ChatPage = () => {
   const recordedChunksRef = useRef([]);
   const recordingTimerRef = useRef(null);
   const recordingStreamRef = useRef(null);
+
+  // One-shot AI-modes flash-card walkthrough. The flag is set by
+  // Login.jsx / Signup.jsx on a successful auth and consumed here so
+  // the carousel only plays once per fresh session, right after the
+  // cinematic intro video closes. We read+clear the flag on mount so
+  // that a page refresh after dismissal does not replay the cards.
+  const [showModesIntro, setShowModesIntro] = useState(false);
+  const modesIntroPendingRef = useRef(false);
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem("laboracle_show_modes_intro") === "1") {
+        modesIntroPendingRef.current = true;
+        sessionStorage.removeItem("laboracle_show_modes_intro");
+      }
+    } catch {
+      /* sessionStorage may be unavailable in private mode -- skip */
+    }
+  }, []);
 
   const chatEndRef = useRef(null);
   const textareaRef = useRef(null);
@@ -459,8 +478,20 @@ const ChatPage = () => {
   return (
     <div className="cp-page">
       {/* Cinematic intro that plays every time /chat mounts. The modal
-          self-dismisses on Skip / ESC / backdrop click / video end. */}
-      <ChatIntroVideo />
+          self-dismisses on Skip / ESC / backdrop click / video end.
+          When it closes after a fresh login/signup we promote the
+          one-shot AI-modes flash-card walkthrough into view. */}
+      <ChatIntroVideo
+        onClose={() => {
+          if (modesIntroPendingRef.current) {
+            modesIntroPendingRef.current = false;
+            setShowModesIntro(true);
+          }
+        }}
+      />
+      {showModesIntro && (
+        <AIModesIntro onDone={() => setShowModesIntro(false)} />
+      )}
       <aside className="cp-sidebar">
         <div className="cp-brand" onClick={() => navigate("/")}>
           <img src="/laboracle-logo.png" alt="Laboracle" className="cp-brand-logo" />
@@ -475,44 +506,12 @@ const ChatPage = () => {
           </button>
         </nav>
 
-        <div className="cp-section-label">Account</div>
-        <nav className="cp-nav">
-          <button className="cp-nav-item" onClick={() => navigate("/profile")}>
-            <span className="cp-nav-icon"><User /></span> Profile
-          </button>
-          <button
-            className="cp-nav-item"
-            onClick={() => navigate("/profile#settings")}
-          >
-            <span className="cp-nav-icon"><SettingsIcon /></span> Settings
-          </button>
-          <button
-            className="cp-nav-item"
-            onClick={() => navigate("/profile#subscription")}
-          >
-            <span className="cp-nav-icon"><CreditCard /></span> Subscription
-          </button>
-        </nav>
-
-        <div className="cp-section-label">Help</div>
-        <nav className="cp-nav">
-          <button
-            className="cp-nav-item"
-            onClick={() => {
-              window.location.href = "mailto:laboraclee@gmail.com?subject=Help%20centre%20enquiry";
-            }}
-          >
-            <span className="cp-nav-icon"><LifeBuoy /></span> Help centre
-          </button>
-          <button
-            className="cp-nav-item"
-            onClick={() => {
-              window.location.href = "mailto:laboraclee@gmail.com?subject=Support%20request";
-            }}
-          >
-            <span className="cp-nav-icon"><Headphones /></span> Support
-          </button>
-        </nav>
+        {/* Sidebar order: Saved chats → Your account → Role → AI mode →
+            Account links (Profile / Settings / Subscription) → Help.
+            The user-action surfaces (history, role, mode) sit closest to
+            the chat workspace so they're reachable at a glance, while
+            navigation that takes the user away from chat lives at the
+            bottom. */}
 
         {canSaveChats && (
           <div className="cp-history">
@@ -595,7 +594,7 @@ const ChatPage = () => {
             className={`cp-toggle ${userRole === "teacher" ? "cp-toggle--on" : ""}`}
             onClick={() => setUserRole("teacher")}
           >
-            Teacher
+            Teacher / Professor
           </button>
         </div>
 
@@ -634,6 +633,45 @@ const ChatPage = () => {
         <div className="cp-mode-hint">
           {AI_MODE_HINTS[aiMode] || AI_MODE_HINTS.deterministic}
         </div>
+
+        <div className="cp-section-label">Account</div>
+        <nav className="cp-nav">
+          <button className="cp-nav-item" onClick={() => navigate("/profile")}>
+            <span className="cp-nav-icon"><User /></span> Profile
+          </button>
+          <button
+            className="cp-nav-item"
+            onClick={() => navigate("/profile#settings")}
+          >
+            <span className="cp-nav-icon"><SettingsIcon /></span> Settings
+          </button>
+          <button
+            className="cp-nav-item"
+            onClick={() => navigate("/profile#subscription")}
+          >
+            <span className="cp-nav-icon"><CreditCard /></span> Subscription
+          </button>
+        </nav>
+
+        <div className="cp-section-label">Help</div>
+        <nav className="cp-nav">
+          <button
+            className="cp-nav-item"
+            onClick={() => {
+              window.location.href = "mailto:laboraclee@gmail.com?subject=Help%20centre%20enquiry";
+            }}
+          >
+            <span className="cp-nav-icon"><LifeBuoy /></span> Help centre
+          </button>
+          <button
+            className="cp-nav-item"
+            onClick={() => {
+              window.location.href = "mailto:laboraclee@gmail.com?subject=Support%20request";
+            }}
+          >
+            <span className="cp-nav-icon"><Headphones /></span> Support
+          </button>
+        </nav>
       </aside>
 
       <main className="cp-main">
@@ -644,7 +682,7 @@ const ChatPage = () => {
               <div className="cp-header-title">Laboracle</div>
               <div className="cp-header-sub">
                 {AI_MODE_LABELS[aiMode] || AI_MODE_LABELS.deterministic} &bull;{" "}
-                {userRole === "student" ? "Student" : "Teacher"} mode
+                {userRole === "student" ? "Student" : "Teacher / Professor"} mode
               </div>
             </div>
           </div>

@@ -15,18 +15,27 @@ import "./ChatIntroVideo.css";
 // toggle (bottom-right) lets the viewer turn audio on once it's
 // playing -- a single user gesture is enough to unmute even if the
 // page hadn't been interacted with yet.
-const ChatIntroVideo = ({ src = "/chat-intro.mp4" }) => {
+const ChatIntroVideo = ({ src = "/chat-intro.mp4", onClose }) => {
   const [open, setOpen] = useState(true);
   const [muted, setMuted] = useState(true);
   const videoRef = useRef(null);
   const skipBtnRef = useRef(null);
+
+  // Wrapper used by every dismissal path so we always notify the parent
+  // exactly once per mount. Some dismissal sources (Skip, ESC, end,
+  // backdrop, error) used to call setOpen(false) directly, which left
+  // the chained AI-modes flash-card carousel without a trigger.
+  const dismiss = () => {
+    setOpen(false);
+    if (typeof onClose === "function") onClose();
+  };
 
   // ESC-to-close, body-scroll lock, and initial focus on the skip
   // button so the modal is reachable from the keyboard immediately.
   useEffect(() => {
     if (!open) return undefined;
     const onKey = (e) => {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") dismiss();
     };
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -64,7 +73,7 @@ const ChatIntroVideo = ({ src = "/chat-intro.mp4" }) => {
   // Backdrop-only click handler -- ignore clicks bubbling up from
   // the video element / its native controls.
   const onBackdropClick = (e) => {
-    if (e.target === e.currentTarget) setOpen(false);
+    if (e.target === e.currentTarget) dismiss();
   };
 
   const toggleMute = () => {
@@ -92,7 +101,7 @@ const ChatIntroVideo = ({ src = "/chat-intro.mp4" }) => {
         type="button"
         ref={skipBtnRef}
         className="chat-intro-skip"
-        onClick={() => setOpen(false)}
+        onClick={dismiss}
         aria-label="Skip intro video"
       >
         Skip <X size={16} aria-hidden="true" />
@@ -105,11 +114,11 @@ const ChatIntroVideo = ({ src = "/chat-intro.mp4" }) => {
         autoPlay
         muted={muted}
         playsInline
-        onEnded={() => setOpen(false)}
+        onEnded={dismiss}
         // If the video file is missing (e.g. before the asset has
         // been copied into /public on a fresh deploy) the modal
         // auto-dismisses instead of showing a broken-video frame.
-        onError={() => setOpen(false)}
+        onError={dismiss}
       />
 
       <button

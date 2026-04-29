@@ -128,6 +128,14 @@ const Signup = () => {
           return;
         }
       }
+      // One-shot flag: ChatPage replays the AI-modes flash-card
+      // walkthrough right after the intro video on the first visit
+      // following a successful signup. Cleared when the cards close.
+      try {
+        sessionStorage.setItem("laboracle_show_modes_intro", "1");
+      } catch {
+        /* private mode / disabled storage -- silently skip the tour */
+      }
       // Default signup success: send straight into chat (matches the
       // post-login redirect, plays the cinematic intro modal).
       navigate("/chat");

@@ -1,0 +1,206 @@
+/*
+ * Flash-card carousel that briefs the user on the four AI modes.
+ * Plays once after a fresh login or signup, immediately after the
+ * cinematic intro video closes. Visual language is borrowed from the
+ * hero section: deep purple backdrop, frosted-glass card, brand
+ * accent edge that shifts colour per mode.
+ */
+
+.ami-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10000; /* above the chat intro video (z=9999) so the carousel
+                    is reliably on top during any brief overlap. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(10, 8, 24, 0.78);
+  backdrop-filter: blur(18px) saturate(1.05);
+  -webkit-backdrop-filter: blur(18px) saturate(1.05);
+  animation: ami-fade 220ms ease-out;
+}
+
+@keyframes ami-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.ami-card {
+  position: relative;
+  width: min(440px, 92vw);
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%),
+    rgba(31, 22, 70, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  padding: 28px 26px 22px;
+  color: #f4f1ff;
+  text-align: center;
+  isolation: isolate;
+  animation: ami-pop 260ms cubic-bezier(0.2, 0.9, 0.4, 1.2);
+}
+
+@keyframes ami-pop {
+  from { opacity: 0; transform: translateY(12px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+/* Per-mode accent strip along the top edge. Subtle, not rainbow. */
+.ami-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  background: var(--ami-accent, #7c6cf0);
+  opacity: 0.9;
+}
+
+.ami-card--indigo  { --ami-accent: #6f6cf0; }
+.ami-card--violet  { --ami-accent: #9c6cf0; }
+.ami-card--fuchsia { --ami-accent: #c660ea; }
+.ami-card--sky     { --ami-accent: #66a8f0; }
+
+.ami-skip {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  font-size: 12px;
+  letter-spacing: 0.3px;
+  color: rgba(244, 241, 255, 0.7);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease;
+}
+.ami-skip:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.ami-eyebrow {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1.6px;
+  color: rgba(244, 241, 255, 0.55);
+  margin-bottom: 18px;
+}
+
+.ami-icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  color: var(--ami-accent, #9c6cf0);
+  background:
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0) 60%),
+    rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.ami-title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  margin: 0 0 4px;
+}
+
+.ami-tagline {
+  font-size: 13px;
+  color: var(--ami-accent, #9c6cf0);
+  margin-bottom: 14px;
+  font-weight: 500;
+}
+
+.ami-body {
+  font-size: 14px;
+  line-height: 1.55;
+  color: rgba(244, 241, 255, 0.85);
+  margin: 0 0 22px;
+}
+
+.ami-dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+
+.ami-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  transition: background 160ms ease, transform 160ms ease;
+}
+.ami-dot--on {
+  background: var(--ami-accent, #9c6cf0);
+  transform: scale(1.25);
+}
+
+.ami-actions {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 10px;
+}
+
+.ami-btn {
+  appearance: none;
+  border: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease, border-color 160ms ease, opacity 160ms ease;
+}
+
+.ami-btn--ghost {
+  justify-self: start;
+  background: transparent;
+  color: rgba(244, 241, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.ami-btn--ghost:hover:not([disabled]) {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+.ami-btn--ghost[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.ami-btn--primary {
+  justify-self: end;
+  background: var(--ami-accent, #9c6cf0);
+  color: #fff;
+}
+.ami-btn--primary:hover {
+  filter: brightness(1.08);
+}
+
+.ami-step-label {
+  font-size: 12px;
+  color: rgba(244, 241, 255, 0.55);
+  letter-spacing: 0.3px;
+}
+
+@media (max-width: 480px) {
+  .ami-card {
+    padding: 24px 20px 18px;
+  }
+  .ami-title { font-size: 20px; }
+  .ami-body  { font-size: 13.5px; }
+}
