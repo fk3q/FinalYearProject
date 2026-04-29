@@ -51,3 +51,9 @@ google-auth==2.36.0
 
 # Microsoft Sign-In (ID token verification via JWKS)
 PyJWT[crypto]==2.9.0
+
+# Background scheduler for the bi-weekly reminder emails + in-app
+# notifications. Pinned to 3.10.x because that's the latest series
+# that still ships an asyncio scheduler with the cron+coalesce
+# semantics we rely on.
+apscheduler==3.10.4

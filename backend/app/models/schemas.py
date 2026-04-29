@@ -325,6 +325,58 @@ class UsageQuotaResponse(BaseModel):
     voice: QuotaCounter
 
 
+# ── Notifications ─────────────────────────────────────────────────────────────
+
+class NotificationItem(BaseModel):
+    """One row in the bell-icon dropdown."""
+
+    id: int
+    kind: str = Field(
+        ...,
+        description=(
+            "Stable category string, e.g. 'study_reminder', "
+            "'upgrade_reminder', 'system'. Frontend uses this to pick "
+            "the icon and accent colour."
+        ),
+    )
+    title: str
+    body: str
+    link_url: Optional[str] = Field(
+        default=None,
+        description="Optional internal route the user lands on when clicking.",
+    )
+    read_at: Optional[datetime] = None
+    created_at: datetime
+
+
+class NotificationListResponse(BaseModel):
+    items: List[NotificationItem]
+    unread_count: int
+
+
+class UnreadCountResponse(BaseModel):
+    unread_count: int
+
+
+class NotificationPreferencesPayload(BaseModel):
+    """
+    All four channel toggles. Sending a partial payload (PUT) is fine
+    -- omitted fields keep their current value via `set_preferences`.
+    """
+
+    study_email_enabled:   Optional[bool] = None
+    study_inapp_enabled:   Optional[bool] = None
+    upgrade_email_enabled: Optional[bool] = None
+    upgrade_inapp_enabled: Optional[bool] = None
+
+
+class NotificationPreferencesResponse(BaseModel):
+    study_email_enabled:   bool
+    study_inapp_enabled:   bool
+    upgrade_email_enabled: bool
+    upgrade_inapp_enabled: bool
+
+
 # ── Admin dashboard ───────────────────────────────────────────────────────────
 
 class AdminLoginRequest(BaseModel):

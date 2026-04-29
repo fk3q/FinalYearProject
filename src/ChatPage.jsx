@@ -20,6 +20,7 @@ import {
 import AccountSidebarBlock from "./components/AccountSidebarBlock";
 import ChatIntroVideo from "./components/ChatIntroVideo";
 import ModelPicker from "./components/ModelPicker";
+import NotificationBell from "./components/NotificationBell";
 import { useUsageTracker } from "./hooks/useUsageTracker";
 import { useModels } from "./hooks/useModels";
 import { authHeaders, getSessionUser } from "./api/auth";
@@ -594,6 +595,7 @@ const ChatPage = () => {
             </div>
           </div>
           <div className="cp-header-right">
+            <NotificationBell />
             <ModelPicker
               models={models}
               selectedId={selectedModelId}

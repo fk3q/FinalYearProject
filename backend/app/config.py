@@ -56,6 +56,14 @@ class Settings(BaseSettings):
     # can be added later without breaking existing clients.
     DEFAULT_MODEL: str = "gpt-4o"
 
+    # ── Reminder scheduler ───────────────────────────────────────────────────
+    # Master kill-switch for the bi-weekly study + upgrade reminders.
+    # Defaults to True (production) -- set this to False in dev `.env`
+    # files if you don't want the scheduler firing while you're hacking
+    # or running tests. The cron timing itself is hardcoded in
+    # reminder_scheduler.py because it's tied to the product copy.
+    REMINDERS_ENABLED: bool = True
+
     # ── Chunking ─────────────────────────────────────────────────────────────
     CHUNK_SIZE: int = 1000
     CHUNK_OVERLAP: int = 200

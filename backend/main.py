@@ -37,7 +37,14 @@ from app.services.llm import registry as model_registry
 from app.routers.auth import router as auth_router, users_router
 from app.routers.admin import router as admin_router
 from app.routers.payments import router as payments_router
-from app.services import chat_history_service, quota_service, user_service, voice_service
+from app.routers.notifications import router as notifications_router
+from app.services import (
+    chat_history_service,
+    quota_service,
+    reminder_scheduler,
+    user_service,
+    voice_service,
+)
 from app.services.document_service import MAX_UPLOAD_BYTES
 from app.services.voice_service import MAX_AUDIO_BYTES
 
@@ -67,7 +74,25 @@ async def lifespan(app: FastAPI):
             "MySQL users table init failed — auth routes will fail until DB is configured: %s",
             exc,
         )
-    yield
+
+    # ── Reminder scheduler ───────────────────────────────────────────────────
+    # Boots APScheduler with the Mon+Thu 09:00 UTC cron triggers that
+    # power the bell-icon dropdown + reminder emails. Failures here
+    # are isolated -- if APScheduler isn't installed yet (older image)
+    # the function logs a warning and the rest of the app keeps
+    # running, just without the bi-weekly nudges.
+    try:
+        reminder_scheduler.start_scheduler()
+    except Exception:
+        logger.exception("reminder scheduler failed to start")
+
+    try:
+        yield
+    finally:
+        try:
+            reminder_scheduler.stop_scheduler()
+        except Exception:
+            logger.exception("reminder scheduler shutdown failed")
 
 
 # ── Rate limiting ─────────────────────────────────────────────────────────────
@@ -111,6 +136,7 @@ app.include_router(auth_router, prefix="/api")
 app.include_router(users_router, prefix="/api")
 app.include_router(admin_router, prefix="/api")
 app.include_router(payments_router, prefix="/api")
+app.include_router(notifications_router, prefix="/api")
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────

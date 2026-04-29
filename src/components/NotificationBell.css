@@ -1,0 +1,380 @@
+/* ── NotificationBell ─────────────────────────────────────────────────
+ *
+ * Sits in the chat header next to the model picker. Light + dark
+ * variants share most styles; dark mode switches the panel surface
+ * to match the rest of the chat dark UI.
+ */
+
+.nb-root {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  font-family: inherit;
+}
+
+/* ── Trigger button (the bell itself) ───────────────────────────── */
+.nb-trigger {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #d6d9e4;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #4f46e5;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease,
+    transform 0.15s ease;
+}
+
+.nb-trigger:hover {
+  background: #f6f7ff;
+  border-color: #4f46e5;
+}
+
+.nb-trigger:focus-visible {
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
+}
+
+/* Subtle pulse to draw the eye when there are unread items. */
+.nb-trigger--unread {
+  border-color: #7c3aed;
+  color: #7c3aed;
+  animation: nb-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes nb-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.0);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(124, 58, 237, 0.12);
+  }
+}
+
+/* ── Unread count badge ─────────────────────────────────────────── */
+.nb-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  box-shadow: 0 0 0 2px #ffffff;
+  pointer-events: none;
+}
+
+/* ── Dropdown panel ─────────────────────────────────────────────── */
+.nb-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 40;
+  width: 340px;
+  max-width: calc(100vw - 24px);
+  background: #ffffff;
+  border: 1px solid #e2e5f0;
+  border-radius: 14px;
+  box-shadow:
+    0 1px 3px rgba(15, 23, 42, 0.06),
+    0 18px 36px -12px rgba(15, 23, 42, 0.25);
+  overflow: hidden;
+  animation: nb-panel-in 0.18s ease-out both;
+}
+
+@keyframes nb-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.nb-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid #eceef6;
+  background: #fafbff;
+}
+
+.nb-panel__title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1f2336;
+}
+
+.nb-mark-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 0;
+  background: transparent;
+  color: #4f46e5;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.15s ease;
+}
+
+.nb-mark-all:hover {
+  background: #eef0ff;
+}
+
+.nb-panel__body {
+  max-height: 420px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Empty + error states ───────────────────────────────────────── */
+.nb-empty {
+  padding: 28px 18px;
+  text-align: center;
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.nb-empty__sub {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #9ca3b3;
+}
+
+.nb-empty--error {
+  color: #b91c1c;
+}
+
+/* ── Notification row ───────────────────────────────────────────── */
+.nb-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 32px 1fr auto;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  border-bottom: 1px solid #f1f3fa;
+  transition: background 0.12s ease;
+}
+
+.nb-row:last-child {
+  border-bottom: 0;
+}
+
+.nb-row:hover {
+  background: #f7f8ff;
+}
+
+.nb-row--unread {
+  background: #f3f4ff;
+}
+
+.nb-row--unread:hover {
+  background: #eceeff;
+}
+
+/* Left-edge accent strip per kind */
+.nb-row::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 3px;
+  border-radius: 2px;
+  background: transparent;
+}
+
+.nb-row--study::before {
+  background: #4f46e5;
+}
+
+.nb-row--upgrade::before {
+  background: #7c3aed;
+}
+
+.nb-row--system::before {
+  background: #6b7280;
+}
+
+.nb-row__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: #eef0ff;
+  color: #4f46e5;
+  flex-shrink: 0;
+}
+
+.nb-row--upgrade .nb-row__icon {
+  background: #f1e8ff;
+  color: #7c3aed;
+}
+
+.nb-row--system .nb-row__icon {
+  background: #f1f3fa;
+  color: #6b7280;
+}
+
+.nb-row__content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0; /* lets the body text wrap inside the grid cell */
+}
+
+.nb-row__title {
+  font-weight: 700;
+  font-size: 13.5px;
+  color: #1f2336;
+  line-height: 1.3;
+}
+
+.nb-row__body {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: #4b5563;
+  white-space: normal;
+  word-wrap: break-word;
+}
+
+.nb-row__time {
+  font-size: 11px;
+  color: #9ca3b3;
+  margin-top: 2px;
+}
+
+.nb-row__dot {
+  align-self: center;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4f46e5;
+  flex-shrink: 0;
+}
+
+.nb-row--upgrade .nb-row__dot {
+  background: #7c3aed;
+}
+
+/* ── Dark theme ─────────────────────────────────────────────────── */
+html[data-theme="dark"] .nb-trigger {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #c7c9ff;
+}
+
+html[data-theme="dark"] .nb-trigger:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: #818cf8;
+}
+
+html[data-theme="dark"] .nb-trigger--unread {
+  border-color: #c4b5fd;
+  color: #c4b5fd;
+}
+
+html[data-theme="dark"] .nb-badge {
+  box-shadow: 0 0 0 2px #1d1f2c;
+}
+
+html[data-theme="dark"] .nb-panel {
+  background: #1d1f2c;
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 18px 36px -12px rgba(0, 0, 0, 0.5);
+}
+
+html[data-theme="dark"] .nb-panel__header {
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+html[data-theme="dark"] .nb-panel__title {
+  color: #e6e7f2;
+}
+
+html[data-theme="dark"] .nb-mark-all {
+  color: #c7c9ff;
+}
+
+html[data-theme="dark"] .nb-mark-all:hover {
+  background: rgba(124, 58, 237, 0.18);
+}
+
+html[data-theme="dark"] .nb-empty {
+  color: #a1a4be;
+}
+
+html[data-theme="dark"] .nb-empty__sub {
+  color: #7c7e94;
+}
+
+html[data-theme="dark"] .nb-row {
+  border-bottom-color: rgba(255, 255, 255, 0.05);
+}
+
+html[data-theme="dark"] .nb-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+html[data-theme="dark"] .nb-row--unread {
+  background: rgba(124, 58, 237, 0.12);
+}
+
+html[data-theme="dark"] .nb-row--unread:hover {
+  background: rgba(124, 58, 237, 0.18);
+}
+
+html[data-theme="dark"] .nb-row__icon {
+  background: rgba(99, 102, 241, 0.18);
+  color: #c7c9ff;
+}
+
+html[data-theme="dark"] .nb-row--upgrade .nb-row__icon {
+  background: rgba(124, 58, 237, 0.22);
+  color: #c4b5fd;
+}
+
+html[data-theme="dark"] .nb-row--system .nb-row__icon {
+  background: rgba(255, 255, 255, 0.06);
+  color: #a1a4be;
+}
+
+html[data-theme="dark"] .nb-row__title {
+  color: #e6e7f2;
+}
+
+html[data-theme="dark"] .nb-row__body {
+  color: #b6b8ce;
+}
+
+html[data-theme="dark"] .nb-row__time {
+  color: #7c7e94;
+}

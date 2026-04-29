@@ -236,6 +236,67 @@ def init_db_schema() -> None:
             except Exception:
                 # Column already exists -- ignore.
                 pass
+
+            # ── In-app notifications ─────────────────────────────────
+            # One row per delivered (or pending) notification. The
+            # bell-icon dropdown reads this table; the reminder
+            # scheduler writes to it twice a week. `kind` lets us
+            # filter / group by reminder type without parsing copy.
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS notifications (
+                    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                    user_id INT UNSIGNED NOT NULL,
+                    kind VARCHAR(40) NOT NULL,
+                    title VARCHAR(160) NOT NULL,
+                    body TEXT NOT NULL,
+                    link_url VARCHAR(255) NULL,
+                    read_at TIMESTAMP NULL,
+                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    KEY idx_notifications_user_created (user_id, created_at DESC),
+                    KEY idx_notifications_user_unread (user_id, read_at),
+                    CONSTRAINT fk_notifications_user
+                        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+                """
+            )
+
+            # Per-user opt-out toggles. We auto-create a row with
+            # everything enabled the first time a user is seen by the
+            # scheduler / preferences endpoint, so missing rows imply
+            # "all reminders on" rather than "all reminders off".
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS notification_preferences (
+                    user_id INT UNSIGNED NOT NULL PRIMARY KEY,
+                    study_email_enabled TINYINT(1) NOT NULL DEFAULT 1,
+                    study_inapp_enabled TINYINT(1) NOT NULL DEFAULT 1,
+                    upgrade_email_enabled TINYINT(1) NOT NULL DEFAULT 1,
+                    upgrade_inapp_enabled TINYINT(1) NOT NULL DEFAULT 1,
+                    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                        ON UPDATE CURRENT_TIMESTAMP,
+                    CONSTRAINT fk_notification_prefs_user
+                        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+                """
+            )
+
+            # Idempotency log for the scheduler. Before firing a
+            # reminder batch we INSERT IGNORE here -- if the row
+            # already exists, another worker (or a same-day restart)
+            # already handled it and we skip.
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS reminder_runs (
+                    kind VARCHAR(40) NOT NULL,
+                    run_date DATE NOT NULL,
+                    started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    finished_at TIMESTAMP NULL,
+                    sent_count INT UNSIGNED NOT NULL DEFAULT 0,
+                    PRIMARY KEY (kind, run_date)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+                """
+            )
         conn.commit()
         logger.info("MySQL users table ready.")
     except Exception:
