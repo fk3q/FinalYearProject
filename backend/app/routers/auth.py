@@ -533,6 +533,7 @@ async def get_usage_quota(
         period_start=snapshot["period_start"],
         chat=QuotaCounter(**snapshot["chat"]),
         upload=QuotaCounter(**snapshot["upload"]),
+        voice=QuotaCounter(**snapshot["voice"]),
     )
 
 

@@ -34,8 +34,9 @@ from app.models.schemas import (
 from app.routers.auth import router as auth_router, users_router
 from app.routers.admin import router as admin_router
 from app.routers.payments import router as payments_router
-from app.services import chat_history_service, quota_service, user_service
+from app.services import chat_history_service, quota_service, user_service, voice_service
 from app.services.document_service import MAX_UPLOAD_BYTES
+from app.services.voice_service import MAX_AUDIO_BYTES
 
 
 @asynccontextmanager
@@ -243,6 +244,62 @@ async def chat_query(
     if session_id_saved is not None:
         return result.model_copy(update={"session_id": session_id_saved})
     return result
+
+
+@app.post("/api/voice/transcribe")
+@limiter.limit("10/minute")
+async def voice_transcribe(
+    request: Request,
+    file: UploadFile = File(...),
+    current_user: Dict[str, Any] = Depends(require_user),
+):
+    """
+    Transcribe a short audio clip (recorded by the user's mic) into text
+    via OpenAI Whisper. Returns `{"text": "..."}` so the frontend can
+    drop the result straight into the chat input box for editing.
+
+    Throttling layers:
+      • slowapi: 10 calls/minute per IP — burst protection.
+      • quota_service: monthly per-user cap by subscription tier.
+      • voice_service: 10 MB hard cap on the audio payload, plus
+        Content-Length pre-check below.
+    """
+    # Cheap pre-check based on the request header so a multi-GB upload is
+    # rejected before we buffer any of it. The streaming reader inside
+    # voice_service still enforces the same cap as a backstop.
+    content_length = request.headers.get("content-length")
+    if content_length and content_length.isdigit() and int(content_length) > MAX_AUDIO_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail=(
+                f"Audio file too large. Maximum allowed is "
+                f"{MAX_AUDIO_BYTES // (1024 * 1024)} MB."
+            ),
+        )
+
+    user_id = int(current_user["id"])
+
+    try:
+        quota_service.check_and_increment(user_id, "voice")
+    except quota_service.QuotaExceeded as e:
+        raise HTTPException(status_code=429, detail=str(e))
+
+    try:
+        text = await voice_service.transcribe_audio(file)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except RuntimeError as exc:
+        # OPENAI_API_KEY missing / disabled — surface as a 503 so the
+        # client can show "voice unavailable" rather than a generic 500.
+        raise HTTPException(status_code=503, detail=str(exc))
+    except Exception as exc:
+        logger.error(
+            "Voice transcription failed for user %s:\n%s",
+            user_id, traceback.format_exc(),
+        )
+        raise HTTPException(status_code=500, detail="Transcription failed.") from exc
+
+    return {"text": text}
 
 
 @app.get("/api/documents/count")

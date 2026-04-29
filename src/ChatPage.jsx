@@ -8,7 +8,15 @@ import {
   CreditCard,
   LifeBuoy,
   Headphones,
+  Mic,
+  Square,
+  Loader2,
 } from "lucide-react";
+import {
+  transcribeAudio,
+  pickRecorderMimeType,
+  MAX_RECORDING_SECONDS,
+} from "./api/voice";
 import AccountSidebarBlock from "./components/AccountSidebarBlock";
 import ChatIntroVideo from "./components/ChatIntroVideo";
 import { useUsageTracker } from "./hooks/useUsageTracker";
@@ -41,6 +49,21 @@ const ChatPage = () => {
   const [messages, setMessages] = useState([WELCOME_MESSAGE]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+
+  // Voice-input state: idle → recording → transcribing → idle.
+  // `recording` toggles the mic-button styling and starts the duration
+  // timer. `transcribing` shows a spinner while Whisper is working. The
+  // last error (mic permission, quota, etc.) lives in `voiceError` so
+  // we can show a one-line hint under the textarea.
+  const [recording, setRecording] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const [voiceError, setVoiceError] = useState("");
+  const mediaRecorderRef = useRef(null);
+  const recordedChunksRef = useRef([]);
+  const recordingTimerRef = useRef(null);
+  const recordingStreamRef = useRef(null);
+
   const chatEndRef = useRef(null);
   const textareaRef = useRef(null);
 
@@ -186,6 +209,170 @@ const ChatPage = () => {
       send();
     }
   };
+
+  // ── Voice input ───────────────────────────────────────────────────
+  // Releases all the resources we hold while recording: stops the
+  // duration timer, kills the active mic stream, and clears the
+  // MediaRecorder reference so a stale instance can't fire callbacks.
+  const cleanupRecording = useCallback(() => {
+    if (recordingTimerRef.current) {
+      window.clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    }
+    if (recordingStreamRef.current) {
+      try {
+        recordingStreamRef.current.getTracks().forEach((t) => t.stop());
+      } catch {
+        /* stream may already be torn down */
+      }
+      recordingStreamRef.current = null;
+    }
+    mediaRecorderRef.current = null;
+    recordedChunksRef.current = [];
+  }, []);
+
+  const startRecording = useCallback(async () => {
+    if (recording || transcribing) return;
+    setVoiceError("");
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setVoiceError("Voice input isn't supported in this browser.");
+      return;
+    }
+    if (typeof MediaRecorder === "undefined") {
+      setVoiceError("Voice input isn't supported in this browser.");
+      return;
+    }
+
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (err) {
+      // Most common: user dismissed the permission prompt. We don't
+      // expose the underlying DOMException name -- a friendly hint is
+      // enough for non-technical users.
+      setVoiceError(
+        err?.name === "NotAllowedError"
+          ? "Microphone access was denied. Enable it in your browser settings."
+          : "Couldn't access your microphone."
+      );
+      return;
+    }
+
+    const mimeType = pickRecorderMimeType();
+    const recorder = mimeType
+      ? new MediaRecorder(stream, { mimeType })
+      : new MediaRecorder(stream);
+
+    recordedChunksRef.current = [];
+    recorder.ondataavailable = (e) => {
+      if (e.data && e.data.size > 0) {
+        recordedChunksRef.current.push(e.data);
+      }
+    };
+
+    recorder.onstop = async () => {
+      // The active stream is no longer needed -- release the mic
+      // immediately so the browser hides the recording indicator.
+      if (recordingStreamRef.current) {
+        try {
+          recordingStreamRef.current.getTracks().forEach((t) => t.stop());
+        } catch {
+          /* already torn down */
+        }
+        recordingStreamRef.current = null;
+      }
+      if (recordingTimerRef.current) {
+        window.clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
+
+      const chunks = recordedChunksRef.current;
+      recordedChunksRef.current = [];
+      mediaRecorderRef.current = null;
+
+      if (!chunks.length) {
+        setRecording(false);
+        return;
+      }
+
+      const blob = new Blob(chunks, { type: recorder.mimeType || "audio/webm" });
+      setRecording(false);
+      setTranscribing(true);
+
+      try {
+        const text = await transcribeAudio(blob);
+        if (text) {
+          // Append to whatever was already typed -- a single space
+          // separator if the box wasn't empty.
+          setInput((prev) => (prev ? `${prev.trim()} ${text}` : text));
+          textareaRef.current?.focus();
+        } else {
+          setVoiceError("Didn't catch anything. Try again?");
+        }
+      } catch (err) {
+        setVoiceError(err?.message || "Transcription failed.");
+      } finally {
+        setTranscribing(false);
+      }
+    };
+
+    mediaRecorderRef.current = recorder;
+    recordingStreamRef.current = stream;
+
+    setRecording(true);
+    setRecordingSeconds(0);
+    recorder.start();
+
+    // Tick once a second so the UI can show elapsed time. Auto-stops
+    // at MAX_RECORDING_SECONDS so a user that walks away from their
+    // mic doesn't accidentally upload a 25 MB clip.
+    const startedAt = Date.now();
+    recordingTimerRef.current = window.setInterval(() => {
+      const elapsed = Math.floor((Date.now() - startedAt) / 1000);
+      setRecordingSeconds(elapsed);
+      if (elapsed >= MAX_RECORDING_SECONDS) {
+        // Stop programmatically -- the onstop handler above takes
+        // care of uploading whatever was captured up to this point.
+        try {
+          if (
+            mediaRecorderRef.current &&
+            mediaRecorderRef.current.state !== "inactive"
+          ) {
+            mediaRecorderRef.current.stop();
+          }
+        } catch {
+          /* recorder already stopped */
+        }
+      }
+    }, 250);
+  }, [recording, transcribing]);
+
+  const stopRecording = useCallback(() => {
+    if (!mediaRecorderRef.current) return;
+    try {
+      if (mediaRecorderRef.current.state !== "inactive") {
+        mediaRecorderRef.current.stop();
+      }
+    } catch {
+      /* already stopped -- onstop will not fire again */
+    }
+  }, []);
+
+  const toggleRecording = useCallback(() => {
+    if (recording) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
+  }, [recording, startRecording, stopRecording]);
+
+  // Tear everything down on unmount in case the user navigates away
+  // mid-recording. Without this the mic indicator stays on until they
+  // reload the tab.
+  useEffect(() => {
+    return () => cleanupRecording();
+  }, [cleanupRecording]);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -461,19 +648,61 @@ const ChatPage = () => {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKey}
             placeholder={
-              userRole === "teacher"
+              recording
+                ? "Listening… click the mic again to stop."
+                : transcribing
+                ? "Transcribing your voice…"
+                : userRole === "teacher"
                 ? "Ask about curriculum, program structure, admin details…"
                 : "Ask about your course, lessons, or assignments…"
             }
+            disabled={transcribing}
           />
+          <button
+            type="button"
+            className={`cp-mic-btn${
+              recording ? " cp-mic-btn--recording" : ""
+            }${transcribing ? " cp-mic-btn--transcribing" : ""}`}
+            onClick={toggleRecording}
+            disabled={transcribing}
+            aria-label={
+              recording
+                ? `Stop recording (${recordingSeconds}s)`
+                : transcribing
+                ? "Transcribing"
+                : "Record voice input"
+            }
+            title={
+              recording
+                ? `Stop & transcribe (${recordingSeconds}s)`
+                : transcribing
+                ? "Transcribing…"
+                : "Voice input"
+            }
+          >
+            {transcribing ? (
+              <Loader2 size={18} className="cp-mic-spin" />
+            ) : recording ? (
+              <Square size={16} fill="currentColor" />
+            ) : (
+              <Mic size={18} />
+            )}
+            {recording && (
+              <span className="cp-mic-timer">
+                {String(Math.floor(recordingSeconds / 60)).padStart(1, "0")}:
+                {String(recordingSeconds % 60).padStart(2, "0")}
+              </span>
+            )}
+          </button>
           <button
             className="cp-send-btn"
             onClick={send}
-            disabled={!input.trim() || isTyping}
+            disabled={!input.trim() || isTyping || recording || transcribing}
           >
             Send
           </button>
         </div>
+        {voiceError && <div className="cp-voice-error">{voiceError}</div>}
       </main>
     </div>
   );

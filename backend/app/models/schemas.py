@@ -273,7 +273,7 @@ class QuotaCounter(BaseModel):
 
 
 class UsageQuotaResponse(BaseModel):
-    """Snapshot of the signed-in user's chat/upload usage for this month."""
+    """Snapshot of the signed-in user's chat/upload/voice usage for this month."""
 
     tier: str
     period_start: str = Field(
@@ -282,6 +282,7 @@ class UsageQuotaResponse(BaseModel):
     )
     chat: QuotaCounter
     upload: QuotaCounter
+    voice: QuotaCounter
 
 
 # ── Admin dashboard ───────────────────────────────────────────────────────────

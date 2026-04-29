@@ -1,5 +1,6 @@
 """
-Per-tier monthly quotas for chat queries and document uploads.
+Per-tier monthly quotas for chat queries, document uploads, and voice
+transcriptions.
 
 Each tier has a hard cap on how many of each action a user can perform per
 calendar month. Counters live in `user_quota_usage`, keyed by
@@ -19,11 +20,23 @@ from app.services import user_service
 logger = logging.getLogger(__name__)
 
 
-# Tier → {chat: monthly limit, upload: monthly limit}. None = unlimited.
+# Tier → {chat, upload, voice: monthly limit}. None = unlimited.
+# Voice = number of microphone-input transcriptions per month. Each Whisper
+# call regardless of audio length counts as one (we cap recording duration
+# to 90s on the client so individual costs stay small).
 QUOTAS: Dict[str, Dict[str, Optional[int]]] = {
-    "free":     {"chat": 30,  "upload": 5},
-    "regular":  {"chat": 300, "upload": 50},
-    "advanced": {"chat": None, "upload": None},
+    "free":     {"chat": 30,   "upload": 5,  "voice": 30},
+    "regular":  {"chat": 300,  "upload": 50, "voice": 300},
+    "advanced": {"chat": None, "upload": None, "voice": None},
+}
+
+
+# Action → DB column name in `user_quota_usage`. Centralised so the SQL
+# below stays in sync if a new action is added.
+_ACTION_COLUMN = {
+    "chat":   "chat_count",
+    "upload": "upload_count",
+    "voice":  "voice_count",
 }
 
 
@@ -55,7 +68,7 @@ def _tier_for(user_id: int) -> str:
 def _current_counts(user_id: int) -> Dict[str, int]:
     row = mysql_db.fetch_one(
         """
-        SELECT chat_count, upload_count
+        SELECT chat_count, upload_count, voice_count
         FROM user_quota_usage
         WHERE user_id = %s AND period_start = %s
         LIMIT 1
@@ -63,36 +76,45 @@ def _current_counts(user_id: int) -> Dict[str, int]:
         (int(user_id), _period_start_today()),
     )
     return {
-        "chat": int((row or {}).get("chat_count") or 0),
+        "chat":   int((row or {}).get("chat_count") or 0),
         "upload": int((row or {}).get("upload_count") or 0),
+        "voice":  int((row or {}).get("voice_count") or 0),
     }
 
 
-def _bump(user_id: int, *, chat_delta: int = 0, upload_delta: int = 0) -> None:
+def _bump(
+    user_id: int,
+    *,
+    chat_delta: int = 0,
+    upload_delta: int = 0,
+    voice_delta: int = 0,
+) -> None:
     """Atomic upsert: insert a new month row or add to the existing counters."""
     mysql_db.execute_update(
         """
-        INSERT INTO user_quota_usage (user_id, period_start, chat_count, upload_count)
-        VALUES (%s, %s, %s, %s)
+        INSERT INTO user_quota_usage (user_id, period_start, chat_count, upload_count, voice_count)
+        VALUES (%s, %s, %s, %s, %s)
         ON DUPLICATE KEY UPDATE
             chat_count   = chat_count   + VALUES(chat_count),
-            upload_count = upload_count + VALUES(upload_count)
+            upload_count = upload_count + VALUES(upload_count),
+            voice_count  = voice_count  + VALUES(voice_count)
         """,
         (
             int(user_id),
             _period_start_today(),
             max(0, int(chat_delta)),
             max(0, int(upload_delta)),
+            max(0, int(voice_delta)),
         ),
     )
 
 
 def check_and_increment(user_id: int, action: str) -> None:
     """
-    Reserve one unit of `action` ('chat' or 'upload') for the user, or raise
-    `QuotaExceeded` if their tier is already at the cap for this month.
+    Reserve one unit of `action` ('chat', 'upload', or 'voice') for the user,
+    or raise `QuotaExceeded` if their tier is already at the cap for this month.
     """
-    if action not in ("chat", "upload"):
+    if action not in _ACTION_COLUMN:
         raise ValueError(f"Unknown quota action: {action!r}")
 
     tier = _tier_for(user_id)
@@ -123,4 +145,5 @@ def get_usage(user_id: int) -> Dict[str, Any]:
         "period_start": _period_start_today().isoformat(),
         "chat":   {"used": counts["chat"],   "limit": limits["chat"]},
         "upload": {"used": counts["upload"], "limit": limits["upload"]},
+        "voice":  {"used": counts["voice"],  "limit": limits["voice"]},
     }

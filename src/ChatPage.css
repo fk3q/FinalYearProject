@@ -493,6 +493,119 @@
 .cp-send-btn:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
 .cp-send-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
+/* ── Voice input mic button ──────────────────────────────────────────
+ * Three visual states:
+ *   · idle         -- subtle ghost-button next to the textarea, mic icon
+ *   · recording    -- pulsing red, shows live elapsed timer (mm:ss)
+ *   · transcribing -- disabled, indigo loader spinner
+ * The button shares the height of the Send button so the input bar
+ * keeps a single horizontal baseline. */
+.cp-mic-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 44px;
+  height: 44px;
+  padding: 0 12px;
+  border: 1.5px solid #c5cde8;
+  border-radius: 12px;
+  background: #f7f8ff;
+  color: #4f46e5;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s ease;
+}
+
+.cp-mic-btn:hover:not(:disabled) {
+  background: #eef0ff;
+  border-color: #4f46e5;
+  transform: translateY(-1px);
+}
+
+.cp-mic-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Recording: pulsing red dot, white icon, fixed-width timer. */
+.cp-mic-btn--recording {
+  background: #ef4444;
+  border-color: #ef4444;
+  color: #ffffff;
+  animation: cp-mic-pulse 1.4s ease-in-out infinite;
+}
+
+.cp-mic-btn--recording:hover:not(:disabled) {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #ffffff;
+}
+
+.cp-mic-timer {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes cp-mic-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 0 rgba(239, 68, 68, 0.55),
+      0 4px 14px rgba(239, 68, 68, 0.32);
+  }
+  50% {
+    box-shadow:
+      0 0 0 10px rgba(239, 68, 68, 0),
+      0 4px 14px rgba(239, 68, 68, 0.32);
+  }
+}
+
+/* Transcribing: indigo loader spinning in place. */
+.cp-mic-btn--transcribing {
+  background: #eef0ff;
+  border-color: #c5cde8;
+  color: #4f46e5;
+  animation: none;
+}
+
+.cp-mic-spin {
+  animation: cp-mic-spin 0.9s linear infinite;
+}
+
+@keyframes cp-mic-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* One-line error hint shown under the input bar when mic permission
+   is denied, the monthly voice quota is exhausted, etc. */
+.cp-voice-error {
+  margin: 6px 28px 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  font-size: 13px;
+}
+
+@media (max-width: 768px) {
+  .cp-mic-btn {
+    min-width: 40px;
+    height: 40px;
+    padding: 0 10px;
+  }
+  .cp-voice-error {
+    margin: 6px 16px 12px;
+  }
+}
+
 /* ── Scrollbar ───────────────────────────────────────── */
 .cp-messages::-webkit-scrollbar { width: 5px; }
 .cp-messages::-webkit-scrollbar-track { background: transparent; }

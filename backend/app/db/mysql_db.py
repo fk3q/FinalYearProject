@@ -207,9 +207,9 @@ def init_db_schema() -> None:
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
                 """
             )
-            # Per-user, per-month counters for tier-based quotas (chat, upload).
-            # Keyed by (user_id, period_start) so we never accidentally
-            # double-count across months.
+            # Per-user, per-month counters for tier-based quotas
+            # (chat, upload, voice). Keyed by (user_id, period_start) so
+            # we never accidentally double-count across months.
             cur.execute(
                 """
                 CREATE TABLE IF NOT EXISTS user_quota_usage (
@@ -217,12 +217,25 @@ def init_db_schema() -> None:
                     period_start DATE NOT NULL,
                     chat_count INT UNSIGNED NOT NULL DEFAULT 0,
                     upload_count INT UNSIGNED NOT NULL DEFAULT 0,
+                    voice_count INT UNSIGNED NOT NULL DEFAULT 0,
                     PRIMARY KEY (user_id, period_start),
                     CONSTRAINT fk_user_quota_user
                         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
                 """
             )
+            # Idempotent column-add for installs that were created before
+            # the voice quota was introduced. Wrapped in a try because
+            # `IF NOT EXISTS` on `ADD COLUMN` only landed in MySQL 8.0.29
+            # and we still support older 8.x patches in some envs.
+            try:
+                cur.execute(
+                    "ALTER TABLE user_quota_usage "
+                    "ADD COLUMN voice_count INT UNSIGNED NOT NULL DEFAULT 0"
+                )
+            except Exception:
+                # Column already exists -- ignore.
+                pass
         conn.commit()
         logger.info("MySQL users table ready.")
     except Exception:
