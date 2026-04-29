@@ -185,10 +185,12 @@
   overflow: hidden;
   isolation: isolate;
   /* Glow tint, written as a bare RGB tuple so the rules below can compose
-     it with any alpha via `rgba(var(--glow), <a>)`. Cyan #22d3ee is the
-     visual complement to the purple/indigo hero gradient, so the glow
-     pops against the background while feeling premium and on-brand. */
-  --glow: 34, 211, 238;
+     it with any alpha via `rgba(var(--glow), <a>)`. Sky blue #38bdf8 sits
+     close to the indigo end of the hero gradient -- analogous rather than
+     complementary -- so the glow feels like a softer, friendlier extension
+     of the brand instead of a sharp pop. Easy to retint by editing this
+     one tuple. */
+  --glow: 56, 189, 248;
 }
 
 .cta-spotlight::before {
