@@ -282,22 +282,39 @@
 .hero {
   position: relative;
   overflow: hidden;
-  /* Slightly darker / richer purple gradient. Same hue family as the
-     original (#667eea -> #764ba2) just pulled ~12-15% deeper so white
-     text reads with more contrast and the stats strip looks denser. */
-  background: linear-gradient(135deg, #5363cf 0%, #5a3879 100%);
+  /* Pulled another ~8% darker on top of the previous step. The
+     brighter the glass highlights below get, the more contrast they
+     need against the base, so a deeper indigo->plum reads as "thick
+     coloured glass" rather than "flat purple gradient". User
+     explicitly authorised darkening. */
+  background: linear-gradient(135deg, #4a5ac0 0%, #4f3072 100%);
   color: white;
   padding: 100px 20px;
   text-align: center;
 }
 
-/* Static glass highlights -- baked into the panel, do not animate.
-   Three stacked stops:
-     1. Top-edge specular (the bright lip of a glass surface catching
-        a light source above and slightly to the left).
-     2. Bottom-right ambient bloom (warm bounced light).
-     3. Diagonal "refracted light bar" near the upper third, the way
-        light bends through a curved glass edge. */
+/* ── Liquid-glass surface highlights (Apple-style) ────────────────────────
+ * Eight stacked gradient layers in `.hero::before` mimic the optics of
+ * a thick coloured-glass panel. Read top-to-bottom in source order
+ * (which is bottom-to-top in stacking order):
+ *
+ *   (a) Razor-thin top rim line  -- bright lip of the glass.
+ *   (b) Top convex inner glow    -- the surface bulges towards the
+ *                                   viewer like a lens.
+ *   (c) Top-left specular catch  -- primary studio light.
+ *   (d) Top-right specular catch -- secondary fill light.
+ *   (e) Cool chromatic edge      -- blue-tinted refraction on the
+ *                                   left side, the iridescent
+ *                                   rainbow-edge that gives glass its
+ *                                   "liquid" feel.
+ *   (f) Warm chromatic edge      -- pink-tinted refraction on the
+ *                                   right side, completing the
+ *                                   dispersion.
+ *   (g) Bottom inset darkening   -- "looking into" the glass, hints at
+ *                                   thickness.
+ *   (h) Brand purple base        -- already on `.hero`, shows through
+ *                                   between all the highlights so the
+ *                                   colour stays unmistakably ours. */
 .hero::before {
   content: "";
   position: absolute;
@@ -305,29 +322,58 @@
   pointer-events: none;
   z-index: 0;
   background:
-    radial-gradient(
-      ellipse 70% 35% at 28% -5%,
-      rgba(255, 255, 255, 0.22) 0%,
-      rgba(255, 255, 255, 0) 65%
-    ),
-    radial-gradient(
-      ellipse 80% 55% at 80% 110%,
-      rgba(255, 255, 255, 0.10) 0%,
-      rgba(255, 255, 255, 0) 65%
-    ),
+    /* (a) Razor-thin top rim line. */
     linear-gradient(
-      118deg,
-      rgba(255, 255, 255, 0) 32%,
-      rgba(255, 255, 255, 0.10) 46%,
-      rgba(255, 255, 255, 0.04) 52%,
-      rgba(255, 255, 255, 0) 68%
+      180deg,
+      rgba(255, 255, 255, 0.42) 0%,
+      rgba(255, 255, 255, 0.14) 0.4%,
+      rgba(255, 255, 255, 0) 0.9%
+    ),
+    /* (b) Top convex inner glow -- broad highlight curving in from
+           above so the surface reads as bulging towards the viewer. */
+    radial-gradient(
+      ellipse 75% 38% at 50% -8%,
+      rgba(255, 255, 255, 0.30) 0%,
+      rgba(255, 255, 255, 0) 62%
+    ),
+    /* (c) Top-left specular catch. */
+    radial-gradient(
+      ellipse 32% 28% at 22% 12%,
+      rgba(255, 255, 255, 0.22) 0%,
+      rgba(255, 255, 255, 0) 55%
+    ),
+    /* (d) Top-right specular catch (smaller, dimmer fill light). */
+    radial-gradient(
+      ellipse 28% 24% at 80% 18%,
+      rgba(255, 255, 255, 0.16) 0%,
+      rgba(255, 255, 255, 0) 55%
+    ),
+    /* (e) Cool chromatic dispersion on the left edge. */
+    radial-gradient(
+      ellipse 22% 60% at 0% 55%,
+      rgba(180, 220, 255, 0.13) 0%,
+      rgba(180, 220, 255, 0) 65%
+    ),
+    /* (f) Warm chromatic dispersion on the right edge. */
+    radial-gradient(
+      ellipse 22% 60% at 100% 50%,
+      rgba(255, 210, 225, 0.11) 0%,
+      rgba(255, 210, 225, 0) 65%
+    ),
+    /* (g) Bottom inset darkening for glass-thickness depth. */
+    linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0) 68%,
+      rgba(0, 0, 0, 0.14) 100%
     );
 }
 
 /* Drifting "liquid" highlights -- two soft radial blobs whose
-   positions ease across the panel on a slow 26 s loop. Combined with
-   the static specular above, the surface reads as glass that's
-   subtly catching shifting light, not just a flat gradient. */
+   positions ease across the panel on a slow loop. Combined with the
+   static specular set above, the surface reads as glass that's
+   actively catching shifting light. Slightly brightened and sped up
+   from the previous version because the new darker base gives them
+   more headroom. */
 .hero::after {
   content: "";
   position: absolute;
@@ -337,18 +383,18 @@
   background:
     radial-gradient(
       ellipse 38% 48% at 50% 50%,
-      rgba(255, 255, 255, 0.11) 0%,
+      rgba(255, 255, 255, 0.14) 0%,
       rgba(255, 255, 255, 0) 70%
     ),
     radial-gradient(
       ellipse 28% 38% at 50% 50%,
-      rgba(180, 200, 255, 0.07) 0%,
+      rgba(180, 200, 255, 0.09) 0%,
       rgba(180, 200, 255, 0) 70%
     );
   background-repeat: no-repeat;
   background-size: 60% 60%, 50% 50%;
   background-position: 12% 28%, 78% 70%;
-  animation: hero-liquid-flow 26s ease-in-out infinite;
+  animation: hero-liquid-flow 22s ease-in-out infinite;
 }
 
 @keyframes hero-liquid-flow {
