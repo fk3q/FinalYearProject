@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Github, Instagram, Linkedin, Twitter } from 'lucide-react';
 import './MainPage.css';
 import { getSessionUser } from './api/auth';
 import { createCheckoutSession } from './api/payments';
@@ -326,9 +327,44 @@ const MainPage = () => {
             <h3>Laboracle</h3>
             <p>Your smart learning companion</p>
             <div className="social-links">
-              <a href="#">Twitter</a>
-              <a href="#">LinkedIn</a>
-              <a href="#">GitHub</a>
+              <a
+                href="https://github.com/fk3q"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="social-icon"
+                aria-label="Laboracle on GitHub"
+              >
+                <Github size={18} strokeWidth={2} />
+              </a>
+              <a
+                href="https://www.instagram.com/lab_oracle/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="social-icon"
+                aria-label="Laboracle on Instagram"
+              >
+                <Instagram size={18} strokeWidth={2} />
+              </a>
+              {/* Twitter placeholder — replace href when an account exists.
+                  Until then it's wired to "#" intentionally so the icon
+                  stays in the row for visual balance with the other three. */}
+              <a
+                href="#"
+                className="social-icon social-icon--placeholder"
+                aria-label="Twitter (coming soon)"
+                title="Coming soon"
+              >
+                <Twitter size={18} strokeWidth={2} />
+              </a>
+              <a
+                href="https://www.linkedin.com/in/furqan-zedani-1717a5406/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="social-icon"
+                aria-label="Laboracle founder on LinkedIn"
+              >
+                <Linkedin size={18} strokeWidth={2} />
+              </a>
             </div>
           </div>
           <div className="footer-section">

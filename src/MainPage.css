@@ -366,11 +366,54 @@
 
 .social-links {
   display: flex;
-  gap: 15px;
+  gap: 12px;
+  margin-top: 4px;
 }
 
-.social-links a {
-  display: inline-block;
+/* Circular icon-button social links — small white circles on the dark
+   footer with the platform glyph centered inside, inspired by the
+   compact style used by sites like Scholarcy. */
+.social-links .social-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #1a1a2e;
+  text-decoration: none;
+  transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease,
+    box-shadow 0.2s ease;
+  margin-bottom: 0;
+}
+
+.social-links .social-icon:hover {
+  background: #667eea;
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(102, 126, 234, 0.35);
+}
+
+.social-links .social-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Placeholder variant — used for social channels we don't have a real
+   account for yet. Visually present in the row but clearly "muted" so
+   we don't promise links we can't deliver. */
+.social-links .social-icon--placeholder {
+  background: rgba(255, 255, 255, 0.18);
+  color: #c7cad6;
+  cursor: default;
+}
+
+.social-links .social-icon--placeholder:hover {
+  background: rgba(255, 255, 255, 0.28);
+  color: #ffffff;
+  transform: none;
+  box-shadow: none;
 }
 
 .footer-bottom {
