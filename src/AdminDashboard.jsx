@@ -1,6 +1,16 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
+  Activity,
+  CalendarDays,
+  Clock,
+  MessageCircle,
+  MessagesSquare,
+  TrendingUp,
+  UserPlus,
+  Users,
+} from "lucide-react";
+import {
   adminLogout,
   backfillGeo,
   getAdminStats,
@@ -227,14 +237,14 @@ const AdminDashboard = () => {
       {backfillMsg && <div className="adm-banner">{backfillMsg}</div>}
 
       <section className="adm-cards">
-        <Card label="Total users"     value={formatNumber(totals.total_users)}      accent="blue" />
-        <Card label="New today"        value={formatNumber(totals.users_today)}       accent="green" />
-        <Card label="New (7 days)"     value={formatNumber(totals.users_last_7_days)} accent="cyan" />
-        <Card label="New (30 days)"    value={formatNumber(totals.users_last_30_days)} accent="violet" />
-        <Card label="Active today"     value={formatNumber(totals.active_users_today)} accent="amber" />
-        <Card label="Time spent today" value={formatDuration(totals.total_seconds_today)} accent="rose" />
-        <Card label="Chat sessions"    value={formatNumber(totals.total_chat_sessions)} accent="teal" />
-        <Card label="Chat messages"    value={formatNumber(totals.total_chat_messages)} accent="indigo" />
+        <Card label="Total users"     value={formatNumber(totals.total_users)}        accent="blue"   icon={Users} />
+        <Card label="New today"        value={formatNumber(totals.users_today)}        accent="green"  icon={UserPlus} />
+        <Card label="New (7 days)"     value={formatNumber(totals.users_last_7_days)}  accent="cyan"   icon={TrendingUp} />
+        <Card label="New (30 days)"    value={formatNumber(totals.users_last_30_days)} accent="violet" icon={CalendarDays} />
+        <Card label="Active today"     value={formatNumber(totals.active_users_today)} accent="amber"  icon={Activity} />
+        <Card label="Time spent today" value={formatDuration(totals.total_seconds_today)} accent="rose"   icon={Clock} />
+        <Card label="Chat sessions"    value={formatNumber(totals.total_chat_sessions)} accent="teal"   icon={MessagesSquare} />
+        <Card label="Chat messages"    value={formatNumber(totals.total_chat_messages)} accent="indigo" icon={MessageCircle} />
       </section>
 
       <div className="adm-row">
@@ -555,10 +565,17 @@ const formatKb = (kb) => {
   return `${n.toFixed(1)} KB`;
 };
 
-const Card = ({ label, value, accent }) => (
+const Card = ({ label, value, accent, icon: Icon }) => (
   <div className={`adm-card adm-card--${accent || "blue"}`}>
-    <span className="adm-card-label">{label}</span>
-    <span className="adm-card-value">{value}</span>
+    {Icon && (
+      <span className="adm-card-icon" aria-hidden="true">
+        <Icon strokeWidth={2.2} />
+      </span>
+    )}
+    <span className="adm-card-text">
+      <span className="adm-card-label">{label}</span>
+      <span className="adm-card-value">{value}</span>
+    </span>
   </div>
 );
 

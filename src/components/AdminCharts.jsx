@@ -46,7 +46,7 @@ export const BarChart = ({ data, xLabel, yLabel, height = 240 }) => {
               x2={width - padding.right}
               y1={t.y}
               y2={t.y}
-              stroke="rgba(255,255,255,0.06)"
+              stroke="rgba(20,30,60,0.06)"
             />
             <text x={padding.left - 6} y={t.y + 3} className="adm-svg-tick" textAnchor="end">
               {Math.round(t.v)}
@@ -72,7 +72,7 @@ export const BarChart = ({ data, xLabel, yLabel, height = 240 }) => {
                 height={Math.max(h, 1)}
                 rx={4}
                 fill={colorFor(i)}
-                opacity={hover && hover.i !== i ? 0.45 : 0.95}
+                opacity={hover && hover.i !== i ? 0.4 : 1}
               />
               <text
                 x={x + w / 2}
@@ -157,7 +157,7 @@ export const PieChart = ({ data, size = 220 }) => {
     <div className="adm-pie-row">
       <svg viewBox={`0 0 ${size} ${size}`} className="adm-pie" width={size} height={size}>
         {slices.map((s, i) => (
-          <path key={i} d={s.path} fill={s.color} stroke="#1a1e36" strokeWidth={1} />
+          <path key={i} d={s.path} fill={s.color} stroke="#ffffff" strokeWidth={1.5} />
         ))}
       </svg>
       <ul className="adm-pie-legend">
@@ -229,7 +229,7 @@ export const Histogram = ({
               x2={width - padding.right}
               y1={t.y}
               y2={t.y}
-              stroke="rgba(255,255,255,0.06)"
+              stroke="rgba(20,30,60,0.06)"
             />
             <text x={padding.left - 6} y={t.y + 3} className="adm-svg-tick" textAnchor="end">
               {t.v}
@@ -334,7 +334,7 @@ export const ScatterPlot = ({
               x2={width - padding.right}
               y1={toY(v)}
               y2={toY(v)}
-              stroke="rgba(255,255,255,0.06)"
+              stroke="rgba(20,30,60,0.06)"
             />
             <text x={padding.left - 6} y={toY(v) + 3} className="adm-svg-tick" textAnchor="end">
               {Math.round(v)}
@@ -348,7 +348,7 @@ export const ScatterPlot = ({
               x2={toX(v)}
               y1={padding.top}
               y2={padding.top + innerH}
-              stroke="rgba(255,255,255,0.04)"
+              stroke="rgba(20,30,60,0.04)"
             />
             <text x={toX(v)} y={height - padding.bottom + 16} className="adm-svg-xlabel" textAnchor="middle">
               {Math.round(v)}
@@ -367,8 +367,8 @@ export const ScatterPlot = ({
               r={hover === i ? 7 : 5}
               fill={colorFor(i)}
               fillOpacity={0.85}
-              stroke="#1a1e36"
-              strokeWidth={1}
+              stroke="#ffffff"
+              strokeWidth={1.5}
               onMouseEnter={() => setHover(i)}
               onMouseLeave={() => setHover(null)}
               style={{ cursor: "pointer" }}
