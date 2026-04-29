@@ -264,8 +264,24 @@
   box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
 }
 
-/* Hero Section */
+/* ── Hero Section ────────────────────────────────────────────────────────
+ * The brand purple gradient is preserved as the *base* layer, then
+ * overlaid with two pseudo-elements to fake a "liquid glass" surface:
+ *   .hero::before -> static specular catches (top edge highlight,
+ *                    bottom-right corner glow, diagonal light bar)
+ *   .hero::after  -> two soft white blobs that slowly drift across the
+ *                    panel on a long loop, simulating light flowing
+ *                    over a curved glass surface.
+ * Educational motif icons drift behind the copy on top of all that
+ * (z-index 1). The text content sits on z-index 2.
+ *
+ * `position: relative` + `overflow: hidden` are mandatory: relative so
+ * the absolutely-positioned children anchor to the hero, hidden so
+ * the drifting icons enter/leave cleanly at the edges instead of
+ * spilling under the navbar or into the next section. */
 .hero {
+  position: relative;
+  overflow: hidden;
   /* Slightly darker / richer purple gradient. Same hue family as the
      original (#667eea -> #764ba2) just pulled ~12-15% deeper so white
      text reads with more contrast and the stats strip looks denser. */
@@ -275,7 +291,137 @@
   text-align: center;
 }
 
+/* Static glass highlights -- baked into the panel, do not animate.
+   Three stacked stops:
+     1. Top-edge specular (the bright lip of a glass surface catching
+        a light source above and slightly to the left).
+     2. Bottom-right ambient bloom (warm bounced light).
+     3. Diagonal "refracted light bar" near the upper third, the way
+        light bends through a curved glass edge. */
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(
+      ellipse 70% 35% at 28% -5%,
+      rgba(255, 255, 255, 0.22) 0%,
+      rgba(255, 255, 255, 0) 65%
+    ),
+    radial-gradient(
+      ellipse 80% 55% at 80% 110%,
+      rgba(255, 255, 255, 0.10) 0%,
+      rgba(255, 255, 255, 0) 65%
+    ),
+    linear-gradient(
+      118deg,
+      rgba(255, 255, 255, 0) 32%,
+      rgba(255, 255, 255, 0.10) 46%,
+      rgba(255, 255, 255, 0.04) 52%,
+      rgba(255, 255, 255, 0) 68%
+    );
+}
+
+/* Drifting "liquid" highlights -- two soft radial blobs whose
+   positions ease across the panel on a slow 26 s loop. Combined with
+   the static specular above, the surface reads as glass that's
+   subtly catching shifting light, not just a flat gradient. */
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(
+      ellipse 38% 48% at 50% 50%,
+      rgba(255, 255, 255, 0.11) 0%,
+      rgba(255, 255, 255, 0) 70%
+    ),
+    radial-gradient(
+      ellipse 28% 38% at 50% 50%,
+      rgba(180, 200, 255, 0.07) 0%,
+      rgba(180, 200, 255, 0) 70%
+    );
+  background-repeat: no-repeat;
+  background-size: 60% 60%, 50% 50%;
+  background-position: 12% 28%, 78% 70%;
+  animation: hero-liquid-flow 26s ease-in-out infinite;
+}
+
+@keyframes hero-liquid-flow {
+  0%, 100% {
+    background-position: 12% 28%, 78% 70%;
+  }
+  33% {
+    background-position: 60% 50%, 30% 18%;
+  }
+  66% {
+    background-position: 82% 12%, 18% 78%;
+  }
+}
+
+/* Drifting educational motifs (book, library, graduation cap, ...)
+   sit above the gloss but below the hero copy. */
+.hero-bg-icons {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.hero-bg-icon {
+  position: absolute;
+  /* Color baked at alpha 0.10 so the icons read as motifs, not
+     decoration. The element-level `opacity` animation just fades
+     them in/out at the edges of their drift. */
+  color: rgba(255, 255, 255, 0.1);
+  display: inline-flex;
+  animation:
+    hero-icon-drift-ltr var(--bg-icon-dur, 32s) linear var(--bg-icon-delay, 0s) infinite;
+  will-change: transform, opacity;
+}
+
+.hero-bg-icon--rtl {
+  animation-name: hero-icon-drift-rtl;
+}
+
+/* Left -> right drift. Icon enters from off-screen-left, fades up,
+   crosses the hero, fades out on the right. `left` driven directly so
+   the icon traverses the full hero width regardless of how far apart
+   transform-percentages would land at different viewport sizes. */
+@keyframes hero-icon-drift-ltr {
+  0%   { left: -8%; opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { left: 108%; opacity: 0; }
+}
+
+@keyframes hero-icon-drift-rtl {
+  0%   { left: 108%; opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { left: -8%; opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero::after,
+  .hero-bg-icon {
+    animation: none;
+  }
+  /* Park the drifting icons at fixed x-positions so they don't all
+     stack at left:0 (their starting frame) when motion is reduced. */
+  .hero-bg-icon--ltr { left: 18%; opacity: 1; }
+  .hero-bg-icon--rtl { left: 78%; opacity: 1; }
+}
+
 .hero-content {
+  position: relative;
+  /* Sits above both the static gloss layer (z 0) and the drifting
+     icons (z 1) so headline / buttons / stats are never obscured. */
+  z-index: 2;
   max-width: 900px;
   margin: 0 auto;
 }

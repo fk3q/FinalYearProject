@@ -3,9 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeftRight,
   BookMarked,
+  BookOpen,
   GraduationCap,
   Heart,
+  Library,
+  Lightbulb,
   MessageCircleQuestion,
+  Notebook,
   ShieldCheck,
 } from 'lucide-react';
 import {
@@ -99,6 +103,21 @@ const PLANS = [
       'Early access to new features',
     ],
   },
+];
+
+// Educational motifs that drift sideways behind the hero copy. Each
+// row has a fixed vertical position and its own duration / delay so
+// the cluster looks like icons quietly travelling across the hero on
+// six independent rails. `direction === 'rtl'` flips the keyframe so
+// some icons go right-to-left, breaking the procession into a
+// crisscross. Sparse on purpose -- six icons total, "just visible".
+const HERO_BG_ICONS = [
+  { Icon: BookOpen,      top: '14%', size: 50, dur: '32s', delay: '0s',   direction: 'ltr' },
+  { Icon: Library,       top: '72%', size: 60, dur: '38s', delay: '6s',   direction: 'rtl' },
+  { Icon: GraduationCap, top: '38%', size: 56, dur: '34s', delay: '12s',  direction: 'ltr' },
+  { Icon: BookMarked,    top: '85%', size: 40, dur: '36s', delay: '4s',   direction: 'rtl' },
+  { Icon: Lightbulb,     top: '24%', size: 38, dur: '30s', delay: '16s',  direction: 'rtl' },
+  { Icon: Notebook,      top: '58%', size: 44, dur: '34s', delay: '20s',  direction: 'ltr' },
 ];
 
 // requestAnimationFrame counter that ticks `from` up to `to` once `active`
@@ -321,6 +340,24 @@ const MainPage = () => {
 
       {/* Hero Section */}
       <section className="hero">
+        {/* Drifting educational motifs behind the copy. `aria-hidden`
+            because they're decorative -- screen readers should skip
+            straight to the headline. */}
+        <div className="hero-bg-icons" aria-hidden="true">
+          {HERO_BG_ICONS.map(({ Icon, top, size, dur, delay, direction }, i) => (
+            <span
+              key={i}
+              className={`hero-bg-icon hero-bg-icon--${direction}`}
+              style={{
+                top,
+                '--bg-icon-dur': dur,
+                '--bg-icon-delay': delay,
+              }}
+            >
+              <Icon size={size} strokeWidth={1.4} />
+            </span>
+          ))}
+        </div>
         <div className="hero-content">
           <h1 className="hero-title">
             Your Smart Learning Assistant
