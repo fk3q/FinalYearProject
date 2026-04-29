@@ -140,34 +140,83 @@
   background: white;
   color: #667eea;
   border: none;
-  padding: 16px 36px;
-  border-radius: 10px;
-  font-size: 18px;
-  font-weight: 600;
+  padding: 16px 40px;
+  border-radius: 999px;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform 0.2s ease, box-shadow 0.3s ease;
 }
 
 .cta-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
 
 .cta-secondary {
   background: transparent;
   color: white;
   border: 2px solid white;
-  padding: 16px 36px;
-  border-radius: 10px;
-  font-size: 18px;
-  font-weight: 600;
+  padding: 14px 38px;
+  border-radius: 999px;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: background 0.3s ease, color 0.3s ease, transform 0.2s ease,
+    box-shadow 0.3s ease;
 }
 
 .cta-secondary:hover {
   background: white;
   color: #667eea;
+  transform: translateY(-2px);
+}
+
+/* ── Cursor-following spotlight glow ──────────────────────────────────────
+ * `--mx` and `--my` are written by the React mousemove handler in pixels
+ * relative to the button. The ::before paints a soft orange radial gradient
+ * centered at that point, clipped to the button's pill shape via
+ * `overflow: hidden`. The outer halo is a separate orange box-shadow that
+ * fades in on hover, so the effect feels like the button is sitting under
+ * a warm ambient light that tracks the mouse. */
+.cta-spotlight {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  --glow: 255, 107, 0; /* warm orange (#ff6b00). Comma-separated for rgba(). */
+}
+
+.cta-spotlight::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    180px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(var(--glow), 0.55),
+    rgba(var(--glow), 0) 70%
+  );
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Keep the button label/icon stack above the spotlight. */
+.cta-spotlight > * {
+  position: relative;
+  z-index: 1;
+}
+
+.cta-spotlight:hover::before {
+  opacity: 1;
+}
+
+.cta-spotlight:hover {
+  box-shadow:
+    0 0 0 1px rgba(var(--glow), 0.25),
+    0 8px 22px -4px rgba(var(--glow), 0.55),
+    0 16px 40px -10px rgba(var(--glow), 0.45);
 }
 
 .hero-stats {

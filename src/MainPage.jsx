@@ -53,6 +53,17 @@ const MainPage = () => {
   const [checkoutLoading, setCheckoutLoading] = useState(null); // plan id currently checking out
   const [checkoutError, setCheckoutError] = useState('');
 
+  // Spotlight glow that follows the cursor across hero CTAs. We write the
+  // pointer's position relative to the button into CSS custom properties so
+  // a `radial-gradient` in the stylesheet can render the highlight at that
+  // exact point. Using getBoundingClientRect (instead of layerX/Y) keeps the
+  // result stable across browsers and zoom levels.
+  const handleSpotlight = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    e.currentTarget.style.setProperty('--mx', `${e.clientX - rect.left}px`);
+    e.currentTarget.style.setProperty('--my', `${e.clientY - rect.top}px`);
+  };
+
   const handleSelectPlan = async (planId) => {
     setCheckoutError('');
     const plan = PLANS.find((p) => p.id === planId);
@@ -134,10 +145,18 @@ const MainPage = () => {
             with citations powered by safe, low-hallucination AI technology.
           </p>
           <div className="hero-buttons">
-            <button onClick={() => navigate('/signup')} className="cta-primary">
+            <button
+              onClick={() => navigate('/signup')}
+              onMouseMove={handleSpotlight}
+              className="cta-primary cta-spotlight"
+            >
               Get Started Free
             </button>
-            <button onClick={() => navigate('/upload')} className="cta-secondary">
+            <button
+              onClick={() => navigate('/upload')}
+              onMouseMove={handleSpotlight}
+              className="cta-secondary cta-spotlight"
+            >
               Try Demo
             </button>
           </div>
