@@ -120,11 +120,17 @@ const Signup = () => {
               (err?.message || "unknown error") +
               " — you can try again from the Pricing page.",
           );
+          // Keep this fallback on /profile (not /chat). The user is
+          // mid-subscription and needs Pricing nav from a familiar
+          // account home; bouncing them into the chat intro modal
+          // would bury the failure they need to act on.
           navigate("/profile");
           return;
         }
       }
-      navigate("/profile");
+      // Default signup success: send straight into chat (matches the
+      // post-login redirect, plays the cinematic intro modal).
+      navigate("/chat");
     },
     [navigate],
   );

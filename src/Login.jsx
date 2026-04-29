@@ -30,7 +30,11 @@ const Login = () => {
         saveSessionUser(data.user);
         if (data.user.theme) applyTheme(data.user.theme);
       }
-      navigate("/profile");
+      // Land returning users straight in the chat workspace; the
+      // ChatPage mount triggers the cinematic intro on every visit.
+      // Account / billing / settings remain accessible from the chat
+      // sidebar.
+      navigate("/chat");
     },
     [applyTheme, navigate],
   );
