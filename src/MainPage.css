@@ -487,6 +487,14 @@
   right: 0;
   bottom: 0;
   width: clamp(150px, 14vw, 190px);
+  /* The source clip has a thin black letterbox baked into its
+     bottom edge. Forcing a slightly-wider-than-tall aspect ratio
+     (combined with `object-position: center top` on the video
+     itself) means the video covers the frame from the top down and
+     the black strip overflows past the bottom of the frame, where
+     `overflow: hidden` clips it away. Tweak the ratio to crop more
+     (e.g. 5/4) or less (e.g. 10/9) of the bottom. */
+  aspect-ratio: 7 / 6;
   z-index: 3;
   /* Round only the inner corners (top-left and top-right) so the
      bottom and right edges sit cleanly against the hero borders --
@@ -526,8 +534,14 @@
 .hero-video {
   display: block;
   width: 100%;
-  height: auto;
+  /* `height: 100%` lets the video fill the aspect-ratio'd frame; the
+     `cover` + `object-position: center top` combo anchors the
+     character to the top of the frame so the black letterbox at the
+     bottom of the source clip overflows past the frame's bottom edge
+     and gets clipped by the parent's `overflow: hidden`. */
+  height: 100%;
   object-fit: cover;
+  object-position: center top;
 }
 
 /* Tablet: shrink the corner accent so it doesn't crowd the stats row. */
