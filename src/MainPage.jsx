@@ -383,43 +383,40 @@ const MainPage = () => {
           ))}
         </div>
         <div className="hero-content">
-          <div className="hero-text">
-            <h1 className="hero-title">
-              Your Smart Learning Assistant
-            </h1>
-            <p className="hero-subtitle">
-              Ask questions about your courses, curriculum, and program details. Get accurate answers 
-              with citations powered by safe, low-hallucination AI technology.
-            </p>
-            <div className="hero-buttons">
-              <button
-                onClick={() => navigate('/signup')}
-                onMouseMove={handleSpotlight}
-                onMouseLeave={handleSpotlightLeave}
-                className="cta-primary cta-spotlight"
-              >
-                Get Started Free
-              </button>
-              <button
-                onClick={() => navigate('/upload')}
-                onMouseMove={handleSpotlight}
-                onMouseLeave={handleSpotlightLeave}
-                className="cta-secondary cta-spotlight"
-              >
-                Try Demo
-              </button>
-            </div>
-            <HeroStats />
+          <h1 className="hero-title">
+            Your Smart Learning Assistant
+          </h1>
+          <p className="hero-subtitle">
+            Ask questions about your courses, curriculum, and program details. Get accurate answers 
+            with citations powered by safe, low-hallucination AI technology.
+          </p>
+          <div className="hero-buttons">
+            <button
+              onClick={() => navigate('/signup')}
+              onMouseMove={handleSpotlight}
+              onMouseLeave={handleSpotlightLeave}
+              className="cta-primary cta-spotlight"
+            >
+              Get Started Free
+            </button>
+            <button
+              onClick={() => navigate('/upload')}
+              onMouseMove={handleSpotlight}
+              onMouseLeave={handleSpotlightLeave}
+              className="cta-secondary cta-spotlight"
+            >
+              Try Demo
+            </button>
           </div>
-
-          {/* Companion video sitting in a glassy frame on the right
-              column. Auto-plays muted on loop -- it's an ambient
-              accent, not a narrative video, so no controls. The
-              `onError` handler hides the frame entirely if the asset
-              isn't deployed yet, so the hero collapses to its
-              previous single-column look without a broken-video box. */}
-          <HeroCompanionVideo />
+          <HeroStats />
         </div>
+
+        {/* Ambient companion video pinned to the lower-right corner
+            of the hero section, "leaning" against the right edge.
+            Sibling of `.hero-content` so it can be absolutely
+            positioned against `.hero` itself rather than the centred
+            text column. Auto-hides if the asset is missing. */}
+        <HeroCompanionVideo />
       </section>
 
       {/* Features Section — bento-style asymmetric grid of dark cards */}

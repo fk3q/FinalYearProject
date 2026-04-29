@@ -468,72 +468,40 @@
   /* Sits above both the static gloss layer (z 0) and the drifting
      icons (z 1) so headline / buttons / stats are never obscured. */
   z-index: 2;
-  /* Two-column hero: copy on the left, ambient video frame on the
-     right. Wider max-width than the previous single-column layout
-     because two columns need more horizontal room without the
-     headline reflowing onto three lines. The columns auto-collapse
-     to a single stacked layout below 920 px (see media query lower
-     in this file). */
-  max-width: 1180px;
+  max-width: 800px;
   margin: 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 56px;
 }
 
-/* Left-hand text column. Slight grow factor so the headline and
-   subtitle have priority for horizontal space; the video frame on
-   the right has a hard max-width and won't fight back. */
-.hero-text {
-  flex: 1 1 0;
-  min-width: 0; /* lets long words wrap inside flex */
-  text-align: left;
-}
-
-/* Override the previous centered alignment of the copy elements
-   when they're inside the new two-column layout. The base
-   `.hero-title` / `.hero-subtitle` / `.hero-stats` rules above stay
-   intact for any other place they might be reused. */
-.hero-text .hero-title,
-.hero-text .hero-subtitle {
-  text-align: left;
-}
-
-.hero-text .hero-buttons {
-  justify-content: flex-start;
-}
-
-.hero-text .hero-stats {
-  justify-content: flex-start;
-}
-
-/* ── Glass video frame ──────────────────────────────────────────────────
- * Decorative, ambient. Sits on the right side of the hero in a
- * frosted-glass shell that matches the hero's liquid-glass surface:
- * thin white inner stroke, dark drop shadow underneath, soft purple
- * ambient halo so the frame reads as part of the hero "material"
- * rather than a foreign element.
+/* ── Companion video, lower-right corner ────────────────────────────────
+ * Pinned to the bottom-right of the hero section so the character
+ * appears to be "leaning" against the right edge of the page.
+ * Sibling of `.hero-content` -- positioned against `.hero` itself,
+ * not the centred text column, so it stays flush against the
+ * viewport's right edge regardless of how narrow the copy column is.
  *
- * `aspect-ratio: auto` lets the video itself dictate the frame's
- * height -- works for both portrait and landscape source files. */
+ * Small footprint (clamp 180–240 px) so it reads as a decorative
+ * accent, never competing with the headline or stats. Auto-hides
+ * below 640 px to keep mobile uncluttered. */
 .hero-video-frame {
-  flex: 0 0 auto;
-  width: clamp(260px, 32vw, 380px);
-  position: relative;
-  border-radius: 24px;
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  width: clamp(180px, 18vw, 240px);
+  z-index: 3;
+  border-radius: 22px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.22);
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.08),
     inset 0 1px 0 rgba(255, 255, 255, 0.32),
-    0 30px 60px -20px rgba(0, 0, 0, 0.5),
-    0 0 70px rgba(167, 139, 250, 0.28);
-  /* Faint backdrop blur so anything drifting behind the frame
-     (educational motifs, liquid highlights) reads with a touch of
-     depth-of-field rather than crisp focus. */
+    0 24px 50px -18px rgba(0, 0, 0, 0.55),
+    0 0 60px rgba(167, 139, 250, 0.24);
   -webkit-backdrop-filter: saturate(120%);
   backdrop-filter: saturate(120%);
+  /* Subtle "leaning" tilt -- gives the impression the figure is
+     resting against the right edge rather than floating squarely. */
+  transform: rotate(-1.2deg);
+  transform-origin: bottom right;
 }
 
 /* Specular sheen on the upper edge of the frame -- mirrors the
@@ -556,34 +524,23 @@
   display: block;
   width: 100%;
   height: auto;
-  /* The video might be portrait or landscape -- we cover the frame
-     so it never pillarboxes against the dark background. */
   object-fit: cover;
 }
 
-/* Stack the columns on tablet / mobile so the headline can breathe
-   and the video sits below the CTAs instead of being squeezed. */
+/* Tablet: shrink the corner accent so it doesn't crowd the stats row. */
 @media (max-width: 920px) {
-  .hero-content {
-    flex-direction: column;
-    text-align: center;
-    gap: 40px;
-  }
-  .hero-text {
-    text-align: center;
-  }
-  .hero-text .hero-title,
-  .hero-text .hero-subtitle {
-    text-align: center;
-  }
-  .hero-text .hero-buttons {
-    justify-content: center;
-  }
-  .hero-text .hero-stats {
-    justify-content: center;
-  }
   .hero-video-frame {
-    width: clamp(240px, 70vw, 360px);
+    width: clamp(150px, 22vw, 200px);
+    right: 12px;
+    bottom: 12px;
+  }
+}
+
+/* Mobile: hide the decorative video entirely so the hero copy and
+   stats own the screen. */
+@media (max-width: 640px) {
+  .hero-video-frame {
+    display: none;
   }
 }
 
