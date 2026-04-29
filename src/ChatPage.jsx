@@ -97,25 +97,24 @@ const ChatPage = () => {
   const recordingTimerRef = useRef(null);
   const recordingStreamRef = useRef(null);
 
-  // AI-modes flash-card walkthrough. We trigger it in two cases:
-  //   1. A fresh login or signup just happened (sessionStorage flag set
-  //      by Login.jsx / Signup.jsx). This is for new users coming
-  //      through the auth flow.
-  //   2. The user has never dismissed the tour on this device
-  //      (localStorage flag absent). This catches existing users so
-  //      they get to see the flash cards once after the feature ships.
-  // Either way, once the carousel is dismissed we set the localStorage
-  // flag so it never replays on this device again.
+  // AI-modes flash-card walkthrough.
+  //
+  // Auto-show rule: ONLY for first-time users on this device. We mark
+  // the tour as done in localStorage the moment the carousel dismisses
+  // (or even if it never opens this session, after a successful auth)
+  // so it never auto-replays. The session flag set by Login.jsx /
+  // Signup.jsx is consumed but does not force a replay.
+  //
+  // Manual replay: the "Replay tour" button beneath the AI Mode hint
+  // sets `showModesIntro` directly, bypassing the auto-show logic.
   const [showModesIntro, setShowModesIntro] = useState(false);
   const modesIntroPendingRef = useRef(false);
   useEffect(() => {
     try {
-      const fromAuth = sessionStorage.getItem("laboracle_show_modes_intro") === "1";
+      // Always clear the fresh-auth flag on mount so it doesn't linger.
+      sessionStorage.removeItem("laboracle_show_modes_intro");
       const tourDone = localStorage.getItem("laboracle_modes_tour_done") === "1";
-      if (fromAuth) {
-        sessionStorage.removeItem("laboracle_show_modes_intro");
-      }
-      if (fromAuth || !tourDone) {
+      if (!tourDone) {
         modesIntroPendingRef.current = true;
       }
     } catch {
@@ -131,6 +130,13 @@ const ChatPage = () => {
       /* persistent flag can't be saved -- worst case the tour
          replays on next visit, which is non-fatal. */
     }
+  };
+
+  // Manual "Replay tour" trigger. We don't touch the localStorage flag
+  // here -- a manual replay shouldn't reset the "seen it" state, just
+  // reopen the cards on demand for whoever wants a refresher.
+  const replayModesTour = () => {
+    setShowModesIntro(true);
   };
 
   const chatEndRef = useRef(null);
@@ -653,6 +659,14 @@ const ChatPage = () => {
 
         <div className="cp-mode-hint">
           {AI_MODE_HINTS[aiMode] || AI_MODE_HINTS.deterministic}
+          <button
+            type="button"
+            className="cp-mode-replay"
+            onClick={replayModesTour}
+            title="Open the AI mode quick tour again"
+          >
+            Replay AI mode tour
+          </button>
         </div>
 
         <div className="cp-section-label">Role</div>

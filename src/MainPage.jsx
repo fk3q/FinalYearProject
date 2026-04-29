@@ -22,7 +22,7 @@ import {
   XIcon,
 } from './components/SocialIcons';
 import './MainPage.css';
-import { getSessionUser } from './api/auth';
+import { clearSessionUser, getSessionUser } from './api/auth';
 import { createCheckoutSession } from './api/payments';
 
 // Bento-grid feature cards rendered in the "Powerful Features" section.
@@ -277,6 +277,40 @@ const MainPage = () => {
   const [checkoutLoading, setCheckoutLoading] = useState(null); // plan id currently checking out
   const [checkoutError, setCheckoutError] = useState('');
 
+  // Snapshot of the current session user. Lets the navbar and hero
+  // CTAs short-circuit the auth flow when somebody is already signed
+  // in -- previously every CTA went through /login or /signup, which
+  // forced returning users back through the cinematic intro every
+  // time they bounced through the home page.
+  const sessionUser = getSessionUser();
+  const isSignedIn = Boolean(sessionUser?.id);
+
+  const handleHeroPrimary = () => {
+    navigate(isSignedIn ? '/chat' : '/signup');
+  };
+
+  const handleHeroSecondary = () => {
+    navigate(isSignedIn ? '/chat' : '/upload');
+  };
+
+  const handleLogout = () => {
+    // clearSessionUser drops the bearer token, the cached user, and
+    // the token expiry -- exactly what the rest of the app expects
+    // when somebody signs out. We don't blanket-clear localStorage
+    // because the "tour seen" / "intro video seen" flags should
+    // persist per device, not per session.
+    try {
+      clearSessionUser();
+      sessionStorage.removeItem('laboracle_pending_plan');
+    } catch {
+      /* storage may be unavailable -- silently fall through */
+    }
+    navigate('/');
+    // Force a clean reload so any in-memory React state holding the
+    // old user dies with the page. Avoids a stale-avatar flash.
+    window.location.reload();
+  };
+
   // Spotlight glow that follows the cursor across hero CTAs. We write the
   // pointer's position relative to the button into CSS custom properties so
   // a `radial-gradient` in the stylesheet can render the highlight at that
@@ -361,6 +395,13 @@ const MainPage = () => {
       <header className="header">
         <div className="header-content">
           <div className="logo" onClick={() => navigate('/')}>
+            {/* Round white disc behind the logo. The .logo-img is
+                deliberately a touch larger than the disc so the
+                square corners of the artwork peek out beyond the
+                circle, matching the request to "round it but have
+                the square come out a bit". The bubbles rise from
+                the bottom of the disc. */}
+            <span className="logo-disc" aria-hidden="true" />
             <img src="/laboracle-logo.png" alt="Laboracle" className="logo-img" />
             <span className="logo-bubbles" aria-hidden="true">
               <span className="logo-bubble" />
@@ -378,12 +419,28 @@ const MainPage = () => {
             <a href="#about">About</a>
           </nav>
           <div className="auth-buttons">
-            <button onClick={() => navigate('/login')} className="login-btn">
-              Login
-            </button>
-            <button onClick={() => navigate('/signup')} className="signup-btn">
-              Sign Up
-            </button>
+            {isSignedIn ? (
+              <>
+                <button onClick={handleLogout} className="login-btn">
+                  Log out
+                </button>
+                <button
+                  onClick={() => navigate('/chat')}
+                  className="signup-btn"
+                >
+                  Open chat
+                </button>
+              </>
+            ) : (
+              <>
+                <button onClick={() => navigate('/login')} className="login-btn">
+                  Login
+                </button>
+                <button onClick={() => navigate('/signup')} className="signup-btn">
+                  Sign Up
+                </button>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -418,20 +475,20 @@ const MainPage = () => {
           </p>
           <div className="hero-buttons">
             <button
-              onClick={() => navigate('/signup')}
+              onClick={handleHeroPrimary}
               onMouseMove={handleSpotlight}
               onMouseLeave={handleSpotlightLeave}
               className="cta-primary cta-spotlight"
             >
-              Get Started Free
+              {isSignedIn ? 'Open Chat' : 'Get Started Free'}
             </button>
             <button
-              onClick={() => navigate('/upload')}
+              onClick={handleHeroSecondary}
               onMouseMove={handleSpotlight}
               onMouseLeave={handleSpotlightLeave}
               className="cta-secondary cta-spotlight"
             >
-              Try Demo
+              {isSignedIn ? 'Continue Where You Left Off' : 'Try Demo'}
             </button>
           </div>
           <HeroStats />

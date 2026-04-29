@@ -81,20 +81,43 @@
 
 .logo {
   position: relative;
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
   font-size: 24px;
   font-weight: 700;
   color: #667eea;
   cursor: pointer;
+  /* Reserve enough box for the bigger logo. The image itself is
+     centred via flex; the round disc and bubble stream are absolute
+     children positioned against this container. */
+  width: 96px;
+  height: 96px;
+}
+
+/* Round white badge behind the logo image. Slightly smaller than the
+   image so the artwork's square corners peek out around the circle
+   -- a deliberate hybrid look the marketing nav had requested. */
+.logo-disc {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 76px;
+  height: 76px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid rgba(124, 58, 237, 0.22);
+  z-index: 0;
+  pointer-events: none;
 }
 
 .logo-img {
   position: relative;
   z-index: 1;
-  height: 40px;
-  width: auto;
+  height: 96px;
+  width: 96px;
   display: block;
   object-fit: contain;
 }
@@ -108,12 +131,15 @@
  * bar. Disabled for users who set `prefers-reduced-motion`. */
 .logo-bubbles {
   position: absolute;
-  /* Stretch from just above the navbar's top padding to just below it
-     so bubbles get crisply clipped at both edges of the bar. */
-  top: -8px;
+  /* Centred over the logo container; spans from just below the disc
+     up past the top of the navbar so the trail fades naturally. We
+     keep overflow hidden so bubbles never spill into the page below
+     the bar. */
+  top: -16px;
   bottom: -8px;
-  left: -4px;
-  width: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 96px;
   pointer-events: none;
   overflow: hidden;
   z-index: 2;

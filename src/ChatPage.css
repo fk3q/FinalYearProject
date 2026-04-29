@@ -238,6 +238,24 @@
   border-radius: 8px;
 }
 
+.cp-mode-replay {
+  appearance: none;
+  border: none;
+  background: none;
+  padding: 0;
+  margin-top: 6px;
+  font: inherit;
+  font-size: 11px;
+  color: #6f6cf0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  display: inline-block;
+}
+.cp-mode-replay:hover {
+  color: #4f4ad6;
+}
+
 /* Saved chats */
 .cp-history {
   display: flex;

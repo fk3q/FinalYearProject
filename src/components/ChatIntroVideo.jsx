@@ -16,17 +16,44 @@ import "./ChatIntroVideo.css";
 // playing -- a single user gesture is enough to unmute even if the
 // page hadn't been interacted with yet.
 const ChatIntroVideo = ({ src = "/chat-intro.mp4", onClose }) => {
-  const [open, setOpen] = useState(true);
+  // Play the video once per device, not on every /chat mount. We
+  // initialise `open` from localStorage so a returning user is never
+  // ambushed by the cinematic again, and so the parent's onClose chain
+  // (AI-modes carousel) gets a chance to fire immediately.
+  const [open, setOpen] = useState(() => {
+    try {
+      return localStorage.getItem("laboracle_intro_video_seen") !== "1";
+    } catch {
+      return true;
+    }
+  });
   const [muted, setMuted] = useState(true);
   const videoRef = useRef(null);
   const skipBtnRef = useRef(null);
 
+  // If the video is suppressed, fire onClose on the next tick so any
+  // chained UI (AI-modes flash cards) can decide whether to render.
+  useEffect(() => {
+    if (open) return undefined;
+    if (typeof onClose !== "function") return undefined;
+    const t = window.setTimeout(() => onClose(), 0);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Wrapper used by every dismissal path so we always notify the parent
   // exactly once per mount. Some dismissal sources (Skip, ESC, end,
   // backdrop, error) used to call setOpen(false) directly, which left
-  // the chained AI-modes flash-card carousel without a trigger.
+  // the chained AI-modes flash-card carousel without a trigger. Also
+  // marks the video as "seen" so it doesn't replay on the next visit.
   const dismiss = () => {
     setOpen(false);
+    try {
+      localStorage.setItem("laboracle_intro_video_seen", "1");
+    } catch {
+      /* persistent flag can't be saved -- worst case the video
+         replays on the next visit, which is non-fatal. */
+    }
     if (typeof onClose === "function") onClose();
   };
 
