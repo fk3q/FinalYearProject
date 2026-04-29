@@ -1,3 +1,11 @@
+/* Same reason as .adm-page in AdminDashboard.css — opt out of forced /
+   extension-driven dark-mode re-inversion so our already-dark theme survives. */
+.al-page,
+.al-card {
+  color-scheme: dark;
+  forced-color-adjust: none;
+}
+
 .al-page {
   min-height: 100vh;
   display: flex;

@@ -24,7 +24,7 @@ export const BarChart = ({ data, xLabel, yLabel, height = 240 }) => {
   const innerH = height - padding.top - padding.bottom;
 
   if (!data || data.length === 0) {
-    return <p className="ad-empty">No data to chart yet.</p>;
+    return <p className="adm-empty">No data to chart yet.</p>;
   }
 
   const max = data.reduce((m, d) => Math.max(m, d.value), 0) || 1;
@@ -37,8 +37,8 @@ export const BarChart = ({ data, xLabel, yLabel, height = 240 }) => {
   });
 
   return (
-    <div className="ad-svg-wrap">
-      <svg viewBox={`0 0 ${width} ${height}`} className="ad-svg">
+    <div className="adm-svg-wrap">
+      <svg viewBox={`0 0 ${width} ${height}`} className="adm-svg">
         {yTicks.map((t, i) => (
           <g key={i}>
             <line
@@ -48,7 +48,7 @@ export const BarChart = ({ data, xLabel, yLabel, height = 240 }) => {
               y2={t.y}
               stroke="rgba(255,255,255,0.06)"
             />
-            <text x={padding.left - 6} y={t.y + 3} className="ad-svg-tick" textAnchor="end">
+            <text x={padding.left - 6} y={t.y + 3} className="adm-svg-tick" textAnchor="end">
               {Math.round(t.v)}
             </text>
           </g>
@@ -77,7 +77,7 @@ export const BarChart = ({ data, xLabel, yLabel, height = 240 }) => {
               <text
                 x={x + w / 2}
                 y={height - padding.bottom + 14}
-                className="ad-svg-xlabel"
+                className="adm-svg-xlabel"
                 textAnchor="end"
                 transform={`rotate(-35 ${x + w / 2} ${height - padding.bottom + 14})`}
               >
@@ -91,7 +91,7 @@ export const BarChart = ({ data, xLabel, yLabel, height = 240 }) => {
           <text
             x={14}
             y={padding.top + innerH / 2}
-            className="ad-svg-axis"
+            className="adm-svg-axis"
             textAnchor="middle"
             transform={`rotate(-90 14 ${padding.top + innerH / 2})`}
           >
@@ -102,7 +102,7 @@ export const BarChart = ({ data, xLabel, yLabel, height = 240 }) => {
           <text
             x={padding.left + innerW / 2}
             y={height - 4}
-            className="ad-svg-axis"
+            className="adm-svg-axis"
             textAnchor="middle"
           >
             {xLabel}
@@ -110,7 +110,7 @@ export const BarChart = ({ data, xLabel, yLabel, height = 240 }) => {
         )}
       </svg>
       {hover && (
-        <div className="ad-tooltip">
+        <div className="adm-tooltip">
           <strong>{hover.label}</strong>: {hover.value}
           {hover.extra ? ` · ${hover.extra}` : ""}
         </div>
@@ -127,7 +127,7 @@ export const PieChart = ({ data, size = 220 }) => {
   );
 
   if (!data || data.length === 0 || total === 0) {
-    return <p className="ad-empty">No data to chart yet.</p>;
+    return <p className="adm-empty">No data to chart yet.</p>;
   }
 
   const cx = size / 2;
@@ -154,18 +154,18 @@ export const PieChart = ({ data, size = 220 }) => {
   });
 
   return (
-    <div className="ad-pie-row">
-      <svg viewBox={`0 0 ${size} ${size}`} className="ad-pie" width={size} height={size}>
+    <div className="adm-pie-row">
+      <svg viewBox={`0 0 ${size} ${size}`} className="adm-pie" width={size} height={size}>
         {slices.map((s, i) => (
           <path key={i} d={s.path} fill={s.color} stroke="#1a1e36" strokeWidth={1} />
         ))}
       </svg>
-      <ul className="ad-pie-legend">
+      <ul className="adm-pie-legend">
         {slices.map((s, i) => (
           <li key={i}>
-            <span className="ad-pie-dot" style={{ background: s.color }} />
-            <span className="ad-pie-legend-label">{s.label}</span>
-            <span className="ad-pie-legend-val">
+            <span className="adm-pie-dot" style={{ background: s.color }} />
+            <span className="adm-pie-legend-label">{s.label}</span>
+            <span className="adm-pie-legend-val">
               {s.value} · {s.pct.toFixed(0)}%
             </span>
           </li>
@@ -190,7 +190,7 @@ export const Histogram = ({
   const innerH = height - padding.top - padding.bottom;
 
   if (!values || values.length === 0) {
-    return <p className="ad-empty">No data to chart yet.</p>;
+    return <p className="adm-empty">No data to chart yet.</p>;
   }
 
   const min = Math.min(...values);
@@ -220,8 +220,8 @@ export const Histogram = ({
   });
 
   return (
-    <div className="ad-svg-wrap">
-      <svg viewBox={`0 0 ${width} ${height}`} className="ad-svg">
+    <div className="adm-svg-wrap">
+      <svg viewBox={`0 0 ${width} ${height}`} className="adm-svg">
         {yTicks.map((t, i) => (
           <g key={i}>
             <line
@@ -231,7 +231,7 @@ export const Histogram = ({
               y2={t.y}
               stroke="rgba(255,255,255,0.06)"
             />
-            <text x={padding.left - 6} y={t.y + 3} className="ad-svg-tick" textAnchor="end">
+            <text x={padding.left - 6} y={t.y + 3} className="adm-svg-tick" textAnchor="end">
               {t.v}
             </text>
           </g>
@@ -252,14 +252,14 @@ export const Histogram = ({
                 opacity={0.9}
               />
               {b.count > 0 && (
-                <text x={x + w / 2} y={y - 4} className="ad-svg-bar-label" textAnchor="middle">
+                <text x={x + w / 2} y={y - 4} className="adm-svg-bar-label" textAnchor="middle">
                   {b.count}
                 </text>
               )}
               <text
                 x={x + w / 2}
                 y={height - padding.bottom + 14}
-                className="ad-svg-xlabel"
+                className="adm-svg-xlabel"
                 textAnchor="middle"
               >
                 {b.label}
@@ -271,7 +271,7 @@ export const Histogram = ({
           <text
             x={padding.left + innerW / 2}
             y={height - 4}
-            className="ad-svg-axis"
+            className="adm-svg-axis"
             textAnchor="middle"
           >
             {xLabel}
@@ -281,7 +281,7 @@ export const Histogram = ({
           <text
             x={14}
             y={padding.top + innerH / 2}
-            className="ad-svg-axis"
+            className="adm-svg-axis"
             textAnchor="middle"
             transform={`rotate(-90 14 ${padding.top + innerH / 2})`}
           >
@@ -309,7 +309,7 @@ export const ScatterPlot = ({
   const innerH = height - padding.top - padding.bottom;
 
   if (!points || points.length === 0) {
-    return <p className="ad-empty">No data to chart yet.</p>;
+    return <p className="adm-empty">No data to chart yet.</p>;
   }
 
   const xs = points.map(xAccessor);
@@ -325,8 +325,8 @@ export const ScatterPlot = ({
   const yTicks = Array.from({ length: ticks + 1 }, (_, i) => (yMax / ticks) * i);
 
   return (
-    <div className="ad-svg-wrap">
-      <svg viewBox={`0 0 ${width} ${height}`} className="ad-svg">
+    <div className="adm-svg-wrap">
+      <svg viewBox={`0 0 ${width} ${height}`} className="adm-svg">
         {yTicks.map((v, i) => (
           <g key={`y${i}`}>
             <line
@@ -336,7 +336,7 @@ export const ScatterPlot = ({
               y2={toY(v)}
               stroke="rgba(255,255,255,0.06)"
             />
-            <text x={padding.left - 6} y={toY(v) + 3} className="ad-svg-tick" textAnchor="end">
+            <text x={padding.left - 6} y={toY(v) + 3} className="adm-svg-tick" textAnchor="end">
               {Math.round(v)}
             </text>
           </g>
@@ -350,7 +350,7 @@ export const ScatterPlot = ({
               y2={padding.top + innerH}
               stroke="rgba(255,255,255,0.04)"
             />
-            <text x={toX(v)} y={height - padding.bottom + 16} className="ad-svg-xlabel" textAnchor="middle">
+            <text x={toX(v)} y={height - padding.bottom + 16} className="adm-svg-xlabel" textAnchor="middle">
               {Math.round(v)}
             </text>
           </g>
@@ -380,7 +380,7 @@ export const ScatterPlot = ({
           <text
             x={padding.left + innerW / 2}
             y={height - 4}
-            className="ad-svg-axis"
+            className="adm-svg-axis"
             textAnchor="middle"
           >
             {xLabel}
@@ -390,7 +390,7 @@ export const ScatterPlot = ({
           <text
             x={14}
             y={padding.top + innerH / 2}
-            className="ad-svg-axis"
+            className="adm-svg-axis"
             textAnchor="middle"
             transform={`rotate(-90 14 ${padding.top + innerH / 2})`}
           >
@@ -399,7 +399,7 @@ export const ScatterPlot = ({
         )}
       </svg>
       {hover !== null && points[hover] && (
-        <div className="ad-tooltip">
+        <div className="adm-tooltip">
           <strong>{points[hover].label || `#${hover + 1}`}</strong>
           {` · ${xLabel || "x"}=${Math.round(xAccessor(points[hover]))}`}
           {` · ${yLabel || "y"}=${Math.round(yAccessor(points[hover]))}`}

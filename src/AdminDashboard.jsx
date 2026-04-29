@@ -122,20 +122,20 @@ const AdminDashboard = () => {
 
   if (loading) {
     return (
-      <div className="ad-page ad-page--center">
-        <div className="ad-loading">Loading admin dashboard…</div>
+      <div className="adm-page adm-page--center">
+        <div className="adm-loading">Loading admin dashboard…</div>
       </div>
     );
   }
 
   if (error && !stats) {
     return (
-      <div className="ad-page ad-page--center">
-        <div className="ad-error-box">
+      <div className="adm-page adm-page--center">
+        <div className="adm-error-box">
           <h2>Could not load dashboard</h2>
           <p>{error}</p>
-          <button className="ad-btn" onClick={handleRefresh}>Try again</button>
-          <button className="ad-btn ad-btn--ghost" onClick={() => navigate("/admin/login")}>
+          <button className="adm-btn" onClick={handleRefresh}>Try again</button>
+          <button className="adm-btn adm-btn--ghost" onClick={() => navigate("/admin/login")}>
             Sign in again
           </button>
         </div>
@@ -191,18 +191,18 @@ const AdminDashboard = () => {
   }));
 
   return (
-    <div className="ad-page">
-      <header className="ad-header">
+    <div className="adm-page">
+      <header className="adm-header">
         <div>
-          <h1 className="ad-h1">Admin Dashboard</h1>
-          <p className="ad-sub">
+          <h1 className="adm-h1">Admin Dashboard</h1>
+          <p className="adm-sub">
             Generated {formatDate(stats.generated_at)} · Laboracle
           </p>
         </div>
-        <div className="ad-header-actions">
+        <div className="adm-header-actions">
           <button
             type="button"
-            className="ad-btn ad-btn--ghost"
+            className="adm-btn adm-btn--ghost"
             onClick={handleRefresh}
             disabled={refreshing}
           >
@@ -210,23 +210,23 @@ const AdminDashboard = () => {
           </button>
           <button
             type="button"
-            className="ad-btn ad-btn--ghost"
+            className="adm-btn adm-btn--ghost"
             onClick={handleBackfill}
             disabled={backfilling}
             title="Look up country/city for users that registered before geo tracking"
           >
             {backfilling ? "Backfilling…" : "Backfill geo"}
           </button>
-          <button type="button" className="ad-btn ad-btn--danger" onClick={handleLogout}>
+          <button type="button" className="adm-btn adm-btn--danger" onClick={handleLogout}>
             Log out
           </button>
         </div>
       </header>
 
-      {error && <div className="ad-banner ad-banner--error">{error}</div>}
-      {backfillMsg && <div className="ad-banner">{backfillMsg}</div>}
+      {error && <div className="adm-banner adm-banner--error">{error}</div>}
+      {backfillMsg && <div className="adm-banner">{backfillMsg}</div>}
 
-      <section className="ad-cards">
+      <section className="adm-cards">
         <Card label="Total users"     value={formatNumber(totals.total_users)}      accent="blue" />
         <Card label="New today"        value={formatNumber(totals.users_today)}       accent="green" />
         <Card label="New (7 days)"     value={formatNumber(totals.users_last_7_days)} accent="cyan" />
@@ -237,49 +237,49 @@ const AdminDashboard = () => {
         <Card label="Chat messages"    value={formatNumber(totals.total_chat_messages)} accent="indigo" />
       </section>
 
-      <div className="ad-row">
-        <section className="ad-panel ad-panel--wide">
-          <h2 className="ad-panel-title">Signups — last 30 days</h2>
+      <div className="adm-row">
+        <section className="adm-panel adm-panel--wide">
+          <h2 className="adm-panel-title">Signups — last 30 days</h2>
           {trend.length === 0 ? (
-            <p className="ad-empty">No signups in the last 30 days.</p>
+            <p className="adm-empty">No signups in the last 30 days.</p>
           ) : (
-            <div className="ad-chart">
+            <div className="adm-chart">
               {trend.map((p) => (
-                <div className="ad-chart-col" key={p.day} title={`${p.day}: ${p.count}`}>
+                <div className="adm-chart-col" key={p.day} title={`${p.day}: ${p.count}`}>
                   <div
-                    className="ad-chart-bar"
+                    className="adm-chart-bar"
                     style={{ height: `${(p.count / maxTrend) * 100}%` }}
                   >
-                    {p.count > 0 && <span className="ad-chart-label">{p.count}</span>}
+                    {p.count > 0 && <span className="adm-chart-label">{p.count}</span>}
                   </div>
-                  <span className="ad-chart-x">{shortDay(p.day)}</span>
+                  <span className="adm-chart-x">{shortDay(p.day)}</span>
                 </div>
               ))}
             </div>
           )}
         </section>
 
-        <section className="ad-panel">
-          <h2 className="ad-panel-title">Where users are from</h2>
+        <section className="adm-panel">
+          <h2 className="adm-panel-title">Where users are from</h2>
           {countries.length === 0 ? (
-            <p className="ad-empty">No country data yet.</p>
+            <p className="adm-empty">No country data yet.</p>
           ) : (
-            <ul className="ad-country-list">
+            <ul className="adm-country-list">
               {countries.map((c, idx) => (
-                <li key={`${c.country}-${idx}`} className="ad-country-row">
-                  <span className="ad-country-name">
-                    <span className="ad-flag">{flagFromCode(c.country_code) || "🌐"}</span>
+                <li key={`${c.country}-${idx}`} className="adm-country-row">
+                  <span className="adm-country-name">
+                    <span className="adm-flag">{flagFromCode(c.country_code) || "🌐"}</span>
                     {c.country}
                   </span>
-                  <div className="ad-country-bar">
+                  <div className="adm-country-bar">
                     <div
-                      className="ad-country-bar-fill"
+                      className="adm-country-bar-fill"
                       style={{ width: `${(c.count / maxCountry) * 100}%` }}
                     />
                   </div>
-                  <span className="ad-country-count">
+                  <span className="adm-country-count">
                     {c.count}
-                    <span className="ad-country-pct">
+                    <span className="adm-country-pct">
                       {totalUsers > 0
                         ? ` · ${Math.round((c.count / totalUsers) * 100)}%`
                         : ""}
@@ -292,13 +292,13 @@ const AdminDashboard = () => {
         </section>
       </div>
 
-      <div className="ad-row">
-        <section className="ad-panel">
-          <h2 className="ad-panel-title">Recent signups</h2>
+      <div className="adm-row">
+        <section className="adm-panel">
+          <h2 className="adm-panel-title">Recent signups</h2>
           {recent.length === 0 ? (
-            <p className="ad-empty">No users yet.</p>
+            <p className="adm-empty">No users yet.</p>
           ) : (
-            <table className="ad-table">
+            <table className="adm-table">
               <thead>
                 <tr>
                   <th>Name</th>
@@ -311,13 +311,13 @@ const AdminDashboard = () => {
                 {recent.map((u) => (
                   <tr key={u.id}>
                     <td>{(u.first_name + " " + u.last_name).trim() || `User #${u.id}`}</td>
-                    <td className="ad-mono">{u.email}</td>
+                    <td className="adm-mono">{u.email}</td>
                     <td>
                       {u.country
                         ? `${u.city ? u.city + ", " : ""}${u.country}`
                         : "—"}
                     </td>
-                    <td className="ad-mono">{formatDate(u.created_at)}</td>
+                    <td className="adm-mono">{formatDate(u.created_at)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -325,12 +325,12 @@ const AdminDashboard = () => {
           )}
         </section>
 
-        <section className="ad-panel">
-          <h2 className="ad-panel-title">Top users by time spent</h2>
+        <section className="adm-panel">
+          <h2 className="adm-panel-title">Top users by time spent</h2>
           {top.length === 0 ? (
-            <p className="ad-empty">No usage data yet.</p>
+            <p className="adm-empty">No usage data yet.</p>
           ) : (
-            <table className="ad-table">
+            <table className="adm-table">
               <thead>
                 <tr>
                   <th>#</th>
@@ -344,7 +344,7 @@ const AdminDashboard = () => {
                   <tr key={u.id}>
                     <td>{idx + 1}</td>
                     <td>{(u.first_name + " " + u.last_name).trim() || `User #${u.id}`}</td>
-                    <td className="ad-mono">{u.email}</td>
+                    <td className="adm-mono">{u.email}</td>
                     <td>{formatDuration(u.total_seconds)}</td>
                   </tr>
                 ))}
@@ -354,9 +354,9 @@ const AdminDashboard = () => {
         </section>
       </div>
 
-      <div className="ad-row">
-        <section className="ad-panel">
-          <h2 className="ad-panel-title">Documents uploaded — top 10 users</h2>
+      <div className="adm-row">
+        <section className="adm-panel">
+          <h2 className="adm-panel-title">Documents uploaded — top 10 users</h2>
           <BarChart
             data={docsByUser}
             xLabel="User"
@@ -364,15 +364,15 @@ const AdminDashboard = () => {
             height={260}
           />
         </section>
-        <section className="ad-panel">
-          <h2 className="ad-panel-title">Document type mix</h2>
+        <section className="adm-panel">
+          <h2 className="adm-panel-title">Document type mix</h2>
           <PieChart data={docTypePie} size={220} />
         </section>
       </div>
 
-      <div className="ad-row">
-        <section className="ad-panel">
-          <h2 className="ad-panel-title">
+      <div className="adm-row">
+        <section className="adm-panel">
+          <h2 className="adm-panel-title">
             Days as a user — histogram
           </h2>
           <Histogram
@@ -383,8 +383,8 @@ const AdminDashboard = () => {
             formatBin={(lo, hi) => `${Math.round(lo)}–${Math.round(hi)}d`}
           />
         </section>
-        <section className="ad-panel">
-          <h2 className="ad-panel-title">
+        <section className="adm-panel">
+          <h2 className="adm-panel-title">
             Days as user vs minutes spent — scatter
           </h2>
           <ScatterPlot
@@ -396,9 +396,9 @@ const AdminDashboard = () => {
         </section>
       </div>
 
-      <div className="ad-row">
-        <section className="ad-panel ad-panel--wide">
-          <h2 className="ad-panel-title">
+      <div className="adm-row">
+        <section className="adm-panel adm-panel--wide">
+          <h2 className="adm-panel-title">
             Chat sessions vs messages — scatter
           </h2>
           <ScatterPlot
@@ -410,16 +410,16 @@ const AdminDashboard = () => {
         </section>
       </div>
 
-      <section className="ad-panel ad-users-panel">
-        <div className="ad-users-panel-header">
-          <h2 className="ad-panel-title">Every user — full details</h2>
-          <span className="ad-users-count">{users.length} total</span>
+      <section className="adm-panel adm-users-panel">
+        <div className="adm-users-panel-header">
+          <h2 className="adm-panel-title">Every user — full details</h2>
+          <span className="adm-users-count">{users.length} total</span>
         </div>
         {users.length === 0 ? (
-          <p className="ad-empty">No users yet.</p>
+          <p className="adm-empty">No users yet.</p>
         ) : (
-          <div className="ad-users-scroll">
-            <table className="ad-table ad-table--users">
+          <div className="adm-users-scroll">
+            <table className="adm-table adm-table--users">
               <thead>
                 <tr>
                   <th>#</th>
@@ -446,12 +446,12 @@ const AdminDashboard = () => {
                       <tr>
                         <td>{idx + 1}</td>
                         <td>{name}</td>
-                        <td className="ad-mono">{u.email}</td>
-                        <td className="ad-mono">{u.phone || "—"}</td>
+                        <td className="adm-mono">{u.email}</td>
+                        <td className="adm-mono">{u.phone || "—"}</td>
                         <td>
                           {u.country ? (
                             <>
-                              <span className="ad-flag">
+                              <span className="adm-flag">
                                 {flagFromCode(u.country_code) || "🌐"}
                               </span>{" "}
                               {u.city ? `${u.city}, ` : ""}
@@ -461,7 +461,7 @@ const AdminDashboard = () => {
                             "—"
                           )}
                         </td>
-                        <td className="ad-mono">{formatDate(u.created_at)}</td>
+                        <td className="adm-mono">{formatDate(u.created_at)}</td>
                         <td>
                           {u.days_as_user != null
                             ? `${u.days_as_user}d`
@@ -471,11 +471,11 @@ const AdminDashboard = () => {
                         <td>{u.chat_sessions}</td>
                         <td>{u.chat_messages}</td>
                         <td>
-                          <span className="ad-doc-pill">
+                          <span className="adm-doc-pill">
                             {u.document_count}
                           </span>
                           {u.total_document_kb > 0 && (
-                            <span className="ad-doc-size">
+                            <span className="adm-doc-size">
                               · {formatKb(u.total_document_kb)}
                             </span>
                           )}
@@ -483,7 +483,7 @@ const AdminDashboard = () => {
                         <td>
                           <button
                             type="button"
-                            className="ad-btn ad-btn--ghost ad-btn--xs"
+                            className="adm-btn adm-btn--ghost adm-btn--xs"
                             onClick={() =>
                               setExpandedUser(isOpen ? null : u.id)
                             }
@@ -499,9 +499,9 @@ const AdminDashboard = () => {
                         </td>
                       </tr>
                       {isOpen && u.documents && u.documents.length > 0 && (
-                        <tr className="ad-doc-row">
+                        <tr className="adm-doc-row">
                           <td colSpan={12}>
-                            <table className="ad-table ad-table--inner">
+                            <table className="adm-table adm-table--inner">
                               <thead>
                                 <tr>
                                   <th>File</th>
@@ -514,13 +514,13 @@ const AdminDashboard = () => {
                               <tbody>
                                 {u.documents.map((d) => (
                                   <tr key={d.document_id}>
-                                    <td className="ad-mono">
+                                    <td className="adm-mono">
                                       {d.original_filename || d.filename}
                                     </td>
                                     <td>{d.doc_type || "—"}</td>
                                     <td>{d.total_chunks}</td>
                                     <td>{formatKb(d.file_size_kb)}</td>
-                                    <td className="ad-mono">
+                                    <td className="adm-mono">
                                       {formatDate(d.chunked_at)}
                                     </td>
                                   </tr>
@@ -556,9 +556,9 @@ const formatKb = (kb) => {
 };
 
 const Card = ({ label, value, accent }) => (
-  <div className={`ad-card ad-card--${accent || "blue"}`}>
-    <span className="ad-card-label">{label}</span>
-    <span className="ad-card-value">{value}</span>
+  <div className={`adm-card adm-card--${accent || "blue"}`}>
+    <span className="adm-card-label">{label}</span>
+    <span className="adm-card-value">{value}</span>
   </div>
 );
 
