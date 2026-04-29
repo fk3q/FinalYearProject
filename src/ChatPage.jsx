@@ -97,23 +97,41 @@ const ChatPage = () => {
   const recordingTimerRef = useRef(null);
   const recordingStreamRef = useRef(null);
 
-  // One-shot AI-modes flash-card walkthrough. The flag is set by
-  // Login.jsx / Signup.jsx on a successful auth and consumed here so
-  // the carousel only plays once per fresh session, right after the
-  // cinematic intro video closes. We read+clear the flag on mount so
-  // that a page refresh after dismissal does not replay the cards.
+  // AI-modes flash-card walkthrough. We trigger it in two cases:
+  //   1. A fresh login or signup just happened (sessionStorage flag set
+  //      by Login.jsx / Signup.jsx). This is for new users coming
+  //      through the auth flow.
+  //   2. The user has never dismissed the tour on this device
+  //      (localStorage flag absent). This catches existing users so
+  //      they get to see the flash cards once after the feature ships.
+  // Either way, once the carousel is dismissed we set the localStorage
+  // flag so it never replays on this device again.
   const [showModesIntro, setShowModesIntro] = useState(false);
   const modesIntroPendingRef = useRef(false);
   useEffect(() => {
     try {
-      if (sessionStorage.getItem("laboracle_show_modes_intro") === "1") {
-        modesIntroPendingRef.current = true;
+      const fromAuth = sessionStorage.getItem("laboracle_show_modes_intro") === "1";
+      const tourDone = localStorage.getItem("laboracle_modes_tour_done") === "1";
+      if (fromAuth) {
         sessionStorage.removeItem("laboracle_show_modes_intro");
       }
+      if (fromAuth || !tourDone) {
+        modesIntroPendingRef.current = true;
+      }
     } catch {
-      /* sessionStorage may be unavailable in private mode -- skip */
+      /* storage may be unavailable in private mode -- skip the tour */
     }
   }, []);
+
+  const handleModesIntroDone = () => {
+    setShowModesIntro(false);
+    try {
+      localStorage.setItem("laboracle_modes_tour_done", "1");
+    } catch {
+      /* persistent flag can't be saved -- worst case the tour
+         replays on next visit, which is non-fatal. */
+    }
+  };
 
   const chatEndRef = useRef(null);
   const textareaRef = useRef(null);
@@ -490,11 +508,30 @@ const ChatPage = () => {
         }}
       />
       {showModesIntro && (
-        <AIModesIntro onDone={() => setShowModesIntro(false)} />
+        <AIModesIntro onDone={handleModesIntroDone} />
       )}
       <aside className="cp-sidebar">
         <div className="cp-brand" onClick={() => navigate("/")}>
-          <img src="/laboracle-logo.png" alt="Laboracle" className="cp-brand-logo" />
+          {/* Round logo badge with the same purple-bubble motif used in
+              the marketing navbar. The badge clips the logo into a
+              circle and the bubble spans rise from the bottom of the
+              badge through and above the logo. The bubbles container
+              has overflow:visible so they trail upward off the disc. */}
+          <span className="cp-brand-circle">
+            <img
+              src="/laboracle-logo.png"
+              alt="Laboracle"
+              className="cp-brand-logo"
+            />
+            <span className="cp-logo-bubbles" aria-hidden="true">
+              <span className="cp-logo-bubble" />
+              <span className="cp-logo-bubble" />
+              <span className="cp-logo-bubble" />
+              <span className="cp-logo-bubble" />
+              <span className="cp-logo-bubble" />
+              <span className="cp-logo-bubble" />
+            </span>
+          </span>
         </div>
 
         <nav className="cp-nav">
@@ -582,22 +619,6 @@ const ChatPage = () => {
 
         <AccountSidebarBlock variant="cp" />
 
-        <div className="cp-section-label">Role</div>
-        <div className="cp-toggle-group">
-          <button
-            className={`cp-toggle ${userRole === "student" ? "cp-toggle--on" : ""}`}
-            onClick={() => setUserRole("student")}
-          >
-            Student
-          </button>
-          <button
-            className={`cp-toggle ${userRole === "teacher" ? "cp-toggle--on" : ""}`}
-            onClick={() => setUserRole("teacher")}
-          >
-            Teacher / Professor
-          </button>
-        </div>
-
         <div className="cp-section-label">AI Mode</div>
         <div className="cp-toggle-group cp-toggle-group--grid">
           <button
@@ -632,6 +653,22 @@ const ChatPage = () => {
 
         <div className="cp-mode-hint">
           {AI_MODE_HINTS[aiMode] || AI_MODE_HINTS.deterministic}
+        </div>
+
+        <div className="cp-section-label">Role</div>
+        <div className="cp-toggle-group">
+          <button
+            className={`cp-toggle ${userRole === "student" ? "cp-toggle--on" : ""}`}
+            onClick={() => setUserRole("student")}
+          >
+            Student
+          </button>
+          <button
+            className={`cp-toggle ${userRole === "teacher" ? "cp-toggle--on" : ""}`}
+            onClick={() => setUserRole("teacher")}
+          >
+            Teacher / Professor
+          </button>
         </div>
 
         <div className="cp-section-label">Account</div>
