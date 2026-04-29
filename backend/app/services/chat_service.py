@@ -70,19 +70,28 @@ class ChatService:
                 retrieved_chunks=0,
             )
 
-        # ── Guard: nothing uploaded yet ──────────────────────────────────────
+        # ── Guard: no documents at all ───────────────────────────────────────
+        # Deterministic mode is, by definition, "answer only from your
+        # uploaded documents" -- so if there's nothing to retrieve from we
+        # have to bail with an upload prompt. Exploratory mode is allowed
+        # to fall through to a general-chat path so the user can chat at
+        # any time, even before they've uploaded anything.
         vector_store = self._doc_service.get_vector_store()
         if vector_store is None:
-            return ChatResponse(
-                answer=(
-                    "You haven't uploaded any documents yet. "
-                    "Please visit the Upload page and add some documents first."
-                ),
-                confidence=0,
-                citations=[],
-                mode=mode,
-                retrieved_chunks=0,
-            )
+            if mode == "deterministic":
+                return ChatResponse(
+                    answer=(
+                        "You haven't uploaded any documents yet, and Deterministic "
+                        "mode answers strictly from your uploads. Switch to "
+                        "Exploratory mode for general questions, or visit the "
+                        "Upload page to add a document first."
+                    ),
+                    confidence=0,
+                    citations=[],
+                    mode=mode,
+                    retrieved_chunks=0,
+                )
+            return await self._answer_without_context(query, mode, user_role)
 
         # ── Step 1: embed the user query ─────────────────────────────────────
         # Async embed so other requests aren't blocked while OpenAI responds.
@@ -103,17 +112,24 @@ class ChatService:
         )
 
         if not results:
-            return ChatResponse(
-                answer=(
-                    "I searched your uploaded documents but could not find "
-                    "information relevant to your question. (Only documents "
-                    "you uploaded are visible to your account.)"
-                ),
-                confidence=40,
-                citations=[],
-                mode=mode,
-                retrieved_chunks=0,
-            )
+            # Same split as the no-documents case above: deterministic
+            # mode tells the user nothing relevant was found, exploratory
+            # mode falls through to a general-knowledge answer.
+            if mode == "deterministic":
+                return ChatResponse(
+                    answer=(
+                        "I searched your uploaded documents but could not find "
+                        "information relevant to your question. Switch to "
+                        "Exploratory mode if you'd like a general answer "
+                        "instead. (Only documents you uploaded are visible "
+                        "to your account.)"
+                    ),
+                    confidence=40,
+                    citations=[],
+                    mode=mode,
+                    retrieved_chunks=0,
+                )
+            return await self._answer_without_context(query, mode, user_role)
 
         docs   = [doc   for doc, _     in results]
         scores = [score for _,   score in results]
@@ -156,6 +172,78 @@ class ChatService:
         )
 
     # ── Internal helpers ──────────────────────────────────────────────────────
+
+    async def _answer_without_context(
+        self,
+        query: str,
+        mode: str,
+        user_role: str,
+    ) -> ChatResponse:
+        """
+        Exploratory-mode fallback when there's nothing to retrieve from --
+        either because the user hasn't uploaded any documents yet or because
+        none of their uploads matched the query. We let GPT-4o answer from
+        general knowledge so the user can keep chatting freely; citations
+        come back empty and confidence is fixed (no FAISS signal to lean on).
+        """
+        system_prompt = self._system_prompt_general(mode, user_role)
+        messages = [
+            SystemMessage(content=system_prompt),
+            HumanMessage(content=query),
+        ]
+
+        llm_response = await self._llm.ainvoke(messages)
+        answer: str = llm_response.content.strip()
+
+        if mode == "exploratory":
+            answer += (
+                "\n\nExploratory note: Think about how this connects to "
+                "broader real-world applications and other topics in your "
+                "studies."
+            )
+
+        return ChatResponse(
+            answer=answer,
+            # 70 = "answered from general knowledge"; deliberately lower
+            # than a strong RAG match so the UI's confidence chip still
+            # reads as "trustworthy but not document-grounded".
+            confidence=70,
+            citations=[],
+            mode=mode,
+            retrieved_chunks=0,
+        )
+
+    @staticmethod
+    def _system_prompt_general(mode: str, role: str) -> str:
+        """
+        System prompt for the no-context (general-knowledge) path.
+        Differs from `_system_prompt` in two ways:
+          1. No "answer strictly from the context excerpts" clause --
+             there are no excerpts.
+          2. Tells GPT to invite the user to upload documents if they
+             want a more grounded answer, so the feature is discoverable.
+        """
+        base = (
+            "You are Laboracle, a friendly AI assistant for an educational "
+            "platform. The user has not uploaded any documents that match "
+            "this question, so answer using your general knowledge. Be "
+            "helpful, accurate, and concise. If the question is the kind "
+            "of thing that would benefit from grounded sources (their own "
+            "notes, syllabus, lecture slides, textbooks), gently mention "
+            "that uploading those documents in Deterministic mode would "
+            "give a more precise, citation-backed answer."
+        )
+
+        role_hint = (
+            "You are speaking with a TEACHER. Use precise, professional "
+            "language and curriculum-level framing."
+            if role == "teacher"
+            else
+            "You are speaking with a STUDENT. Use clear, friendly language "
+            "and explain concepts simply."
+        )
+
+        return f"{base}\n\n{role_hint}"
 
     @staticmethod
     def _build_context(docs: list) -> str:
