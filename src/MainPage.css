@@ -604,72 +604,95 @@
    it stays visible (absolute right panel was effectively zero-width).
    Short cinematic strip — keeps headline readable above the clip. */
 @media (max-width: 640px) {
-  /* Compact accent — full-width strip read as a separate dark card against
-     the hero purple. Pill footprint + radial mask feather edges into #4E3D8C. */
+  /* Wide cinematic strip — fully blended into hero purple. The strip
+     itself is rectangular, but a strong radial mask fades all four
+     edges to transparent and a heavy purple gradient overlay sits on
+     top, so the eye reads "ambient motion in the hero" rather than
+     "video element". No visible borders, no rounded corners that would
+     hint at a contained shape. */
   .hero-video-frame {
     position: relative;
     top: auto;
     right: auto;
     bottom: auto;
     left: auto;
-    width: min(88vw, 268px);
+    /* Wider than before — close to full hero width — and proportionally
+       taller so we see more of the character from waist up. */
+    width: min(96vw, 420px);
     max-width: none;
-    height: clamp(92px, 24vw, 128px);
-    margin: 16px auto 0;
+    height: clamp(140px, 38vw, 200px);
+    margin: 8px auto 0;
     z-index: 0;
-    border-radius: 999px;
+    border-radius: 0;
     overflow: hidden;
     background: transparent;
     box-shadow: none;
     isolation: isolate;
+    /* Aggressive feathering: solid in the centre 30%, then a long
+       gradient out to fully transparent at every edge. The ellipse is
+       wider than tall so the side fades are even stronger than the
+       top/bottom — that's what kills the "rectangle" silhouette. */
     -webkit-mask-image: radial-gradient(
-      ellipse 105% 145% at 50% 48%,
+      ellipse 70% 90% at 50% 50%,
       #000 0%,
-      #000 48%,
-      transparent 82%
+      #000 30%,
+      rgba(0, 0, 0, 0.7) 55%,
+      rgba(0, 0, 0, 0.3) 78%,
+      transparent 100%
     );
     mask-image: radial-gradient(
-      ellipse 105% 145% at 50% 48%,
+      ellipse 70% 90% at 50% 50%,
       #000 0%,
-      #000 48%,
-      transparent 82%
+      #000 30%,
+      rgba(0, 0, 0, 0.7) 55%,
+      rgba(0, 0, 0, 0.3) 78%,
+      transparent 100%
     );
     -webkit-mask-repeat: no-repeat;
     mask-repeat: no-repeat;
     mask-size: 100% 100%;
   }
 
-  /* Tint toward hero purple at perimeter only; keep mid-frame clearer so
-     motion reads against glass highlights instead of a flat purple slab. */
+  /* Purple wash overlay — sits on top of the video and pulls the
+     character's colour palette toward #4E3D8C so the strip feels
+     painted into the hero rather than dropped on top of it. The
+     centre stays the most transparent so the character is still
+     recognisable; edges go heavily purple. */
   .hero-video-frame::before {
     background:
       radial-gradient(
-        ellipse 88% 125% at 50% 45%,
+        ellipse 60% 80% at 50% 50%,
         transparent 0%,
-        transparent 38%,
-        rgba(78, 61, 140, 0.38) 78%,
-        rgba(78, 61, 140, 0.82) 100%
+        rgba(78, 61, 140, 0.05) 30%,
+        rgba(78, 61, 140, 0.35) 65%,
+        rgba(78, 61, 140, 0.75) 100%
       ),
       linear-gradient(
-        rgba(78, 61, 140, 0.18) 0%,
-        transparent 38%,
-        transparent 62%,
-        rgba(78, 61, 140, 0.28) 100%
+        180deg,
+        rgba(78, 61, 140, 0.20) 0%,
+        rgba(78, 61, 140, 0.05) 30%,
+        rgba(78, 61, 140, 0.05) 70%,
+        rgba(78, 61, 140, 0.30) 100%
       );
   }
 
   .hero-video {
     object-fit: cover;
-    object-position: center 36%;
-    transform: scale(1.08);
+    /* Anchor to the upper portion of the source clip so we see the
+       character's torso/face, not the floor. */
+    object-position: center 28%;
+    /* Slight scale so the character fills the strip without leaving
+       letterbox space at the top or bottom. */
+    transform: scale(1.04);
     transform-origin: center center;
-    filter: brightness(1.1) contrast(1.05);
+    /* Cool the video toward purple to match the hero. */
+    filter: brightness(1.05) contrast(1.02) saturate(0.92) hue-rotate(-4deg);
   }
 
   @media (prefers-reduced-motion: reduce) {
     .hero-video {
       transform: none;
-      filter: brightness(1.05);
+      filter: brightness(1.02) saturate(0.92);
     }
   }
 }
