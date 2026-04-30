@@ -45,7 +45,8 @@ const FEATURES = [
   {
     icon: ShieldCheck,
     title: 'Low-Hallucination AI',
-    body: 'A confidence score on every reply, dynamically calculated from how strongly the answer is grounded in your documents.',
+    body:
+      'A confidence score on every reply — a transparent heuristic from retrieval similarity, answer length and hedging language (not a raw model probability).',
     accent: 'emerald',
   },
   {
@@ -92,6 +93,14 @@ const FEATURES = [
     accent: 'pink',
     wide: true,
   },
+];
+
+// Three rows for the bento: wide-left, wide-right, wide-right (matches DOM order).
+const FEATURE_ROW_LAYOUTS = ['wide-left', 'wide-right', 'wide-right'];
+const FEATURE_ROWS = [
+  FEATURES.slice(0, 3),
+  FEATURES.slice(3, 6),
+  FEATURES.slice(6, 9),
 ];
 
 // Pricing plans. Regular is the free default tier — no payment, just a signup.
@@ -284,93 +293,6 @@ const MainPage = () => {
   // time they bounced through the home page.
   const sessionUser = getSessionUser();
   const isSignedIn = Boolean(sessionUser?.id);
-
-  // ── Bento parallax (Apple-widget style) ─────────────────────────────
-  // Subtle Apple-widget-style movement on the Powerful Features grid.
-  // Two effects layered together:
-  //   1. Hover (cursor-driven, desktop only): cards shift horizontally
-  //      based on cursor position relative to the section. Wide cards
-  //      drift opposite from small cards -> "magnetic separation".
-  //   2. Scroll (always on): cards translate vertically based on the
-  //      section's position relative to the viewport centre. Wide
-  //      cards go opposite to smalls so the grid breathes as you
-  //      scroll past it.
-  //
-  // Implementation writes two CSS variables on the section root:
-  //   --bento-mx -> cursor x in [-1..1] (0 when not hovering)
-  //   --bento-sy -> scroll y in [-1..1]
-  // The cards consume them via `transform: translate(...)` rules in
-  // MainPage.css. Magnitudes are tiny (8-10px hover, 6-8px scroll) so
-  // it feels alive rather than physically moving. Existing colours,
-  // halos, hover-glow, and grid layout are untouched -- this is
-  // purely a transform overlay.
-  const featuresRef = useRef(null);
-  useEffect(() => {
-    const root = featuresRef.current;
-    if (!root) return undefined;
-
-    // Reduced-motion: skip the parallax entirely.
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      return undefined;
-    }
-
-    let hoverActive = false;
-    let mouseX = 0;
-    let scrollY = 0;
-    let rafId = 0;
-
-    const flush = () => {
-      rafId = 0;
-      const mx = hoverActive ? (mouseX - 0.5) * 2 : 0;
-      root.style.setProperty('--bento-mx', mx.toFixed(3));
-      root.style.setProperty('--bento-sy', scrollY.toFixed(3));
-    };
-    const schedule = () => {
-      if (rafId) return;
-      rafId = window.requestAnimationFrame(flush);
-    };
-
-    const onMouseMove = (e) => {
-      const rect = root.getBoundingClientRect();
-      mouseX = (e.clientX - rect.left) / Math.max(rect.width, 1);
-      hoverActive = true;
-      schedule();
-    };
-    const onMouseLeave = () => {
-      hoverActive = false;
-      schedule();
-    };
-    const onScroll = () => {
-      const rect = root.getBoundingClientRect();
-      const vh = window.innerHeight || 1;
-      const sectionCentre = rect.top + rect.height / 2;
-      const viewportCentre = vh / 2;
-      const raw = (sectionCentre - viewportCentre) / vh;
-      scrollY = Math.max(-1, Math.min(1, raw));
-      schedule();
-    };
-
-    // Hover only on real pointer devices -- on touch the listeners
-    // would just sit unused.
-    const supportsHover = window.matchMedia('(hover: hover)').matches;
-    if (supportsHover) {
-      root.addEventListener('mousemove', onMouseMove, { passive: true });
-      root.addEventListener('mouseleave', onMouseLeave, { passive: true });
-    }
-    window.addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
-
-    return () => {
-      if (supportsHover) {
-        root.removeEventListener('mousemove', onMouseMove);
-        root.removeEventListener('mouseleave', onMouseLeave);
-      }
-      window.removeEventListener('scroll', onScroll);
-      if (rafId) window.cancelAnimationFrame(rafId);
-      root.style.removeProperty('--bento-mx');
-      root.style.removeProperty('--bento-sy');
-    };
-  }, []);
 
   const handleHeroPrimary = () => {
     navigate(isSignedIn ? '/chat' : '/signup');
@@ -589,12 +511,11 @@ const MainPage = () => {
         <HeroCompanionVideo />
       </section>
 
-      {/* Features Section — bento-style asymmetric grid of dark cards.
-          The section ref drives a subtle Apple-widget-style parallax
-          effect set up in the useEffect below: hover and scroll both
-          translate the cards by a few pixels. Cards' colours, halos,
-          and grid layout are untouched -- this is a transform overlay. */}
-      <section id="features" className="features" ref={featuresRef}>
+      {/* Features — three rows; each row hovers into an Apple-widget-style
+          swap (wide card trades horizontal slots with the pair of small
+          cards). Implemented with CSS grid placement only — colours and
+          typography unchanged. */}
+      <section id="features" className="features">
         <div className="features-head">
           <h2 className="section-title features-title">Powerful Features</h2>
           <p className="features-sub">
@@ -602,24 +523,31 @@ const MainPage = () => {
             actually useful in a classroom.
           </p>
         </div>
-        <div className="features-bento">
-          {FEATURES.map(({ icon: Icon, title, body, accent, wide }) => (
-            <article
-              key={title}
-              className={[
-                'bento-card',
-                `bento-card--${accent}`,
-                wide ? 'bento-card--wide' : '',
-              ]
-                .filter(Boolean)
-                .join(' ')}
+        <div className="features-bento-stack">
+          {FEATURE_ROWS.map((rowItems, ri) => (
+            <div
+              key={`bento-row-${ri}`}
+              className={`features-bento-row features-bento-row--${FEATURE_ROW_LAYOUTS[ri]}`}
             >
-              <span className="bento-icon" aria-hidden="true">
-                <Icon size={22} strokeWidth={2.2} />
-              </span>
-              <h3 className="bento-title">{title}</h3>
-              <p className="bento-body">{body}</p>
-            </article>
+              {rowItems.map(({ icon: Icon, title, body, accent, wide }) => (
+                <article
+                  key={title}
+                  className={[
+                    'bento-card',
+                    `bento-card--${accent}`,
+                    wide ? 'bento-card--wide' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                >
+                  <span className="bento-icon" aria-hidden="true">
+                    <Icon size={22} strokeWidth={2.2} />
+                  </span>
+                  <h3 className="bento-title">{title}</h3>
+                  <p className="bento-body">{body}</p>
+                </article>
+              ))}
+            </div>
           ))}
         </div>
       </section>

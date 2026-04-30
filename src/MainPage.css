@@ -880,18 +880,73 @@
   color: #5c637a;
 }
 
-.features-bento {
+.features-bento-stack {
   max-width: 1200px;
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.features-bento-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 18px;
-  /* Parallax variables. Set on the parent section (#features) by JS in
-     MainPage.jsx; default to 0 so the cards sit in their natural
-     positions until the listeners attach. The cards consume them in
-     `transform: translate(...)` rules below. */
-  --bento-mx: 0;
-  --bento-sy: 0;
+  align-items: stretch;
+}
+
+.features-bento-row--wide-left .bento-card:nth-child(1) {
+  grid-column: 1 / span 2;
+  grid-row: 1;
+}
+.features-bento-row--wide-left .bento-card:nth-child(2) {
+  grid-column: 3;
+  grid-row: 1;
+}
+.features-bento-row--wide-left .bento-card:nth-child(3) {
+  grid-column: 4;
+  grid-row: 1;
+}
+
+.features-bento-row--wide-right .bento-card:nth-child(1) {
+  grid-column: 1;
+  grid-row: 1;
+}
+.features-bento-row--wide-right .bento-card:nth-child(2) {
+  grid-column: 2;
+  grid-row: 1;
+}
+.features-bento-row--wide-right .bento-card:nth-child(3) {
+  grid-column: 3 / span 2;
+  grid-row: 1;
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .features-bento-row--wide-left:hover .bento-card:nth-child(1) {
+    grid-column: 3 / span 2;
+    grid-row: 1;
+  }
+  .features-bento-row--wide-left:hover .bento-card:nth-child(2) {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .features-bento-row--wide-left:hover .bento-card:nth-child(3) {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .features-bento-row--wide-right:hover .bento-card:nth-child(1) {
+    grid-column: 3;
+    grid-row: 1;
+  }
+  .features-bento-row--wide-right:hover .bento-card:nth-child(2) {
+    grid-column: 4;
+    grid-row: 1;
+  }
+  .features-bento-row--wide-right:hover .bento-card:nth-child(3) {
+    grid-column: 1 / span 2;
+    grid-row: 1;
+  }
 }
 
 .bento-card {
@@ -908,36 +963,16 @@
   overflow: hidden;
   isolation: isolate;
 
-  /* ── Bento parallax (Apple-widget style) ───────────────────────────
-     Two parallax channels driven by JS-set CSS variables on the
-     parent `#features` section:
-       · --bento-mx  -- cursor x in [-1..1]; default 0
-       · --bento-sy  -- scroll progress in [-1..1]; default 0
-     We split the per-card translate into x/y CSS variables (`--card-tx`
-     / `--card-ty`) so the existing :hover lift can compose on top
-     without obliterating the parallax offset. Magnitudes are small
-     by design (~8px hover, 6px scroll) -- you feel them more than
-     you see them, exactly like Apple widgets.
-     Small cards: move OPPOSITE to cursor x and OPPOSITE to scroll y
-     (i.e. cursor goes right -> smalls drift left; scroll progresses
-     downward -> smalls drift up). Wide cards (overridden below)
-     do the opposite, so the row visually breathes apart and back. */
-  --card-tx: calc(var(--bento-mx, 0) * -8px);
-  --card-ty: calc(var(--bento-sy, 0) * -6px);
-  transform: translate(var(--card-tx), var(--card-ty));
-
-  transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1),
-    border-color 0.25s ease, box-shadow 0.3s ease;
+  transition:
+    grid-column 0.38s cubic-bezier(0.25, 1, 0.3, 1),
+    grid-row 0.38s cubic-bezier(0.25, 1, 0.3, 1),
+    transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-color 0.25s ease,
+    box-shadow 0.3s ease;
 }
 
-/* Wide variant — span 2 columns to create the asymmetric bento layout.
-   Also flips the parallax direction so the wide card moves OPPOSITE
-   to the small ones (cursor right -> wide drifts right; scroll
-   progresses downward -> wide drifts down). */
+/* Semantic marker — spanning handled per `.features-bento-row`. */
 .bento-card--wide {
-  grid-column: span 2;
-  --card-tx: calc(var(--bento-mx, 0) * 8px);
-  --card-ty: calc(var(--bento-sy, 0) * 6px);
 }
 
 /* Soft accent halo that bleeds in from the top edge — adds the
@@ -964,11 +999,7 @@
 }
 
 .bento-card:hover {
-  /* Compose the existing -4px lift on top of the parallax offset
-     (--card-tx / --card-ty) instead of replacing it -- otherwise
-     hovering a card would snap it back to the grid centre and lose
-     the magnetic feel. */
-  transform: translate(var(--card-tx), calc(var(--card-ty) - 4px));
+  transform: translateY(-4px);
   border-color: var(--accent-solid, rgba(102, 126, 234, 0.4));
   box-shadow:
     0 0 0 1px var(--accent-solid, rgba(102, 126, 234, 0.4)),
@@ -1123,50 +1154,87 @@
   --accent-glow: rgba(244, 114, 182, 0.45);
 }
 
-/* Mobile — collapse to single column so wide cards still fit, and
-   gentle the parallax magnitude (smalls/wides go in opposite vertical
-   directions but with a softer 4px max -- enough for "alive" feel on
-   a phone but never visually noisy). Hover parallax is auto-disabled
-   on touch devices because the JS only attaches mousemove on
-   `(hover: hover)` pointers, so --bento-mx stays at 0 there. */
-@media (max-width: 880px) {
-  .features-bento {
-    grid-template-columns: 1fr;
-  }
-  .bento-card--wide {
-    grid-column: span 1;
-  }
-}
-
-@media (max-width: 640px) {
-  .bento-card {
-    --card-ty: calc(var(--bento-sy, 0) * -4px);
-  }
-  .bento-card--wide {
-    --card-ty: calc(var(--bento-sy, 0) * 4px);
-  }
-}
-
-/* Reduced-motion: zero out the parallax channels so the cards sit
-   completely still. JS already short-circuits the listeners under
-   the same media query, but this CSS catches the case where the
-   listener runs once before the preference is read. */
-@media (prefers-reduced-motion: reduce) {
-  .bento-card,
-  .bento-card--wide {
-    --card-tx: 0px;
-    --card-ty: 0px;
-    transition: none;
-  }
-}
-
-/* Tablet — 2 columns; wide cards still span 2 (full row). */
+/* Tablet / narrow desktop — each row becomes a 2-column grid: wide card
+   spans full width on row 1; two narrows sit side-by-side on row 2.
+   Hover swap mirrors the desktop behaviour vertically (wide trades rows). */
 @media (min-width: 881px) and (max-width: 1100px) {
-  .features-bento {
+  .features-bento-row {
     grid-template-columns: repeat(2, 1fr);
   }
-  .bento-card--wide {
-    grid-column: span 2;
+
+  .features-bento-row--wide-left .bento-card:nth-child(1) {
+    grid-column: 1 / span 2;
+    grid-row: 1;
+  }
+  .features-bento-row--wide-left .bento-card:nth-child(2) {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .features-bento-row--wide-left .bento-card:nth-child(3) {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .features-bento-row--wide-right .bento-card:nth-child(1) {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .features-bento-row--wide-right .bento-card:nth-child(2) {
+    grid-column: 2;
+    grid-row: 2;
+  }
+  .features-bento-row--wide-right .bento-card:nth-child(3) {
+    grid-column: 1 / span 2;
+    grid-row: 1;
+  }
+
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .features-bento-row--wide-left:hover .bento-card:nth-child(1) {
+      grid-column: 1 / span 2;
+      grid-row: 2;
+    }
+    .features-bento-row--wide-left:hover .bento-card:nth-child(2) {
+      grid-column: 1;
+      grid-row: 1;
+    }
+    .features-bento-row--wide-left:hover .bento-card:nth-child(3) {
+      grid-column: 2;
+      grid-row: 1;
+    }
+
+    .features-bento-row--wide-right:hover .bento-card:nth-child(1) {
+      grid-column: 1;
+      grid-row: 1;
+    }
+    .features-bento-row--wide-right:hover .bento-card:nth-child(2) {
+      grid-column: 2;
+      grid-row: 1;
+    }
+    .features-bento-row--wide-right:hover .bento-card:nth-child(3) {
+      grid-column: 1 / span 2;
+      grid-row: 2;
+    }
+  }
+}
+
+/* Mobile — stack cards; disable implicit hover choreography */
+@media (max-width: 880px) {
+  .features-bento-row {
+    grid-template-columns: 1fr;
+  }
+  .features-bento-row .bento-card:nth-child(n) {
+    grid-column: 1 / -1 !important;
+    grid-row: auto !important;
+  }
+}
+
+/* Reduced-motion: freeze placement — no hover slot swap */
+@media (prefers-reduced-motion: reduce) {
+  .bento-card {
+    transition:
+      transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1),
+      border-color 0.25s ease,
+      box-shadow 0.3s ease;
   }
 }
 
