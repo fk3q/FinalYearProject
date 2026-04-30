@@ -48,6 +48,13 @@ class Settings(BaseSettings):
     MODEL_ID_GPT5:           str = "gpt-5"
     MODEL_ID_CLAUDE_OPUS:    str = "claude-opus-4-7"
     MODEL_ID_CLAUDE_SONNET:  str = "claude-sonnet-4-6"
+    # Gemini comes in two SKUs:
+    #   · Flash -- free-tier on Google's side (no billing required), fast,
+    #     multimodal. Surfaced as the "free Gemini" in the registry.
+    #   · Pro   -- paid-only on Google's side (`generate_content_free_tier_*`
+    #     limit is 0 for new projects). Surfaced behind the Regular tier so
+    #     free users see it greyed out with an upgrade hint.
+    MODEL_ID_GEMINI_FLASH:   str = "gemini-2.5-flash"
     MODEL_ID_GEMINI_PRO:     str = "gemini-2.5-pro"
 
     # The model used when a chat request omits an explicit `model` field.

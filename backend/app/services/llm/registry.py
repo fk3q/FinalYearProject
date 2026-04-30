@@ -26,11 +26,14 @@ from .openai_client import OpenAIProvider
 # sessionStorage and posts back; the underlying vendor model_id (e.g.
 # "claude-opus-4-7") lives separately in settings so we can rotate
 # vendor versions without forcing every client to clear their cache.
-MODEL_GPT4O   = "gpt-4o"
-MODEL_GPT5    = "gpt-5"
-MODEL_OPUS    = "opus-4-7"
-MODEL_SONNET  = "sonnet-4-6"
-MODEL_GEMINI  = "gemini-2-5-pro"
+MODEL_GPT4O         = "gpt-4o"
+MODEL_GPT5          = "gpt-5"
+MODEL_OPUS          = "opus-4-7"
+MODEL_SONNET        = "sonnet-4-6"
+MODEL_GEMINI_FLASH  = "gemini-2-5-flash"
+MODEL_GEMINI        = "gemini-2-5-pro"  # kept as MODEL_GEMINI for back-compat
+                                        # with sessionStorage entries already in
+                                        # the wild from earlier deploys.
 
 
 # Tier ordering, lowest → highest. Used by `_tier_at_least`.
@@ -54,11 +57,12 @@ class _Registry:
         # Mapping: public model_id → vendor model_id (read from settings
         # so it can be rotated via env var without a code change).
         self._vendor_id: Dict[str, str] = {
-            MODEL_GPT4O:   settings.MODEL_ID_GPT4O,
-            MODEL_GPT5:    settings.MODEL_ID_GPT5,
-            MODEL_OPUS:    settings.MODEL_ID_CLAUDE_OPUS,
-            MODEL_SONNET:  settings.MODEL_ID_CLAUDE_SONNET,
-            MODEL_GEMINI:  settings.MODEL_ID_GEMINI_PRO,
+            MODEL_GPT4O:         settings.MODEL_ID_GPT4O,
+            MODEL_GPT5:          settings.MODEL_ID_GPT5,
+            MODEL_OPUS:          settings.MODEL_ID_CLAUDE_OPUS,
+            MODEL_SONNET:        settings.MODEL_ID_CLAUDE_SONNET,
+            MODEL_GEMINI_FLASH:  settings.MODEL_ID_GEMINI_FLASH,
+            MODEL_GEMINI:        settings.MODEL_ID_GEMINI_PRO,
         }
 
         # The static catalogue. `available` is recomputed per request
@@ -77,13 +81,32 @@ class _Registry:
                 speed_label="Fast",
                 description="OpenAI's everyday model — fast and capable.",
             ),
+            # Gemini 2.5 Flash -- the "free Gemini". Google offers
+            # Flash on its actual free tier (no billing required), so
+            # this is the model free Laboracle users get when they
+            # pick Gemini in the picker. Pro is gated to Regular+
+            # below.
+            MODEL_GEMINI_FLASH: ModelInfo(
+                id=MODEL_GEMINI_FLASH,
+                label="Gemini 2.5 Flash",
+                provider="google",
+                min_tier="free",
+                speed_label="Fast",
+                description="Google's quickest — multimodal and free.",
+            ),
             MODEL_GEMINI: ModelInfo(
                 id=MODEL_GEMINI,
                 label="Gemini 2.5 Pro",
                 provider="google",
-                min_tier="free",
-                speed_label="Fast",
-                description="Google's flagship — fast and inexpensive.",
+                # Bumped from "free" to "regular" -- Google moved Pro
+                # off the free tier, so trying to call it without
+                # billing on the Cloud project returns 429s with
+                # `limit: 0`. Keeping it visible behind a paid tier
+                # gives free users an upgrade hook instead of a
+                # mysteriously broken model.
+                min_tier="regular",
+                speed_label="Medium",
+                description="Google's flagship — deeper reasoning, paid plan.",
             ),
             MODEL_SONNET: ModelInfo(
                 id=MODEL_SONNET,

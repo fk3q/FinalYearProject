@@ -76,7 +76,7 @@ const FEATURES = [
   {
     icon: Sparkles,
     title: 'Multi-Model AI',
-    body: 'Choose between GPT-4o, GPT-5, Claude Opus 4.7, Claude Sonnet 4.6 and Gemini 2.5 Pro for the answer style you need.',
+    body: 'Choose between GPT-4o, GPT-5, Claude Opus 4.7, Claude Sonnet 4.6, Gemini 2.5 Flash and Gemini 2.5 Pro for the answer style you need.',
     accent: 'fuchsia',
   },
   {
