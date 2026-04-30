@@ -17,9 +17,12 @@ export default function GoogleSignInButton({ onCredential, disabled }) {
   const measureWidth = useCallback(() => {
     const el = containerRef.current;
     if (!el) return;
-    /* clientWidth = content box only (matches GIS width; avoids overflow clip). */
-    const w = Math.floor(el.clientWidth);
-    setBtnWidth(Math.max(220, Math.min(400, w > 0 ? w : 320)));
+    /* GIS renders at fixed px width; reserve gutter so Safari doesn't clip
+       the label at the iframe edge (e.g. "Continue with Googl"). */
+    const raw = Math.floor(el.clientWidth);
+    const gutter = 28;
+    const w = Math.max(220, Math.min(400, raw > gutter ? raw - gutter : raw));
+    setBtnWidth(w > 0 ? w : 320);
   }, []);
 
   useEffect(() => {
@@ -56,6 +59,11 @@ export default function GoogleSignInButton({ onCredential, disabled }) {
       mountEl.innerHTML = "";
       const inner = document.createElement("div");
       inner.id = btnId.current;
+      inner.style.width = "100%";
+      inner.style.boxSizing = "border-box";
+      inner.style.display = "flex";
+      inner.style.justifyContent = "center";
+      inner.style.alignItems = "stretch";
       mountEl.appendChild(inner);
 
       window.google.accounts.id.initialize({

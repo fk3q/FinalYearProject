@@ -377,8 +377,14 @@ body {
   display: flex;
   justify-content: center;
   align-self: stretch;
+  width: 100%;
   min-width: 0;
   min-height: 44px;
+  overflow: visible;
+}
+
+.oauth-buttons .google-signin-mount iframe {
+  min-width: 0;
 }
 
 .oauth-busy {

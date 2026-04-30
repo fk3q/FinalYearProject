@@ -604,42 +604,73 @@
    it stays visible (absolute right panel was effectively zero-width).
    Short cinematic strip — keeps headline readable above the clip. */
 @media (max-width: 640px) {
+  /* Compact accent — full-width strip read as a separate dark card against
+     the hero purple. Pill footprint + radial mask feather edges into #4E3D8C. */
   .hero-video-frame {
     position: relative;
     top: auto;
     right: auto;
     bottom: auto;
     left: auto;
-    width: 100%;
-    max-width: 420px;
-    height: clamp(168px, 44vw, 220px);
-    margin: 28px auto 0;
-    z-index: 2;
-    border-radius: 14px;
+    width: min(88vw, 268px);
+    max-width: none;
+    height: clamp(92px, 24vw, 128px);
+    margin: 16px auto 0;
+    z-index: 0;
+    border-radius: 999px;
     overflow: hidden;
+    background: transparent;
+    box-shadow: none;
+    isolation: isolate;
+    -webkit-mask-image: radial-gradient(
+      ellipse 105% 145% at 50% 48%,
+      #000 0%,
+      #000 48%,
+      transparent 82%
+    );
+    mask-image: radial-gradient(
+      ellipse 105% 145% at 50% 48%,
+      #000 0%,
+      #000 48%,
+      transparent 82%
+    );
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    mask-size: 100% 100%;
   }
 
-  /* Lighter overlays than desktop: heavy solid purple was hiding motion on
-     small screens so the clip read as a static silhouette. */
+  /* Tint toward hero purple at perimeter only; keep mid-frame clearer so
+     motion reads against glass highlights instead of a flat purple slab. */
   .hero-video-frame::before {
     background:
-      linear-gradient(
-        to bottom,
+      radial-gradient(
+        ellipse 88% 125% at 50% 45%,
         transparent 0%,
-        transparent 52%,
-        rgba(78, 61, 140, 0.35) 82%,
+        transparent 38%,
+        rgba(78, 61, 140, 0.38) 78%,
         rgba(78, 61, 140, 0.82) 100%
       ),
       linear-gradient(
-        to top,
-        transparent 0%,
-        transparent 68%,
-        rgba(78, 61, 140, 0.5) 100%
+        rgba(78, 61, 140, 0.18) 0%,
+        transparent 38%,
+        transparent 62%,
+        rgba(78, 61, 140, 0.28) 100%
       );
   }
 
   .hero-video {
-    object-position: center 42%;
+    object-fit: cover;
+    object-position: center 36%;
+    transform: scale(1.08);
+    transform-origin: center center;
+    filter: brightness(1.1) contrast(1.05);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-video {
+      transform: none;
+      filter: brightness(1.05);
+    }
   }
 }
 
