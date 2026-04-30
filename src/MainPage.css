@@ -612,45 +612,47 @@
      hint at a contained shape. */
   /* Full-bleed cinematic window flush with the bottom of the hero.
      Breaks out of `.hero`'s 16px side padding via negative margins so
-     the strip spans the full hero width edge-to-edge. */
+     the strip spans the full hero width edge-to-edge.
+     Frame is intentionally taller than the visible window: the bottom
+     ~110 px (containing the source video's black floor letterbox)
+     overshoots past the hero's bottom edge and gets clipped by the
+     hero's `overflow: hidden`. The character's feet end up sitting
+     right at the section boundary (the white line). */
   .hero-video-frame {
     position: relative;
     top: auto;
     right: auto;
     bottom: auto;
     left: auto;
-    /* Edge-to-edge: cancel `.hero`'s 16px side padding. */
     width: calc(100% + 32px);
     max-width: none;
     margin-left: -16px;
     margin-right: -16px;
     margin-top: 24px;
-    /* Negative bottom margin cancels `.hero`'s mobile padding-bottom
-       (70px) so the strip touches the hero's bottom edge. The `.hero`
-       has `overflow: hidden`, so any overshoot beyond the section is
-       clipped at the boundary. */
-    margin-bottom: -70px;
-    height: clamp(360px, 105vw, 520px);
+    /* -180 px = -70 px (cancels hero padding-bottom) + ~110 px overshoot
+       past the hero, where the source's bottom black bar is hidden. */
+    margin-bottom: -180px;
+    height: clamp(460px, 135vw, 640px);
     z-index: 0;
     border-radius: 0;
     overflow: hidden;
     background: transparent;
     box-shadow: none;
     isolation: isolate;
-    /* Top fades into the stats area; bottom stays solid so it meets the
-       section boundary cleanly. */
+    /* Top fades into the stats area; bottom stays solid so the visible
+       cut-line at the white "Powerful Features" boundary is crisp. */
     -webkit-mask-image: linear-gradient(
       180deg,
       transparent 0%,
-      rgba(0, 0, 0, 0.4) 8%,
-      #000 22%,
+      rgba(0, 0, 0, 0.4) 6%,
+      #000 18%,
       #000 100%
     );
     mask-image: linear-gradient(
       180deg,
       transparent 0%,
-      rgba(0, 0, 0, 0.4) 8%,
-      #000 22%,
+      rgba(0, 0, 0, 0.4) 6%,
+      #000 18%,
       #000 100%
     );
     -webkit-mask-repeat: no-repeat;
