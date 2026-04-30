@@ -629,11 +629,11 @@
     margin-left: -16px;
     margin-right: -16px;
     margin-top: 24px;
-    /* -150 px = -70 px (cancels hero padding-bottom) + ~80 px overshoot
-       past the hero, where the source's bottom black bar is hidden.
-       Smaller overshoot than before so the character's feet sit on the
-       white "Powerful Features" line rather than disappearing past it. */
-    margin-bottom: -150px;
+    /* -125 px = -70 px (cancels hero padding-bottom) + ~55 px overshoot.
+       Just enough overshoot to clip the source video's bottom black
+       letterbox while keeping the character's feet inside the visible
+       window — they sit on the white "Powerful Features" line. */
+    margin-bottom: -125px;
     height: clamp(440px, 130vw, 620px);
     z-index: 0;
     border-radius: 0;
