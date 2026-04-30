@@ -205,6 +205,10 @@ class _Registry:
                 # server can't deliver yet.
                 locked_reason = tier_phrase or "Coming soon"
 
+            if info.id == MODEL_GEMINI and settings.GEMINI_PRO_TEMPORARILY_DISABLED:
+                available = False
+                locked_reason = "Currently under service"
+
             out.append(
                 ModelInfo(
                     id=info.id,
@@ -233,6 +237,12 @@ class _Registry:
         info = self.get(model_id)
         if info is None:
             return f"Unknown model: {model_id!r}."
+
+        if model_id == MODEL_GEMINI and settings.GEMINI_PRO_TEMPORARILY_DISABLED:
+            return (
+                "Gemini 2.5 Pro is currently under service. "
+                "Please choose another model."
+            )
 
         user_rank = _TIER_ORDER.get((tier or "free").lower(), 0)
         if _TIER_ORDER[info.min_tier] > user_rank:

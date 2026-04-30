@@ -25,6 +25,10 @@ from app.config import settings
 from app.dependencies import require_user
 from app.services.document_service import DocumentService
 from app.services.chat_service import ChatService
+from app.services.llm.provider_errors import (
+    anthropic_insufficient_credit_user_message,
+    anthropic_reports_insufficient_credits,
+)
 from app.models.schemas import (
     DocumentUploadResponse,
     ChatRequest,
@@ -263,7 +267,18 @@ async def chat_query(
         raise
     except Exception as exc:
         logger.error("Chat query failed:\n%s", traceback.format_exc())
-        raise HTTPException(status_code=500, detail=f"Query error: {exc}") from exc
+        if anthropic_reports_insufficient_credits(exc):
+            raise HTTPException(
+                status_code=503,
+                detail=anthropic_insufficient_credit_user_message(),
+            ) from exc
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "Could not complete this reply. Try again, choose a different model, "
+                "or shorten your question."
+            ),
+        ) from exc
 
     session_id_saved: int | None = None
     try:

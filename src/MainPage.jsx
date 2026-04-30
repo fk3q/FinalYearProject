@@ -273,7 +273,7 @@ const HeroCompanionVideo = ({ src = "/hero-companion.mp4" }) => {
         muted
         loop
         playsInline
-        preload="metadata"
+        preload="auto"
         onError={() => setFailed(true)}
       />
     </div>

@@ -37,6 +37,28 @@ import {
 } from "./api/chatHistory";
 import "./ChatPage.css";
 
+/** Normalize FastAPI `detail` (string | validation array | object) for UI text. */
+function parseFastApiDetail(detail) {
+  if (detail == null || detail === "") return "";
+  if (typeof detail === "string") return detail.trim();
+  if (Array.isArray(detail)) {
+    return detail
+      .map((item) => {
+        if (typeof item === "string") return item;
+        if (item && typeof item === "object" && item.msg != null)
+          return String(item.msg);
+        return "";
+      })
+      .filter(Boolean)
+      .join(" ")
+      .trim();
+  }
+  if (typeof detail === "object") {
+    if (typeof detail.message === "string") return detail.message.trim();
+  }
+  return "";
+}
+
 const WELCOME_MESSAGE = {
   id: 0,
   type: "bot",
@@ -377,8 +399,11 @@ const ChatPage = () => {
       });
 
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ detail: res.statusText }));
-        throw new Error(err.detail || "Query failed");
+        const errBody = await res.json().catch(() => ({}));
+        const detail = parseFastApiDetail(errBody.detail);
+        throw new Error(
+          detail || errBody.message || res.statusText || "Query failed"
+        );
       }
 
       const data = await res.json();
@@ -397,12 +422,20 @@ const ChatPage = () => {
         },
       ]);
     } catch (err) {
+      const raw = err?.message || "Something went wrong.";
+      const billingOrModelHint =
+        /another model|GPT-4o|Claude could not run|Anthropic|could not complete this reply|billing|credits|503/i.test(
+          raw
+        );
+      const suffix = billingOrModelHint
+        ? ""
+        : " Please make sure the backend is running and documents have been uploaded.";
       setMessages((p) => [
         ...p,
         {
           id: Date.now() + 1,
           type: "bot",
-          text: `Error: ${err.message}. Please make sure the backend is running and documents have been uploaded.`,
+          text: raw.startsWith("Error:") ? `${raw}${suffix}` : `Error: ${raw}${suffix}`,
           confidence: 0,
           citations: [],
         },

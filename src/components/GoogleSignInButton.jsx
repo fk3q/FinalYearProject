@@ -17,7 +17,8 @@ export default function GoogleSignInButton({ onCredential, disabled }) {
   const measureWidth = useCallback(() => {
     const el = containerRef.current;
     if (!el) return;
-    const w = Math.floor(el.getBoundingClientRect().width);
+    /* clientWidth = content box only (matches GIS width; avoids overflow clip). */
+    const w = Math.floor(el.clientWidth);
     setBtnWidth(Math.max(220, Math.min(400, w > 0 ? w : 320)));
   }, []);
 

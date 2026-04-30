@@ -1,41 +1,72 @@
-/* Wrap GIS's button in our own bordered shell so the Google button
-   reads visually identical to the Microsoft + Facebook buttons
-   (same 1px border, 8px radius, 44 px min-height, hover lift). The
-   inner button GIS renders has a slightly different default border
-   colour and a 4 px corner radius; `overflow: hidden` on the wrapper
-   clips its corners so only our 8 px outer corners are visible. */
+/* GIS `outline` theme draws its own 8px-rounded chrome inside the iframe.
+   An outer border + overflow:hidden duplicated that edge and clipped text.
+   Wrapper stays chrome-free; hover uses Google palette on the shell only. */
 .google-signin-mount {
+  box-sizing: border-box;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: stretch;
   width: 100%;
   min-height: 44px;
   padding: 0;
   border-radius: 8px;
-  border: 1px solid #d0d5dd;
-  background: #ffffff;
-  overflow: hidden;
-  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+  border: none;
+  background: transparent;
+  overflow: visible;
+  transition: box-shadow 0.25s ease;
 }
 
-.google-signin-mount:hover {
-  background: #f9fafb;
-  border-color: #b6bcc7;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+@keyframes google-signin-brand-ring {
+  0% {
+    box-shadow:
+      0 0 0 2px #4285f4,
+      0 6px 22px rgba(66, 133, 244, 0.28);
+  }
+  33% {
+    box-shadow:
+      0 0 0 2px #ea4335,
+      0 6px 22px rgba(234, 67, 53, 0.26);
+  }
+  66% {
+    box-shadow:
+      0 0 0 2px #fbbc05,
+      0 6px 22px rgba(251, 188, 5, 0.28);
+  }
+  100% {
+    box-shadow:
+      0 0 0 2px #34a853,
+      0 6px 22px rgba(52, 168, 83, 0.26);
+  }
+}
+
+@media (hover: hover) {
+  .google-signin-mount:not(.google-signin-mount--disabled):hover {
+    animation: google-signin-brand-ring 2.5s ease infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @media (hover: hover) {
+    .google-signin-mount:not(.google-signin-mount--disabled):hover {
+      animation: none;
+      box-shadow:
+        0 0 0 2px rgba(66, 133, 244, 0.45),
+        0 4px 14px rgba(15, 23, 42, 0.08);
+    }
+  }
 }
 
 .google-signin-mount > div {
   width: 100% !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: stretch !important;
+  min-height: 44px;
 }
 
 .google-signin-mount iframe {
   width: 100% !important;
   max-width: 100% !important;
-  /* GIS draws its own 1px border inside the rendered button. Our
-     outer wrapper now provides the visible border, so we suppress
-     the inner one. Best-effort -- iframes rendered cross-origin
-     ignore this, but in practice the GIS button is rendered
-     same-origin and the override holds. */
   border: 0 !important;
 }
 

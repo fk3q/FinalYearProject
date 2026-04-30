@@ -16,13 +16,15 @@ logger = logging.getLogger(__name__)
 
 
 def is_configured() -> bool:
-    return bool(settings.SMTP_HOST and settings.SMTP_FROM_EMAIL)
+    from_addr = settings.SMTP_FROM_EMAIL or settings.SMTP_USERNAME
+    return bool(settings.SMTP_HOST and from_addr)
 
 
 def _build_message(to_email: str, subject: str, text: str, html: Optional[str]) -> EmailMessage:
     msg = EmailMessage()
     from_name = settings.SMTP_FROM_NAME or settings.APP_NAME
-    msg["From"] = f"{from_name} <{settings.SMTP_FROM_EMAIL}>"
+    from_addr = settings.SMTP_FROM_EMAIL or settings.SMTP_USERNAME
+    msg["From"] = f"{from_name} <{from_addr}>"
     msg["To"] = to_email
     msg["Subject"] = subject
     msg.set_content(text)

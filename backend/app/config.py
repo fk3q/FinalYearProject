@@ -57,6 +57,10 @@ class Settings(BaseSettings):
     MODEL_ID_GEMINI_FLASH:   str = "gemini-2.5-flash"
     MODEL_ID_GEMINI_PRO:     str = "gemini-2.5-pro"
 
+    # Grey out Gemini 2.5 Pro in /api/models + reject chat when True (quota /
+    # billing issues on Google's side). Set to False in .env when stable again.
+    GEMINI_PRO_TEMPORARILY_DISABLED: bool = True
+
     # The model used when a chat request omits an explicit `model` field.
     # Defaults to GPT-4o because it's free-tier and OPENAI_API_KEY is the
     # only key required for day-1 deployment -- Anthropic / Google keys
@@ -91,9 +95,10 @@ class Settings(BaseSettings):
     API_PORT: int = 8000
     CORS_ORIGINS: str = "http://localhost:3000,http://localhost:3001,http://localhost:5173"
 
-    # ── Email (password reset) ────────────────────────────────────────────────
-    # Leave empty to skip real email sending; the 6-digit code is then logged to
-    # the backend console so you can still test the flow in development.
+    # ── Email (password reset + scheduled reminder emails) ────────────────────
+    # Visible sender is SMTP_FROM_EMAIL (+ SMTP_FROM_NAME). Use your Laboracle
+    # mailbox for both FROM and SMTP_USERNAME when using Gmail (App Password).
+    # Leave host/from empty to skip real SMTP — codes are logged in development.
     SMTP_HOST: str = ""
     SMTP_PORT: int = 587
     SMTP_USERNAME: str = ""

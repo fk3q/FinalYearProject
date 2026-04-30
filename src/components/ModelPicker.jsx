@@ -126,6 +126,8 @@ const ModelPicker = ({
               m.locked_reason || (isDisabled ? tierFallback : null);
             const isTierLocked =
               isDisabled && /available for|requires/i.test(lockedReason || "");
+            const isServiceUnavailable =
+              isDisabled && /currently under service/i.test(lockedReason || "");
             return (
               <button
                 key={m.id}
@@ -134,7 +136,9 @@ const ModelPicker = ({
                 aria-selected={isActive}
                 className={`mp-option${isActive ? " mp-option--active" : ""}${
                   isDisabled ? " mp-option--disabled" : ""
-                }${isTierLocked ? " mp-option--locked" : ""}`}
+                }${isTierLocked ? " mp-option--locked" : ""}${
+                  isServiceUnavailable ? " mp-option--service" : ""
+                }`}
                 onClick={() => {
                   if (isDisabled) return;
                   onSelect(m.id);

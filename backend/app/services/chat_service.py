@@ -19,6 +19,10 @@ from app.models.schemas import ChatResponse
 from app.services import user_service
 from app.services.document_service import DocumentService
 from app.services.llm import registry
+from app.services.llm.provider_errors import (
+    anthropic_insufficient_credit_user_message,
+    anthropic_reports_insufficient_credits,
+)
 
 
 class ChatService:
@@ -296,13 +300,23 @@ class ChatService:
         """
         provider = registry.provider_for(model_id)
         vendor_model = registry.vendor_model_id(model_id)
-        return await provider.chat(
-            model_id=vendor_model,
-            system=system,
-            user=user,
-            max_tokens=settings.LLM_MAX_TOKENS,
-            temperature=settings.LLM_TEMPERATURE,
-        )
+        try:
+            return await provider.chat(
+                model_id=vendor_model,
+                system=system,
+                user=user,
+                max_tokens=settings.LLM_MAX_TOKENS,
+                temperature=settings.LLM_TEMPERATURE,
+            )
+        except HTTPException:
+            raise
+        except Exception as exc:
+            if anthropic_reports_insufficient_credits(exc):
+                raise HTTPException(
+                    status_code=503,
+                    detail=anthropic_insufficient_credit_user_message(),
+                ) from exc
+            raise
 
     @staticmethod
     def _tier_for(user_id: Optional[int]) -> str:
