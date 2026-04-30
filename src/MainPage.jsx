@@ -285,6 +285,93 @@ const MainPage = () => {
   const sessionUser = getSessionUser();
   const isSignedIn = Boolean(sessionUser?.id);
 
+  // ── Bento parallax (Apple-widget style) ─────────────────────────────
+  // Subtle Apple-widget-style movement on the Powerful Features grid.
+  // Two effects layered together:
+  //   1. Hover (cursor-driven, desktop only): cards shift horizontally
+  //      based on cursor position relative to the section. Wide cards
+  //      drift opposite from small cards -> "magnetic separation".
+  //   2. Scroll (always on): cards translate vertically based on the
+  //      section's position relative to the viewport centre. Wide
+  //      cards go opposite to smalls so the grid breathes as you
+  //      scroll past it.
+  //
+  // Implementation writes two CSS variables on the section root:
+  //   --bento-mx -> cursor x in [-1..1] (0 when not hovering)
+  //   --bento-sy -> scroll y in [-1..1]
+  // The cards consume them via `transform: translate(...)` rules in
+  // MainPage.css. Magnitudes are tiny (8-10px hover, 6-8px scroll) so
+  // it feels alive rather than physically moving. Existing colours,
+  // halos, hover-glow, and grid layout are untouched -- this is
+  // purely a transform overlay.
+  const featuresRef = useRef(null);
+  useEffect(() => {
+    const root = featuresRef.current;
+    if (!root) return undefined;
+
+    // Reduced-motion: skip the parallax entirely.
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return undefined;
+    }
+
+    let hoverActive = false;
+    let mouseX = 0;
+    let scrollY = 0;
+    let rafId = 0;
+
+    const flush = () => {
+      rafId = 0;
+      const mx = hoverActive ? (mouseX - 0.5) * 2 : 0;
+      root.style.setProperty('--bento-mx', mx.toFixed(3));
+      root.style.setProperty('--bento-sy', scrollY.toFixed(3));
+    };
+    const schedule = () => {
+      if (rafId) return;
+      rafId = window.requestAnimationFrame(flush);
+    };
+
+    const onMouseMove = (e) => {
+      const rect = root.getBoundingClientRect();
+      mouseX = (e.clientX - rect.left) / Math.max(rect.width, 1);
+      hoverActive = true;
+      schedule();
+    };
+    const onMouseLeave = () => {
+      hoverActive = false;
+      schedule();
+    };
+    const onScroll = () => {
+      const rect = root.getBoundingClientRect();
+      const vh = window.innerHeight || 1;
+      const sectionCentre = rect.top + rect.height / 2;
+      const viewportCentre = vh / 2;
+      const raw = (sectionCentre - viewportCentre) / vh;
+      scrollY = Math.max(-1, Math.min(1, raw));
+      schedule();
+    };
+
+    // Hover only on real pointer devices -- on touch the listeners
+    // would just sit unused.
+    const supportsHover = window.matchMedia('(hover: hover)').matches;
+    if (supportsHover) {
+      root.addEventListener('mousemove', onMouseMove, { passive: true });
+      root.addEventListener('mouseleave', onMouseLeave, { passive: true });
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+
+    return () => {
+      if (supportsHover) {
+        root.removeEventListener('mousemove', onMouseMove);
+        root.removeEventListener('mouseleave', onMouseLeave);
+      }
+      window.removeEventListener('scroll', onScroll);
+      if (rafId) window.cancelAnimationFrame(rafId);
+      root.style.removeProperty('--bento-mx');
+      root.style.removeProperty('--bento-sy');
+    };
+  }, []);
+
   const handleHeroPrimary = () => {
     navigate(isSignedIn ? '/chat' : '/signup');
   };
@@ -502,8 +589,12 @@ const MainPage = () => {
         <HeroCompanionVideo />
       </section>
 
-      {/* Features Section — bento-style asymmetric grid of dark cards */}
-      <section id="features" className="features">
+      {/* Features Section — bento-style asymmetric grid of dark cards.
+          The section ref drives a subtle Apple-widget-style parallax
+          effect set up in the useEffect below: hover and scroll both
+          translate the cards by a few pixels. Cards' colours, halos,
+          and grid layout are untouched -- this is a transform overlay. */}
+      <section id="features" className="features" ref={featuresRef}>
         <div className="features-head">
           <h2 className="section-title features-title">Powerful Features</h2>
           <p className="features-sub">

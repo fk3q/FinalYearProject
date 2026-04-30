@@ -646,6 +646,7 @@
  * The button shares the height of the Send button so the input bar
  * keeps a single horizontal baseline. */
 .cp-mic-btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -659,11 +660,67 @@
   color: #4f46e5;
   cursor: pointer;
   flex-shrink: 0;
+  /* Hide the idle ring overflow so they fade out at the button's
+     border instead of bleeding into the input row. */
+  overflow: hidden;
   transition:
     background 0.18s ease,
     border-color 0.18s ease,
     color 0.18s ease,
     transform 0.18s ease;
+}
+
+/* ── Idle mic pulse ──────────────────────────────────────────────────
+ * Two soft concentric rings expand outward from behind the mic icon
+ * on a slow loop. Purely decorative -- the icon itself is what the
+ * user clicks. The rings sit at z-index 0 and the icon at z-index 1
+ * so the icon stays crisp on top.
+ *
+ * Both rings share the same animation; the second one runs at half
+ * the loop offset (animation-delay: -1.4s) so they never spawn
+ * together, giving the impression of a continuous "breathing" wave.
+ * Disabled for prefers-reduced-motion below. */
+.cp-mic-rings {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.cp-mic-ring {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  opacity: 0;
+  animation: cp-mic-idle-ring 2.8s ease-out infinite;
+}
+
+.cp-mic-ring:nth-child(2) {
+  animation-delay: -1.4s;
+}
+
+@keyframes cp-mic-idle-ring {
+  0% {
+    transform: scale(0.55);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.45;
+  }
+  100% {
+    transform: scale(2.1);
+    opacity: 0;
+  }
+}
+
+.cp-mic-icon {
+  position: relative;
+  z-index: 1;
 }
 
 .cp-mic-btn:hover:not(:disabled) {
@@ -678,12 +735,23 @@
   transform: none;
 }
 
-/* Recording: pulsing red dot, white icon, fixed-width timer. */
+/* Recording: pulsing red bar with the live wavy line + timer. The
+ * minimum width grows so the canvas + timer have room to breathe. */
 .cp-mic-btn--recording {
   background: #ef4444;
   border-color: #ef4444;
   color: #ffffff;
+  min-width: 120px;
   animation: cp-mic-pulse 1.4s ease-in-out infinite;
+}
+
+/* The live waveform canvas drawn by <MicWaveform>. Width/height are
+   set inline by the component (DPR-aware), but we lift the z-index
+   here so the line draws above the button's red background. */
+.cp-mic-wave {
+  display: block;
+  position: relative;
+  z-index: 1;
 }
 
 .cp-mic-btn--recording:hover:not(:disabled) {
@@ -726,6 +794,20 @@
 
 @keyframes cp-mic-spin {
   to { transform: rotate(360deg); }
+}
+
+/* Honour the user's reduced-motion preference -- skip the idle
+   pulse and the recording shadow-pulse. The wavy line is still
+   driven by the live mic input, which is data-driven feedback
+   rather than decorative motion, so it stays. */
+@media (prefers-reduced-motion: reduce) {
+  .cp-mic-ring {
+    animation: none;
+    opacity: 0;
+  }
+  .cp-mic-btn--recording {
+    animation: none;
+  }
 }
 
 /* One-line error hint shown under the input bar when mic permission

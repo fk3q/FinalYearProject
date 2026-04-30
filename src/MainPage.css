@@ -886,6 +886,12 @@
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 18px;
+  /* Parallax variables. Set on the parent section (#features) by JS in
+     MainPage.jsx; default to 0 so the cards sit in their natural
+     positions until the listeners attach. The cards consume them in
+     `transform: translate(...)` rules below. */
+  --bento-mx: 0;
+  --bento-sy: 0;
 }
 
 .bento-card {
@@ -901,13 +907,37 @@
   min-height: 200px;
   overflow: hidden;
   isolation: isolate;
-  transition: transform 0.25s ease, border-color 0.25s ease,
-    box-shadow 0.3s ease;
+
+  /* ── Bento parallax (Apple-widget style) ───────────────────────────
+     Two parallax channels driven by JS-set CSS variables on the
+     parent `#features` section:
+       · --bento-mx  -- cursor x in [-1..1]; default 0
+       · --bento-sy  -- scroll progress in [-1..1]; default 0
+     We split the per-card translate into x/y CSS variables (`--card-tx`
+     / `--card-ty`) so the existing :hover lift can compose on top
+     without obliterating the parallax offset. Magnitudes are small
+     by design (~8px hover, 6px scroll) -- you feel them more than
+     you see them, exactly like Apple widgets.
+     Small cards: move OPPOSITE to cursor x and OPPOSITE to scroll y
+     (i.e. cursor goes right -> smalls drift left; scroll progresses
+     downward -> smalls drift up). Wide cards (overridden below)
+     do the opposite, so the row visually breathes apart and back. */
+  --card-tx: calc(var(--bento-mx, 0) * -8px);
+  --card-ty: calc(var(--bento-sy, 0) * -6px);
+  transform: translate(var(--card-tx), var(--card-ty));
+
+  transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-color 0.25s ease, box-shadow 0.3s ease;
 }
 
-/* Wide variant — span 2 columns to create the asymmetric bento layout. */
+/* Wide variant — span 2 columns to create the asymmetric bento layout.
+   Also flips the parallax direction so the wide card moves OPPOSITE
+   to the small ones (cursor right -> wide drifts right; scroll
+   progresses downward -> wide drifts down). */
 .bento-card--wide {
   grid-column: span 2;
+  --card-tx: calc(var(--bento-mx, 0) * 8px);
+  --card-ty: calc(var(--bento-sy, 0) * 6px);
 }
 
 /* Soft accent halo that bleeds in from the top edge — adds the
@@ -934,7 +964,11 @@
 }
 
 .bento-card:hover {
-  transform: translateY(-4px);
+  /* Compose the existing -4px lift on top of the parallax offset
+     (--card-tx / --card-ty) instead of replacing it -- otherwise
+     hovering a card would snap it back to the grid centre and lose
+     the magnetic feel. */
+  transform: translate(var(--card-tx), calc(var(--card-ty) - 4px));
   border-color: var(--accent-solid, rgba(102, 126, 234, 0.4));
   box-shadow:
     0 0 0 1px var(--accent-solid, rgba(102, 126, 234, 0.4)),
@@ -1089,13 +1123,40 @@
   --accent-glow: rgba(244, 114, 182, 0.45);
 }
 
-/* Mobile — collapse to single column so wide cards still fit. */
+/* Mobile — collapse to single column so wide cards still fit, and
+   gentle the parallax magnitude (smalls/wides go in opposite vertical
+   directions but with a softer 4px max -- enough for "alive" feel on
+   a phone but never visually noisy). Hover parallax is auto-disabled
+   on touch devices because the JS only attaches mousemove on
+   `(hover: hover)` pointers, so --bento-mx stays at 0 there. */
 @media (max-width: 880px) {
   .features-bento {
     grid-template-columns: 1fr;
   }
   .bento-card--wide {
     grid-column: span 1;
+  }
+}
+
+@media (max-width: 640px) {
+  .bento-card {
+    --card-ty: calc(var(--bento-sy, 0) * -4px);
+  }
+  .bento-card--wide {
+    --card-ty: calc(var(--bento-sy, 0) * 4px);
+  }
+}
+
+/* Reduced-motion: zero out the parallax channels so the cards sit
+   completely still. JS already short-circuits the listeners under
+   the same media query, but this CSS catches the case where the
+   listener runs once before the preference is read. */
+@media (prefers-reduced-motion: reduce) {
+  .bento-card,
+  .bento-card--wide {
+    --card-tx: 0px;
+    --card-ty: 0px;
+    transition: none;
   }
 }
 

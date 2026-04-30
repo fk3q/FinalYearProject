@@ -20,6 +20,7 @@ import {
 import AccountSidebarBlock from "./components/AccountSidebarBlock";
 import AIModesIntro from "./components/AIModesIntro";
 import ChatIntroVideo from "./components/ChatIntroVideo";
+import MicWaveform from "./components/MicWaveform";
 import ModelPicker from "./components/ModelPicker";
 import NotificationBell from "./components/NotificationBell";
 import { useUsageTracker } from "./hooks/useUsageTracker";
@@ -92,6 +93,10 @@ const ChatPage = () => {
   const [transcribing, setTranscribing] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [voiceError, setVoiceError] = useState("");
+  // Mirror of `recordingStreamRef.current` as React state so the
+  // <MicWaveform> child can re-render when the stream comes/goes.
+  // (A ref alone wouldn't trigger the visualizer to mount/unmount.)
+  const [recordingStream, setRecordingStream] = useState(null);
   const mediaRecorderRef = useRef(null);
   const recordedChunksRef = useRef([]);
   const recordingTimerRef = useRef(null);
@@ -318,6 +323,7 @@ const ChatPage = () => {
       }
       recordingStreamRef.current = null;
     }
+    setRecordingStream(null);
     mediaRecorderRef.current = null;
     recordedChunksRef.current = [];
   }, []);
@@ -373,6 +379,10 @@ const ChatPage = () => {
         }
         recordingStreamRef.current = null;
       }
+      // Drop the React-state mirror so <MicWaveform> unmounts and
+      // releases its AudioContext immediately, not after onstop's
+      // async transcription completes.
+      setRecordingStream(null);
       if (recordingTimerRef.current) {
         window.clearInterval(recordingTimerRef.current);
         recordingTimerRef.current = null;
@@ -410,6 +420,10 @@ const ChatPage = () => {
 
     mediaRecorderRef.current = recorder;
     recordingStreamRef.current = stream;
+    // Push the live stream into React state too, so <MicWaveform>
+    // can mount with the freshly-acquired MediaStream and start the
+    // analyser graph on the same frame the button flips to recording.
+    setRecordingStream(stream);
 
     setRecording(true);
     setRecordingSeconds(0);
@@ -875,9 +889,27 @@ const ChatPage = () => {
             {transcribing ? (
               <Loader2 size={18} className="cp-mic-spin" />
             ) : recording ? (
-              <Square size={16} fill="currentColor" />
+              // Live Siri-style wavy line driven by the active mic
+              // stream. Falls back to the stop square if the stream
+              // hasn't been promoted to React state yet (a single
+              // frame, basically invisible).
+              recordingStream ? (
+                <MicWaveform stream={recordingStream} width={64} height={20} />
+              ) : (
+                <Square size={16} fill="currentColor" />
+              )
             ) : (
-              <Mic size={18} />
+              <>
+                {/* Idle pulse: two soft concentric rings emanating
+                    from behind the mic icon. Pure CSS, no JS. The
+                    rings sit behind the icon (z-index: 0) and the
+                    icon draws on top (z-index: 1). */}
+                <span className="cp-mic-rings" aria-hidden="true">
+                  <span className="cp-mic-ring" />
+                  <span className="cp-mic-ring" />
+                </span>
+                <Mic size={18} className="cp-mic-icon" />
+              </>
             )}
             {recording && (
               <span className="cp-mic-timer">
