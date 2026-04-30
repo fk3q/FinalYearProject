@@ -610,72 +610,83 @@
      top, so the eye reads "ambient motion in the hero" rather than
      "video element". No visible borders, no rounded corners that would
      hint at a contained shape. */
-  /* Tall cinematic window: shows the character + the streetlamp behind
-     her clearly. The strip fades into hero purple at every edge so it
-     never reads as a contained box, but the centre stays bright enough
-     that the subject is recognisable. */
+  /* Tall cinematic window flush with the bottom of the hero.
+     Shows the full character sitting + the streetlamp above her.
+     Top edge fades into the purple where the stats sit; bottom edge
+     is flush with the hero / next-section boundary; sides feather
+     softly via a purple rim wash. */
   .hero-video-frame {
     position: relative;
     top: auto;
     right: auto;
     bottom: auto;
     left: auto;
-    width: min(96vw, 460px);
+    /* Full-bleed across the hero column. */
+    width: 100%;
     max-width: none;
-    /* Taller window — fits the lamp's vertical span and the
-       character's full upper body. */
-    height: clamp(220px, 64vw, 320px);
-    margin: 8px auto 0;
+    /* Tall enough to fit the lamp top → character feet on a phone. */
+    height: clamp(360px, 105vw, 520px);
+    /* `margin-bottom: -70px` cancels `.hero`'s mobile padding-bottom,
+       so the strip extends all the way down to where the purple hero
+       ends and the white "Powerful Features" section begins.
+       `.hero` has `overflow: hidden`, so any overshoot is clipped. */
+    margin: 24px auto -70px;
     z-index: 0;
     border-radius: 0;
     overflow: hidden;
     background: transparent;
     box-shadow: none;
     isolation: isolate;
-    /* Soft edge-only fade. Big solid core (≈58%) keeps the subject
-       crisp; edges feather out into hero purple. */
-    -webkit-mask-image: radial-gradient(
-      ellipse 80% 92% at 50% 50%,
-      #000 0%,
-      #000 58%,
-      rgba(0, 0, 0, 0.55) 80%,
-      transparent 100%
+    /* Top fades to transparent (blends into the stats area above);
+       middle + bottom are solid so the character + lamp are crisp,
+       and the bottom edge sits flush with the section boundary. */
+    -webkit-mask-image: linear-gradient(
+      180deg,
+      transparent 0%,
+      rgba(0, 0, 0, 0.4) 8%,
+      #000 22%,
+      #000 100%
     );
-    mask-image: radial-gradient(
-      ellipse 80% 92% at 50% 50%,
-      #000 0%,
-      #000 58%,
-      rgba(0, 0, 0, 0.55) 80%,
-      transparent 100%
+    mask-image: linear-gradient(
+      180deg,
+      transparent 0%,
+      rgba(0, 0, 0, 0.4) 8%,
+      #000 22%,
+      #000 100%
     );
     -webkit-mask-repeat: no-repeat;
     mask-repeat: no-repeat;
     mask-size: 100% 100%;
   }
 
-  /* Light purple rim wash — only near the edges. Centre is fully clear
-     so the character's skin / lamp glow render naturally. */
+  /* Side-rim purple wash. Centre stays clear so the subject is
+     recognisable; left/right edges feather into hero purple so the
+     full-bleed strip doesn't show vertical seams. */
   .hero-video-frame::before {
     background:
-      radial-gradient(
-        ellipse 70% 85% at 50% 50%,
-        transparent 0%,
-        transparent 55%,
-        rgba(78, 61, 140, 0.18) 78%,
-        rgba(78, 61, 140, 0.55) 100%
+      linear-gradient(
+        to right,
+        rgba(78, 61, 140, 0.65) 0%,
+        rgba(78, 61, 140, 0.18) 10%,
+        transparent 22%,
+        transparent 78%,
+        rgba(78, 61, 140, 0.18) 90%,
+        rgba(78, 61, 140, 0.65) 100%
+      ),
+      linear-gradient(
+        to top,
+        transparent 82%,
+        rgba(78, 61, 140, 0.35) 100%
       );
   }
 
   .hero-video {
     object-fit: cover;
-    /* Anchor right side of the source so the character + lamp stay
-       inside the visible window even when the strip narrows. */
-    object-position: right 30%;
+    /* Anchor right side of source (where character + lamp live) and
+       centre vertically so both lamp top and character feet fit. */
+    object-position: right center;
     transform: none;
     transform-origin: center center;
-    /* Subtle warmth boost so the lamp glow reads against the purple
-       fade. No hue-rotate this time — kept the colours faithful so the
-       character isn't tinted weirdly. */
     filter: brightness(1.08) contrast(1.04) saturate(1.02);
   }
 
