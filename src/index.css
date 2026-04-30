@@ -29,3 +29,18 @@ code {
 html {
   scroll-behavior: smooth;
 }
+
+/* ── MainPage default zoom ─────────────────────────────────────────────
+ * Renders the landing page (`.main-page`) at 90% on desktop so the
+ * hero, stats, features and pricing sections feel less crowded at
+ * 1080p (the previous 100% looked too large). Scoped to:
+ *   · the `.main-page` container only — chat, login, signup etc. are
+ *     unaffected and still render at 100%.
+ *   · ≥992 px viewports — phones and small tablets keep their mobile
+ *     layout untouched.
+ * To revert: delete this block. */
+@media (min-width: 992px) {
+  .main-page {
+    zoom: 0.9;
+  }
+}
