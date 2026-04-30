@@ -16,12 +16,22 @@ import "./ChatIntroVideo.css";
 // playing -- a single user gesture is enough to unmute even if the
 // page hadn't been interacted with yet.
 const ChatIntroVideo = ({ src = "/chat-intro.mp4", onClose }) => {
-  // Play the video once per device, not on every /chat mount. We
-  // initialise `open` from localStorage so a returning user is never
-  // ambushed by the cinematic again, and so the parent's onClose chain
-  // (AI-modes carousel) gets a chance to fire immediately.
+  // Play rules:
+  //   1. Always play if the user JUST authenticated (Login/Signup
+  //      sets `laboracle_just_authed` in sessionStorage right before
+  //      navigating to /chat). This is the common case and the one
+  //      the user explicitly asked for -- the cinematic should
+  //      replay on every login, not just the first visit per
+  //      device.
+  //   2. Otherwise, play once per device as a first-run gimmick
+  //      (`laboracle_intro_video_seen` in localStorage gates this).
+  //   3. If neither flag fires, suppress the modal entirely so a
+  //      returning user reloading /chat mid-session isn't ambushed.
   const [open, setOpen] = useState(() => {
     try {
+      const justAuthed =
+        sessionStorage.getItem("laboracle_just_authed") === "1";
+      if (justAuthed) return true;
       return localStorage.getItem("laboracle_intro_video_seen") !== "1";
     } catch {
       return true;

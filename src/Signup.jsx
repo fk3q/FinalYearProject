@@ -128,10 +128,17 @@ const Signup = () => {
           return;
         }
       }
-      // Default signup success: send straight into chat. ChatPage
-      // owns the AI-modes tour trigger via its own localStorage
-      // flag, so brand-new accounts will see the cards once on this
-      // device and never again.
+      // Default signup success: send straight into chat. We tag the
+      // navigation as freshly authenticated so ChatPage and the
+      // ChatIntroVideo modal both replay the cinematic + AI-modes
+      // walkthrough on every login/signup (not just the first time
+      // a device sees the app).
+      try {
+        sessionStorage.setItem("laboracle_just_authed", "1");
+      } catch {
+        /* private mode -- non-fatal, user just lands without the
+           cinematic on this navigation. */
+      }
       navigate("/chat");
     },
     [navigate],

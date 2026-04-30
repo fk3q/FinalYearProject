@@ -30,10 +30,17 @@ const Login = () => {
         saveSessionUser(data.user);
         if (data.user.theme) applyTheme(data.user.theme);
       }
-      // Land returning users straight in the chat workspace.
-      // ChatPage decides whether to show the AI-modes tour based on
-      // a per-device localStorage flag, so logging in doesn't force
-      // an existing user to sit through it again.
+      // Mark this navigation as freshly authenticated. ChatPage and
+      // ChatIntroVideo both consume this flag on mount so the
+      // cinematic intro + AI-modes flash cards play after EVERY
+      // login (and clear the flag once they've been queued up so
+      // organic /chat reloads don't replay them mid-session).
+      try {
+        sessionStorage.setItem("laboracle_just_authed", "1");
+      } catch {
+        /* private mode -- worst case the user just lands on /chat
+           without the cinematic, which is non-fatal. */
+      }
       navigate("/chat");
     },
     [applyTheme, navigate],

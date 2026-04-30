@@ -99,11 +99,14 @@ const ChatPage = () => {
 
   // AI-modes flash-card walkthrough.
   //
-  // Auto-show rule: ONLY for first-time users on this device. We mark
-  // the tour as done in localStorage the moment the carousel dismisses
-  // (or even if it never opens this session, after a successful auth)
-  // so it never auto-replays. The session flag set by Login.jsx /
-  // Signup.jsx is consumed but does not force a replay.
+  // Auto-show rules (mirrors ChatIntroVideo):
+  //   1. ALWAYS queue after a fresh login/signup (the
+  //      `laboracle_just_authed` session flag is set by Login.jsx /
+  //      Signup.jsx right before navigating to /chat). The carousel
+  //      then triggers as soon as the cinematic dismisses.
+  //   2. Otherwise, queue only for first-time users on this device
+  //      (`laboracle_modes_tour_done` localStorage flag). This makes
+  //      the tour a one-shot gimmick on organic visits.
   //
   // Manual replay: the "Replay tour" button beneath the AI Mode hint
   // sets `showModesIntro` directly, bypassing the auto-show logic.
@@ -111,12 +114,24 @@ const ChatPage = () => {
   const modesIntroPendingRef = useRef(false);
   useEffect(() => {
     try {
-      // Always clear the fresh-auth flag on mount so it doesn't linger.
+      // Legacy session flag from earlier flow; clear it so it can't
+      // leak into a future build that still checks for it.
       sessionStorage.removeItem("laboracle_show_modes_intro");
-      const tourDone = localStorage.getItem("laboracle_modes_tour_done") === "1";
-      if (!tourDone) {
+
+      const justAuthed =
+        sessionStorage.getItem("laboracle_just_authed") === "1";
+      const tourDone =
+        localStorage.getItem("laboracle_modes_tour_done") === "1";
+
+      if (justAuthed || !tourDone) {
         modesIntroPendingRef.current = true;
       }
+
+      // Consume the auth flag so a same-tab refresh of /chat doesn't
+      // re-trigger the cinematic + cards mid-session. ChatIntroVideo
+      // already read the flag during its initial render (synchronous,
+      // before this effect runs), so clearing it here is safe.
+      sessionStorage.removeItem("laboracle_just_authed");
     } catch {
       /* storage may be unavailable in private mode -- skip the tour */
     }

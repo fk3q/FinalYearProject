@@ -523,9 +523,18 @@
  * on phones so the copy can own the small screen. */
 .hero-video-frame {
   position: absolute;
-  top: 0;
+  /* Shifted ~80px DOWN inside the hero so the visible window of the
+     source clip slides past the dark floor/shadow area at the bottom
+     of the video and that area gets clipped off by the hero's
+     `overflow: hidden`. The frame keeps its full natural height by
+     overshooting `bottom` symmetrically (negative bottom) -- the
+     overshoot is hidden, so the *visible* portion is the same size
+     as before, just translated downward. This restores the original
+     blend the user described as "perfect" before the navbar shrink
+     pulled the whole hero up the page. */
+  top: 80px;
   right: 0;
-  bottom: 0;
+  bottom: -80px;
   width: clamp(280px, 36%, 480px);
   z-index: -1;
   overflow: hidden;
@@ -535,11 +544,17 @@
  * solid hero background (#4E3D8C):
  *   · Left edge -- dissolves the video into the hero base so
  *     there's no hard vertical seam between video and non-video.
- *   · Bottom edge -- covers the thin black letterbox baked into
- *     the bottom of the source clip, blending it into the hero
- *     colour instead of showing a hard black line.
+ *   · Top edge -- now that the frame is shifted down, the empty
+ *     space we'd otherwise expose at the top of the source gets
+ *     softly covered so the streetlight doesn't appear to "float
+ *     in" out of nothing.
+ *   · Bottom edge -- covers any remaining floor shadow / black
+ *     letterbox at the bottom of the source clip, dissolving it
+ *     into the hero colour. Made larger (start at 60% instead of
+ *     78%) since the user reported dark shadows "pouring out" at
+ *     the bottom of the previous setup.
  * Sits above the video but below the glass highlights.
- * If the hero background is re-tuned, both #4E3D8C references below
+ * If the hero background is re-tuned, all #4E3D8C references below
  * must be updated to match. */
 .hero-video-frame::before {
   content: "";
@@ -554,8 +569,13 @@
       #4E3D8C 100%
     ),
     linear-gradient(
+      to top,
+      transparent 88%,
+      #4E3D8C 100%
+    ),
+    linear-gradient(
       to bottom,
-      transparent 78%,
+      transparent 60%,
       #4E3D8C 100%
     );
 }
@@ -1544,47 +1564,205 @@
   transform: none;
 }
 
-/* Responsive Design */
+/* ── Responsive Design ────────────────────────────────────────────────────
+ * Three breakpoints handle the marketing site:
+ *   · 768px  -- narrow tablets / large phones in landscape
+ *   · 640px  -- typical phones in portrait
+ *   · 420px  -- smallest commonly-supported phone widths
+ *
+ * Each breakpoint inherits from the larger one via the cascade, so we
+ * only need to override the things that actually change at each step.
+ * Watch out for any new section added later: anything using a fixed
+ * width or grid-template-columns: repeat(N, 1fr) will need its own
+ * override here or it WILL overflow the viewport on a phone. */
+
+/* Tablet portrait + large phones landscape */
 @media (max-width: 768px) {
+  /* Header: keep the logo + auth pills on the SAME row (stacking
+     them was making the navbar twice as tall on every phone load).
+     The Features/Pricing/About anchor links hide on mobile -- the
+     hero CTAs cover the same intent and there's no room for a real
+     menu without burger-menu JS. */
+  .header {
+    padding: 6px 0;
+  }
   .header-content {
-    flex-direction: column;
-    gap: 20px;
+    padding: 0 14px;
+    gap: 12px;
   }
-
   .nav-links {
-    gap: 20px;
+    display: none;
+  }
+  .auth-buttons {
+    gap: 8px;
+  }
+  .login-btn,
+  .signup-btn {
+    padding: 8px 16px;
+    font-size: 14px;
   }
 
+  /* Hero: smaller padding so the headline isn't 60% scroll on a
+     phone, smaller type, stack CTAs vertically with full width. */
+  .hero {
+    padding: 60px 16px 70px;
+  }
   .hero-title {
     font-size: 36px;
   }
-
   .hero-subtitle {
-    font-size: 18px;
+    font-size: 17px;
+    margin-bottom: 32px;
   }
-
   .hero-buttons {
     flex-direction: column;
-    gap: 15px;
+    gap: 12px;
+    margin-bottom: 40px;
   }
-
+  .hero-buttons .cta-button {
+    width: 100%;
+  }
   .hero-stats {
-    gap: 30px;
+    gap: 24px;
+    flex-wrap: wrap;
   }
 
+  /* Section titles + how-it-works arrow rotation. */
   .section-title {
-    font-size: 32px;
+    font-size: 30px;
   }
-
   .step-arrow {
     transform: rotate(90deg);
   }
 
+  /* Pricing: cards already auto-fit on minmax(280px, 1fr); make sure
+     the ones that don't fit drop instead of trying to squish. */
   .pricing-amount {
-    font-size: 44px;
+    font-size: 42px;
+  }
+  .billing-option {
+    padding: 9px 20px;
+    font-size: 14px;
+  }
+}
+
+/* Phones (portrait) */
+@media (max-width: 640px) {
+  .hero-title {
+    font-size: 30px;
+    line-height: 1.18;
+  }
+  .hero-subtitle {
+    font-size: 16px;
+  }
+  .hero-stats {
+    /* Stack stats vertically -- side-by-side they squish to almost
+       nothing once you account for the percentage labels. */
+    flex-direction: column;
+    gap: 18px;
+    text-align: center;
+  }
+  .stat-number {
+    font-size: 38px;
+  }
+  .stat-label {
+    font-size: 14px;
   }
 
-  .billing-option {
-    padding: 10px 22px;
+  .section-title {
+    font-size: 26px;
+  }
+  .features-bento,
+  .pricing-grid,
+  .footer-content {
+    /* Force single-column on phones so cards never overlap or get
+       cut off at the right edge. */
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  .bento-card {
+    padding: 22px 22px 20px;
+    min-height: 0;
+  }
+  .bento-title {
+    font-size: 18px;
+  }
+  .bento-body {
+    font-size: 14.5px;
+  }
+
+  .steps {
+    gap: 14px;
+  }
+  .step {
+    padding: 28px 20px;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .pricing {
+    padding: 60px 16px;
+  }
+  .footer {
+    padding: 44px 16px 18px;
+  }
+  .footer-content {
+    text-align: center;
+  }
+  .social-links {
+    justify-content: center;
+  }
+}
+
+/* Smallest phones */
+@media (max-width: 420px) {
+  /* Logo can shrink a touch more on tiny screens so the auth
+     buttons keep enough room. */
+  .logo,
+  .logo-disc {
+    width: 52px;
+    height: 52px;
+  }
+  .logo-img {
+    width: 40px;
+    height: 40px;
+  }
+  .logo-bubbles {
+    width: 56px;
+  }
+
+  .login-btn,
+  .signup-btn {
+    padding: 7px 12px;
+    font-size: 13px;
+  }
+  .hero-title {
+    font-size: 26px;
+  }
+  .hero-subtitle {
+    font-size: 15px;
+  }
+  .stat-number {
+    font-size: 32px;
+  }
+  .section-title {
+    font-size: 22px;
+  }
+  .pricing-amount {
+    font-size: 36px;
+  }
+}
+
+/* Universal safety net -- prevents long unbreakable strings (URLs,
+   long words, code samples in cards) from blowing out the viewport. */
+@media (max-width: 768px) {
+  body,
+  .hero-content,
+  .bento-card,
+  .step,
+  .pricing-card,
+  .footer-section {
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 }
