@@ -263,10 +263,39 @@ const HeroStats = () => {
 // single-column layout without leaving a broken-video box.
 const HeroCompanionVideo = ({ src = "/hero-companion.mp4" }) => {
   const [failed, setFailed] = useState(false);
+  const videoRef = useRef(null);
+
+  // iOS Safari sometimes ignores the `autoPlay` attribute even with
+  // `muted` + `playsInline` (low-power mode, data-saver, first paint
+  // on cellular). Imperatively calling .play() on mount works in all
+  // the cases the attribute alone doesn't. Desktop is unaffected --
+  // the browser already auto-played, and a redundant .play() call on
+  // an already-playing video is a no-op.
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    const p = v.play();
+    if (p && typeof p.catch === "function") {
+      // Autoplay blocked entirely (rare given muted + playsInline,
+      // but possible). Fall back to a one-shot user-gesture listener
+      // that starts the video on the first tap anywhere on the page.
+      p.catch(() => {
+        const start = () => {
+          v.play().catch(() => {});
+          document.removeEventListener("touchstart", start);
+          document.removeEventListener("click", start);
+        };
+        document.addEventListener("touchstart", start, { once: true, passive: true });
+        document.addEventListener("click", start, { once: true });
+      });
+    }
+  }, []);
+
   if (failed) return null;
   return (
     <div className="hero-video-frame" aria-hidden="true">
       <video
+        ref={videoRef}
         className="hero-video"
         src={src}
         autoPlay
