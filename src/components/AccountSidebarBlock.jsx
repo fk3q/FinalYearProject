@@ -14,8 +14,12 @@ function initialsFrom(user) {
 /**
  * Signed-in account strip for dashboard sidebars (upload / chat / profile).
  * @param {"up"|"cp"} variant — matches Upload (`up-*`) or Chat (`cp-*`) CSS prefixes.
+ * @param {() => void} [onBeforeNavigate] — run before internal navigations (e.g. close mobile drawer).
  */
-export default function AccountSidebarBlock({ variant = "up" }) {
+export default function AccountSidebarBlock({
+  variant = "up",
+  onBeforeNavigate,
+}) {
   const navigate = useNavigate();
   const user = getSessionUser();
   const p = variant === "cp" ? "cp" : "up";
@@ -27,6 +31,7 @@ export default function AccountSidebarBlock({ variant = "up" }) {
     [user.first_name, user.last_name].filter(Boolean).join(" ").trim() || user.email;
 
   const logout = async () => {
+    onBeforeNavigate?.();
     await logoutUser();
     navigate("/login");
   };
@@ -36,7 +41,10 @@ export default function AccountSidebarBlock({ variant = "up" }) {
       <button
         type="button"
         className={`${p}-account-main`}
-        onClick={() => navigate("/profile")}
+        onClick={() => {
+          onBeforeNavigate?.();
+          navigate("/profile");
+        }}
         title="View your profile"
       >
         {pic ? (

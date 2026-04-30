@@ -30,7 +30,7 @@
 
 .google-signin-mount iframe {
   width: 100% !important;
-  max-width: 380px;
+  max-width: 100% !important;
   /* GIS draws its own 1px border inside the rendered button. Our
      outer wrapper now provides the visible border, so we suppress
      the inner one. Best-effort -- iframes rendered cross-origin

@@ -11,6 +11,8 @@ import {
   Mic,
   Square,
   Loader2,
+  PanelLeft,
+  X,
 } from "lucide-react";
 import {
   transcribeAudio,
@@ -38,7 +40,9 @@ const WELCOME_MESSAGE = {
   id: 0,
   type: "bot",
   text: "Hello! I'm Laboracle. Ask me anything about the documents you've uploaded.",
-  confidence: 100,
+  // No chip until a real model reply — avoids showing a bogus "100%"
+  // that isn't computed by the retrieval heuristic.
+  confidence: 0,
   citations: [],
 };
 
@@ -117,6 +121,114 @@ const ChatPage = () => {
   // sets `showModesIntro` directly, bypassing the auto-show logic.
   const [showModesIntro, setShowModesIntro] = useState(false);
   const modesIntroPendingRef = useRef(false);
+
+  // Mobile drawer: sidebar becomes an off-canvas panel; desktop keeps it inline.
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [mobileDrawerBreakpoint, setMobileDrawerBreakpoint] = useState(() =>
+    typeof window !== "undefined"
+      ? window.matchMedia("(max-width: 768px)").matches
+      : false
+  );
+
+  const sidebarRef = useRef(null);
+  const sidebarCloseBtnRef = useRef(null);
+  const menuTriggerRef = useRef(null);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 768px)");
+    const sync = () => {
+      setMobileDrawerBreakpoint(mq.matches);
+      if (!mq.matches) setMobileSidebarOpen(false);
+    };
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
+  useEffect(() => {
+    if (!mobileSidebarOpen || !mobileDrawerBreakpoint) return undefined;
+
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const onEsc = (e) => {
+      if (e.key === "Escape") setMobileSidebarOpen(false);
+    };
+    document.addEventListener("keydown", onEsc);
+
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      document.removeEventListener("keydown", onEsc);
+    };
+  }, [mobileSidebarOpen, mobileDrawerBreakpoint]);
+
+  // React 18-friendly `inert` on the sidebar when the mobile drawer is closed,
+  // so tab order skips off-screen controls.
+  useEffect(() => {
+    const el = sidebarRef.current;
+    if (!el) return;
+    if (mobileDrawerBreakpoint && !mobileSidebarOpen) {
+      el.setAttribute("inert", "");
+    } else {
+      el.removeAttribute("inert");
+    }
+  }, [mobileDrawerBreakpoint, mobileSidebarOpen]);
+
+  // Initial focus when opening + restore focus to the menu trigger when closing.
+  useEffect(() => {
+    if (!mobileSidebarOpen || !mobileDrawerBreakpoint) return undefined;
+
+    const id = requestAnimationFrame(() => {
+      sidebarCloseBtnRef.current?.focus();
+    });
+
+    return () => {
+      cancelAnimationFrame(id);
+      menuTriggerRef.current?.focus({ preventScroll: true });
+    };
+  }, [mobileSidebarOpen, mobileDrawerBreakpoint]);
+
+  // Keep keyboard focus inside the drawer while it is open (capture phase).
+  useEffect(() => {
+    if (!mobileSidebarOpen || !mobileDrawerBreakpoint || !sidebarRef.current)
+      return undefined;
+
+    const sidebar = sidebarRef.current;
+    const selector =
+      'button:not([disabled]), a[href]:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+    const focusables = () =>
+      Array.from(sidebar.querySelectorAll(selector)).filter(
+        (el) =>
+          el instanceof HTMLElement &&
+          el.offsetParent !== null &&
+          sidebar.contains(el)
+      );
+
+    const onKeyDown = (e) => {
+      if (e.key !== "Tab") return;
+      const nodes = focusables();
+      if (nodes.length === 0) return;
+
+      const first = nodes[0];
+      const last = nodes[nodes.length - 1];
+      const active = document.activeElement;
+      const contained = active instanceof Node && sidebar.contains(active);
+
+      if (e.shiftKey) {
+        if (!contained || active === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else if (!contained || active === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", onKeyDown, true);
+    return () => document.removeEventListener("keydown", onKeyDown, true);
+  }, [mobileSidebarOpen, mobileDrawerBreakpoint]);
   useEffect(() => {
     try {
       // Legacy session flag from earlier flow; clear it so it can't
@@ -545,8 +657,38 @@ const ChatPage = () => {
       {showModesIntro && (
         <AIModesIntro onDone={handleModesIntroDone} />
       )}
-      <aside className="cp-sidebar">
-        <div className="cp-brand" onClick={() => navigate("/")}>
+      <div
+        className={`cp-sidebar-backdrop${mobileSidebarOpen ? " cp-sidebar-backdrop--visible" : ""}`}
+        aria-hidden={!mobileSidebarOpen}
+        onClick={() => setMobileSidebarOpen(false)}
+      />
+      <aside
+        ref={sidebarRef}
+        id="cp-chat-sidebar"
+        className={`cp-sidebar${mobileSidebarOpen ? " cp-sidebar--mobile-open" : ""}`}
+        aria-label="Laboracle navigation and settings"
+        {...(mobileDrawerBreakpoint && mobileSidebarOpen
+          ? { role: "dialog", "aria-modal": "true" }
+          : {})}
+      >
+        <button
+          ref={sidebarCloseBtnRef}
+          type="button"
+          className="cp-sidebar-close"
+          aria-label="Close menu"
+          onClick={() => setMobileSidebarOpen(false)}
+        >
+          <X size={22} strokeWidth={2} />
+        </button>
+        <button
+          type="button"
+          className="cp-brand"
+          aria-label="Laboracle — go to home"
+          onClick={() => {
+            setMobileSidebarOpen(false);
+            navigate("/");
+          }}
+        >
           {/* Round logo badge with the same purple-bubble motif used in
               the marketing navbar. The badge clips the logo into a
               circle and the bubble spans rise from the bottom of the
@@ -567,10 +709,16 @@ const ChatPage = () => {
               <span className="cp-logo-bubble" />
             </span>
           </span>
-        </div>
+        </button>
 
         <nav className="cp-nav">
-          <button className="cp-nav-item" onClick={() => navigate("/upload")}>
+          <button
+            className="cp-nav-item"
+            onClick={() => {
+              setMobileSidebarOpen(false);
+              navigate("/upload");
+            }}
+          >
             <span className="cp-nav-icon"><Upload /></span> Upload Documents
           </button>
           <button className="cp-nav-item active">
@@ -592,7 +740,10 @@ const ChatPage = () => {
               <button
                 type="button"
                 className="cp-history-new"
-                onClick={startNewChat}
+                onClick={() => {
+                  setMobileSidebarOpen(false);
+                  startNewChat();
+                }}
                 title="Start a new conversation"
               >
                 + New
@@ -618,7 +769,10 @@ const ChatPage = () => {
                     <button
                       type="button"
                       className="cp-history-item-main"
-                      onClick={() => openSession(s.id)}
+                      onClick={() => {
+                        setMobileSidebarOpen(false);
+                        openSession(s.id);
+                      }}
                       title={s.title}
                     >
                       <span className="cp-history-item-title">{s.title}</span>
@@ -645,14 +799,24 @@ const ChatPage = () => {
 
         {!canSaveChats && (
           <p className="cp-history-hint">
-            <button type="button" className="cp-history-link" onClick={() => navigate("/login")}>
+            <button
+              type="button"
+              className="cp-history-link"
+              onClick={() => {
+                setMobileSidebarOpen(false);
+                navigate("/login");
+              }}
+            >
               Sign in
             </button>{" "}
             to save and reopen your chats.
           </p>
         )}
 
-        <AccountSidebarBlock variant="cp" />
+        <AccountSidebarBlock
+          variant="cp"
+          onBeforeNavigate={() => setMobileSidebarOpen(false)}
+        />
 
         <div className="cp-section-label">AI Mode</div>
         <div className="cp-toggle-group cp-toggle-group--grid">
@@ -716,18 +880,30 @@ const ChatPage = () => {
 
         <div className="cp-section-label">Account</div>
         <nav className="cp-nav">
-          <button className="cp-nav-item" onClick={() => navigate("/profile")}>
+          <button
+            className="cp-nav-item"
+            onClick={() => {
+              setMobileSidebarOpen(false);
+              navigate("/profile");
+            }}
+          >
             <span className="cp-nav-icon"><User /></span> Profile
           </button>
           <button
             className="cp-nav-item"
-            onClick={() => navigate("/profile#settings")}
+            onClick={() => {
+              setMobileSidebarOpen(false);
+              navigate("/profile#settings");
+            }}
           >
             <span className="cp-nav-icon"><SettingsIcon /></span> Settings
           </button>
           <button
             className="cp-nav-item"
-            onClick={() => navigate("/profile#subscription")}
+            onClick={() => {
+              setMobileSidebarOpen(false);
+              navigate("/profile#subscription");
+            }}
           >
             <span className="cp-nav-icon"><CreditCard /></span> Subscription
           </button>
@@ -738,7 +914,9 @@ const ChatPage = () => {
           <button
             className="cp-nav-item"
             onClick={() => {
-              window.location.href = "mailto:laboraclee@gmail.com?subject=Help%20centre%20enquiry";
+              setMobileSidebarOpen(false);
+              window.location.href =
+                "mailto:laboraclee@gmail.com?subject=Help%20centre%20enquiry";
             }}
           >
             <span className="cp-nav-icon"><LifeBuoy /></span> Help centre
@@ -746,7 +924,9 @@ const ChatPage = () => {
           <button
             className="cp-nav-item"
             onClick={() => {
-              window.location.href = "mailto:laboraclee@gmail.com?subject=Support%20request";
+              setMobileSidebarOpen(false);
+              window.location.href =
+                "mailto:laboraclee@gmail.com?subject=Support%20request";
             }}
           >
             <span className="cp-nav-icon"><Headphones /></span> Support
@@ -757,6 +937,21 @@ const ChatPage = () => {
       <main className="cp-main">
         <header className="cp-header">
           <div className="cp-header-left">
+            <button
+              ref={menuTriggerRef}
+              type="button"
+              id="cp-chat-menu-trigger"
+              className="cp-header-menu"
+              aria-label="Open menu — modes, profile, saved chats"
+              aria-controls="cp-chat-sidebar"
+              aria-expanded={
+                mobileDrawerBreakpoint ? mobileSidebarOpen : undefined
+              }
+              aria-haspopup={mobileDrawerBreakpoint ? "dialog" : undefined}
+              onClick={() => setMobileSidebarOpen(true)}
+            >
+              <PanelLeft size={22} strokeWidth={2} />
+            </button>
             <div className="cp-ai-avatar">AI</div>
             <div>
               <div className="cp-header-title">Laboracle</div>

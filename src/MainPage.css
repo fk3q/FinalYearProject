@@ -519,8 +519,9 @@
  * the colour-mismatch problem entirely (no separate frame to tune).
  *
  * Occupies the right ~36% of the hero. Headline / CTAs / stats sit
- * in the left two-thirds and remain perfectly legible. Auto-hides
- * on phones so the copy can own the small screen. */
+ * in the left two-thirds and remain perfectly legible. Below ~640px the
+ * frame drops into normal flow as a short strip under the copy so the
+ * clip stays visible on phones without crowding the headline. */
 .hero-video-frame {
   position: absolute;
   /* Shifted ~80px DOWN inside the hero so the visible window of the
@@ -599,11 +600,41 @@
   }
 }
 
-/* Mobile: hide the decorative video panel entirely so the hero
-   copy and stats own the small screen. */
+/* Mobile: pull the companion video into normal flow below the copy so
+   it stays visible (absolute right panel was effectively zero-width).
+   Short cinematic strip — keeps headline readable above the clip. */
 @media (max-width: 640px) {
   .hero-video-frame {
-    display: none;
+    position: relative;
+    top: auto;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    width: 100%;
+    max-width: 420px;
+    height: clamp(168px, 44vw, 220px);
+    margin: 28px auto 0;
+    z-index: 2;
+    border-radius: 14px;
+    overflow: hidden;
+  }
+
+  .hero-video-frame::before {
+    background:
+      linear-gradient(
+        to bottom,
+        transparent 42%,
+        #4E3D8C 100%
+      ),
+      linear-gradient(
+        to top,
+        transparent 82%,
+        #4E3D8C 100%
+      );
+  }
+
+  .hero-video {
+    object-position: center 28%;
   }
 }
 
@@ -1756,12 +1787,30 @@
     flex-wrap: wrap;
   }
 
-  /* Section titles + how-it-works arrow rotation. */
+  /* Section titles + how-it-works: single column so cards stay readable. */
   .section-title {
     font-size: 30px;
   }
+  .steps {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 16px;
+    max-width: 440px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .step {
+    flex: 0 0 auto;
+    width: 100%;
+    min-width: 0;
+    overflow-wrap: break-word;
+    word-break: normal;
+  }
   .step-arrow {
     transform: rotate(90deg);
+    align-self: center;
+    line-height: 1;
   }
 
   /* Pricing: cards already auto-fit on minmax(280px, 1fr); make sure
@@ -1801,7 +1850,7 @@
   .section-title {
     font-size: 26px;
   }
-  .features-bento,
+  .features-bento-stack,
   .pricing-grid,
   .footer-content {
     /* Force single-column on phones so cards never overlap or get
@@ -1820,13 +1869,8 @@
     font-size: 14.5px;
   }
 
-  .steps {
-    gap: 14px;
-  }
   .step {
-    padding: 28px 20px;
-    min-width: 0;
-    width: 100%;
+    padding: 28px 22px;
   }
 
   .pricing {
@@ -1888,10 +1932,19 @@
   body,
   .hero-content,
   .bento-card,
-  .step,
   .pricing-card,
   .footer-section {
     overflow-wrap: anywhere;
     word-break: break-word;
+  }
+
+  /* Keep prose in step cards readable — `overflow-wrap:anywhere` splits
+     mid-word aggressively when columns get narrow. */
+  .step,
+  .step h3,
+  .step p {
+    overflow-wrap: break-word;
+    word-break: normal;
+    hyphens: auto;
   }
 }
