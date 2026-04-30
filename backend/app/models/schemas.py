@@ -261,6 +261,7 @@ class UserPublic(BaseModel):
     created_at: Optional[datetime] = None
     subscription_tier: str = "free"
     theme: Literal["light", "dark"] = "light"
+    profile_picture_url: Optional[str] = None
 
     model_config = {"from_attributes": True}
 

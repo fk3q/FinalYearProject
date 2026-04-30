@@ -17,22 +17,7 @@
   gap: 8px;
 }
 
-.pf-brand {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  cursor: pointer;
-  margin-bottom: 16px;
-}
-
-.pf-brand-logo {
-  height: 110px;
-  width: auto;
-  display: block;
-  object-fit: contain;
-  filter: brightness(1.15);
-}
+/* Top logo matches Chat sidebar — ChatSidebarBrandMark.css (.cp-brand margin). */
 
 .pf-nav {
   display: flex;

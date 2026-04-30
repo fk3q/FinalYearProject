@@ -20,6 +20,7 @@ import {
   MAX_RECORDING_SECONDS,
 } from "./api/voice";
 import AccountSidebarBlock from "./components/AccountSidebarBlock";
+import ChatSidebarBrandMark from "./components/ChatSidebarBrandMark";
 import AIModesIntro from "./components/AIModesIntro";
 import ChatIntroVideo from "./components/ChatIntroVideo";
 import MicWaveform from "./components/MicWaveform";
@@ -680,36 +681,12 @@ const ChatPage = () => {
         >
           <X size={22} strokeWidth={2} />
         </button>
-        <button
-          type="button"
-          className="cp-brand"
-          aria-label="Laboracle — go to home"
+        <ChatSidebarBrandMark
           onClick={() => {
             setMobileSidebarOpen(false);
             navigate("/");
           }}
-        >
-          {/* Round logo badge with the same purple-bubble motif used in
-              the marketing navbar. The badge clips the logo into a
-              circle and the bubble spans rise from the bottom of the
-              badge through and above the logo. The bubbles container
-              has overflow:visible so they trail upward off the disc. */}
-          <span className="cp-brand-circle">
-            <img
-              src="/laboracle-logo.png"
-              alt="Laboracle"
-              className="cp-brand-logo"
-            />
-            <span className="cp-logo-bubbles" aria-hidden="true">
-              <span className="cp-logo-bubble" />
-              <span className="cp-logo-bubble" />
-              <span className="cp-logo-bubble" />
-              <span className="cp-logo-bubble" />
-              <span className="cp-logo-bubble" />
-              <span className="cp-logo-bubble" />
-            </span>
-          </span>
-        </button>
+        />
 
         <nav className="cp-nav">
           <button

@@ -1,0 +1,122 @@
+/* Shared chat/profile sidebar logo — must stay in sync with Chat sidebar (circle + bubbles). */
+
+.cp-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  margin: 6px 0 14px;
+}
+
+button.cp-brand {
+  background: none;
+  border: none;
+  padding: 0;
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  border-radius: 12px;
+}
+
+button.cp-brand:focus-visible {
+  outline: 2px solid rgba(167, 139, 250, 0.95);
+  outline-offset: 3px;
+}
+
+.cp-brand-circle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid rgba(124, 58, 237, 0.22);
+  isolation: isolate;
+}
+
+.cp-brand-logo {
+  height: 56px;
+  width: 56px;
+  display: block;
+  object-fit: contain;
+  filter: brightness(1.05);
+  position: relative;
+  z-index: 2;
+}
+
+.cp-logo-bubbles {
+  position: absolute;
+  left: 50%;
+  top: -36px;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 120px;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 1;
+}
+
+.cp-logo-bubble {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  width: var(--cp-bub-size, 6px);
+  height: var(--cp-bub-size, 6px);
+  border-radius: 50%;
+  opacity: 0;
+  transform: translate(-50%, 0) scale(0.4);
+  animation: cp-bub-rise var(--cp-bub-dur, 4.4s) ease-in-out
+    var(--cp-bub-delay, 0s) infinite;
+  will-change: transform, opacity;
+}
+
+.cp-logo-bubble:nth-child(odd) {
+  background: rgba(167, 139, 250, 0.32);
+  border: 1px solid rgba(124, 58, 237, 0.55);
+}
+.cp-logo-bubble:nth-child(even) {
+  background: transparent;
+  border: 1.5px solid rgba(118, 75, 162, 0.65);
+}
+
+.cp-logo-bubble:nth-child(1) {
+  left: 44%; --cp-bub-size: 7px; --cp-bub-dur: 4.6s; --cp-bub-delay: 0s;
+}
+.cp-logo-bubble:nth-child(2) {
+  left: 58%; --cp-bub-size: 5px; --cp-bub-dur: 3.8s; --cp-bub-delay: 0.7s;
+}
+.cp-logo-bubble:nth-child(3) {
+  left: 38%; --cp-bub-size: 9px; --cp-bub-dur: 5.6s; --cp-bub-delay: 1.4s;
+}
+.cp-logo-bubble:nth-child(4) {
+  left: 64%; --cp-bub-size: 4px; --cp-bub-dur: 3.4s; --cp-bub-delay: 2.2s;
+}
+.cp-logo-bubble:nth-child(5) {
+  left: 50%; --cp-bub-size: 6px; --cp-bub-dur: 4.8s; --cp-bub-delay: 3s;
+}
+.cp-logo-bubble:nth-child(6) {
+  left: 54%; --cp-bub-size: 8px; --cp-bub-dur: 5.2s; --cp-bub-delay: 3.8s;
+}
+
+@keyframes cp-bub-rise {
+  0% {
+    transform: translate(-50%, 4px) scale(0.4);
+    opacity: 0;
+  }
+  18% { opacity: 1; }
+  85% { opacity: 0.85; }
+  100% {
+    transform: translate(-50%, -76px) scale(1.05);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cp-logo-bubble {
+    animation: none;
+    opacity: 0;
+  }
+}

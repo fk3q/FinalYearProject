@@ -85,6 +85,7 @@ def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
     email_norm = email.strip().lower()
     q = """
     SELECT id, email, password_hash, first_name, last_name, phone, created_at,
+           profile_picture_data,
            COALESCE(subscription_tier, 'free') AS subscription_tier,
            COALESCE(theme, 'light') AS theme,
            google_sub, facebook_id, microsoft_sub
@@ -96,6 +97,7 @@ def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
 def get_public_user_by_id(user_id: int) -> Optional[Dict[str, Any]]:
     q = """
     SELECT id, email, first_name, last_name, phone, created_at,
+           profile_picture_data,
            COALESCE(subscription_tier, 'free') AS subscription_tier,
            COALESCE(theme, 'light') AS theme
     FROM users WHERE id = %s LIMIT 1

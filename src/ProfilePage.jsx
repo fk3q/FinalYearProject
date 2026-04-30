@@ -19,6 +19,7 @@ import {
 import { createPortalSession } from "./api/payments";
 import { useUsageTracker } from "./hooks/useUsageTracker";
 import AccountSidebarBlock from "./components/AccountSidebarBlock";
+import ChatSidebarBrandMark from "./components/ChatSidebarBrandMark";
 import ThemeToggle from "./components/ThemeToggle";
 import { useTheme } from "./contexts/ThemeContext";
 import "./ProfilePage.css";
@@ -261,9 +262,7 @@ const ProfilePage = () => {
   return (
     <div className="pf-page">
       <aside className="pf-sidebar">
-        <div className="pf-brand" onClick={() => navigate("/")}>
-          <img src="/laboracle-logo.png" alt="Laboracle" className="pf-brand-logo" />
-        </div>
+        <ChatSidebarBrandMark onClick={() => navigate("/")} />
 
         <nav className="pf-nav">
           <button className="pf-nav-item" onClick={() => navigate("/upload")}>

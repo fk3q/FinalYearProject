@@ -1,6 +1,10 @@
-import React from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { getSessionUser, logoutUser } from "../api/auth";
+import {
+  getSessionUser,
+  logoutUser,
+  SESSION_USER_CHANGED_EVENT,
+} from "../api/auth";
 import "./AccountSidebarBlock.css";
 
 function initialsFrom(user) {
@@ -21,7 +25,15 @@ export default function AccountSidebarBlock({
   onBeforeNavigate,
 }) {
   const navigate = useNavigate();
-  const user = getSessionUser();
+  const [sessionEpoch, setSessionEpoch] = useState(0);
+
+  useEffect(() => {
+    const bump = () => setSessionEpoch((n) => n + 1);
+    window.addEventListener(SESSION_USER_CHANGED_EVENT, bump);
+    return () => window.removeEventListener(SESSION_USER_CHANGED_EVENT, bump);
+  }, []);
+
+  const user = useMemo(() => getSessionUser(), [sessionEpoch]);
   const p = variant === "cp" ? "cp" : "up";
 
   if (!user) return null;

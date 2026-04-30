@@ -15,9 +15,15 @@ export const USER_STORAGE_KEY = "laboracle_user";
 export const AUTH_TOKEN_KEY = "laboracle_auth_token";
 export const AUTH_TOKEN_EXPIRES_KEY = "laboracle_auth_token_expires";
 
+/** Fired when session user is saved or cleared — sidebar avatar refreshes. */
+export const SESSION_USER_CHANGED_EVENT = "laboracle-session-changed";
+
 export function saveSessionUser(user) {
   if (user && typeof user === "object") {
     sessionStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event(SESSION_USER_CHANGED_EVENT));
+    }
   }
 }
 
@@ -33,6 +39,9 @@ export function getSessionUser() {
 export function clearSessionUser() {
   sessionStorage.removeItem(USER_STORAGE_KEY);
   clearAuthToken();
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(SESSION_USER_CHANGED_EVENT));
+  }
 }
 
 /** Merge fields into the stored session user (e.g. after updating profile photo). */

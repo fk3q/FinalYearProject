@@ -425,6 +425,8 @@ async def logout(token: Optional[str] = Depends(get_bearer_token)):
 
 def _normalize_user_row(row: Dict[str, Any]) -> Dict[str, Any]:
     """Ensure keys match UserPublic (e.g. datetime serialization left to Pydantic)."""
+    pic = row.get("profile_picture_data")
+    profile_picture_url = str(pic) if pic else None
     return {
         "id": int(row["id"]),
         "email": str(row["email"]),
@@ -434,6 +436,7 @@ def _normalize_user_row(row: Dict[str, Any]) -> Dict[str, Any]:
         "created_at": row.get("created_at"),
         "subscription_tier": str(row.get("subscription_tier") or "free"),
         "theme": str(row.get("theme") or "light"),
+        "profile_picture_url": profile_picture_url,
     }
 
 
