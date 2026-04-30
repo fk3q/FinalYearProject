@@ -610,36 +610,35 @@
      top, so the eye reads "ambient motion in the hero" rather than
      "video element". No visible borders, no rounded corners that would
      hint at a contained shape. */
-  /* Tall cinematic window flush with the bottom of the hero.
-     Shows the full character sitting + the streetlamp above her.
-     Top edge fades into the purple where the stats sit; bottom edge
-     is flush with the hero / next-section boundary; sides feather
-     softly via a purple rim wash. */
+  /* Full-bleed cinematic window flush with the bottom of the hero.
+     Breaks out of `.hero`'s 16px side padding via negative margins so
+     the strip spans the full hero width edge-to-edge. */
   .hero-video-frame {
     position: relative;
     top: auto;
     right: auto;
     bottom: auto;
     left: auto;
-    /* Full-bleed across the hero column. */
-    width: 100%;
+    /* Edge-to-edge: cancel `.hero`'s 16px side padding. */
+    width: calc(100% + 32px);
     max-width: none;
-    /* Tall enough to fit the lamp top → character feet on a phone. */
+    margin-left: -16px;
+    margin-right: -16px;
+    margin-top: 24px;
+    /* Negative bottom margin cancels `.hero`'s mobile padding-bottom
+       (70px) so the strip touches the hero's bottom edge. The `.hero`
+       has `overflow: hidden`, so any overshoot beyond the section is
+       clipped at the boundary. */
+    margin-bottom: -70px;
     height: clamp(360px, 105vw, 520px);
-    /* `margin-bottom: -70px` cancels `.hero`'s mobile padding-bottom,
-       so the strip extends all the way down to where the purple hero
-       ends and the white "Powerful Features" section begins.
-       `.hero` has `overflow: hidden`, so any overshoot is clipped. */
-    margin: 24px auto -70px;
     z-index: 0;
     border-radius: 0;
     overflow: hidden;
     background: transparent;
     box-shadow: none;
     isolation: isolate;
-    /* Top fades to transparent (blends into the stats area above);
-       middle + bottom are solid so the character + lamp are crisp,
-       and the bottom edge sits flush with the section boundary. */
+    /* Top fades into the stats area; bottom stays solid so it meets the
+       section boundary cleanly. */
     -webkit-mask-image: linear-gradient(
       180deg,
       transparent 0%,
@@ -660,8 +659,7 @@
   }
 
   /* Side-rim purple wash. Centre stays clear so the subject is
-     recognisable; left/right edges feather into hero purple so the
-     full-bleed strip doesn't show vertical seams. */
+     recognisable; left/right edges feather into hero purple. */
   .hero-video-frame::before {
     background:
       linear-gradient(
@@ -682,16 +680,20 @@
 
   .hero-video {
     object-fit: cover;
-    /* Anchor right side of source (where character + lamp live) and
-       centre vertically so both lamp top and character feet fit. */
-    object-position: right center;
-    transform: none;
-    transform-origin: center center;
+    /* Anchor closer to the top of the source clip so the source's
+       black floor letterbox falls below the visible window. The
+       character + lamp stay centred horizontally on the right. */
+    object-position: right 30%;
+    /* Slight scale so any residual letterbox at the source's edges is
+       cropped past the container bounds. */
+    transform: scale(1.04);
+    transform-origin: right center;
     filter: brightness(1.08) contrast(1.04) saturate(1.02);
   }
 
   @media (prefers-reduced-motion: reduce) {
     .hero-video {
+      transform: none;
       filter: brightness(1.04) saturate(1.0);
     }
   }

@@ -1,21 +1,74 @@
-/* GIS `outline` theme draws its own 8px-rounded chrome inside the iframe.
-   An outer border + overflow:hidden duplicated that edge and clipped text.
-   Wrapper stays chrome-free; hover uses Google palette on the shell only. */
+/* Visible shell mirrors the Microsoft + Facebook buttons exactly so all
+   three OAuth options align in the auth column. The Google Identity
+   Services button is rendered invisibly on top via `.google-signin-overlay`
+   to capture the click and run the official auth flow. */
 .google-signin-mount {
-  box-sizing: border-box;
-  display: flex;
-  justify-content: center;
-  align-items: stretch;
+  position: relative;
   width: 100%;
   min-height: 44px;
-  padding: 0;
   border-radius: 8px;
-  border: none;
-  background: transparent;
-  overflow: visible;
-  transition: box-shadow 0.25s ease;
+  isolation: isolate;
 }
 
+.google-signin-shell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 8px;
+  border: 1px solid #d0d5dd;
+  background: #ffffff;
+  color: #1f2937;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  transition: background 0.2s, border-color 0.2s, box-shadow 0.25s;
+}
+
+.google-signin-btn__icon {
+  flex: 0 0 auto;
+  display: block;
+}
+
+.google-signin-shell__label {
+  flex: 1 1 auto;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The actual GIS rendered button. Stacked on top of the shell, sized to
+   match exactly, but rendered invisible so only our shell shows. Pointer
+   events flow through to GIS so its click handler runs. */
+.google-signin-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  opacity: 0;
+  /* Centre the GIS button inside the overlay if its native width is
+     narrower than the wrapper. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.google-signin-overlay > div,
+.google-signin-overlay iframe {
+  width: 100% !important;
+  height: 100% !important;
+  border: 0 !important;
+}
+
+/* Hover styling on the visible shell, driven by hover on the wrapper so
+   the cursor over the invisible overlay still triggers our brand-colour
+   ring. Touch devices skip the animation. */
 @keyframes google-signin-brand-ring {
   0% {
     box-shadow:
@@ -40,14 +93,16 @@
 }
 
 @media (hover: hover) {
-  .google-signin-mount:not(.google-signin-mount--disabled):hover {
+  .google-signin-mount:not(.google-signin-mount--disabled):hover .google-signin-shell {
+    background: #f9fafb;
+    border-color: #b6bcc7;
     animation: google-signin-brand-ring 2.5s ease infinite;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   @media (hover: hover) {
-    .google-signin-mount:not(.google-signin-mount--disabled):hover {
+    .google-signin-mount:not(.google-signin-mount--disabled):hover .google-signin-shell {
       animation: none;
       box-shadow:
         0 0 0 2px rgba(66, 133, 244, 0.45),
@@ -56,26 +111,13 @@
   }
 }
 
-.google-signin-mount > div {
-  box-sizing: border-box !important;
-  width: 100% !important;
-  min-height: 44px;
-  display: flex !important;
-  justify-content: center !important;
-  align-items: center !important;
-}
-
-.google-signin-mount iframe {
-  flex: 0 1 auto;
-  width: 100% !important;
-  max-width: 100% !important;
-  border: 0 !important;
-  margin: 0 auto !important;
-}
-
 .google-signin-mount--disabled {
   pointer-events: none;
-  opacity: 0.45;
+  opacity: 0.55;
+}
+
+.google-signin-mount--disabled .google-signin-shell {
+  cursor: not-allowed;
 }
 
 .google-signin-hint {
@@ -86,6 +128,17 @@
   border-radius: 8px;
   padding: 10px 12px;
   margin: 0;
+}
+
+html[data-theme="dark"] .google-signin-shell {
+  background: #1f2937;
+  border-color: #334155;
+  color: #e5e7eb;
+}
+
+html[data-theme="dark"] .google-signin-mount:not(.google-signin-mount--disabled):hover .google-signin-shell {
+  background: #243244;
+  border-color: #475569;
 }
 
 html[data-theme="dark"] .google-signin-hint {
