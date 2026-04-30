@@ -24,6 +24,27 @@ from app.config import settings
 from .base import ProviderClient
 
 
+def _model_omits_temperature(model_id: str) -> bool:
+    """
+    True for Claude vendor model IDs that reject the `temperature` parameter.
+
+    Anthropic deprecated temperature on the Claude 4 family (Opus 4.x,
+    Sonnet 4.x, and any extended-thinking variant): the API returns a
+    400 ``invalid_request_error`` with message
+    `"temperature" is deprecated for this model.` if it's set.
+
+    We don't try to be exhaustive — a substring check on the major
+    vendor families covers what the registry exposes today and any
+    future patch revision (4.7, 4.8, ...) without code changes.
+    """
+    mid = (model_id or "").lower()
+    return (
+        mid.startswith("claude-opus-4")
+        or mid.startswith("claude-sonnet-4")
+        or "thinking" in mid
+    )
+
+
 class AnthropicProvider(ProviderClient):
     provider = "anthropic"
 
@@ -45,12 +66,21 @@ class AnthropicProvider(ProviderClient):
                 f"langchain-anthropic is not installed: {_IMPORT_ERROR!r}"
             )
 
-        llm = ChatAnthropic(
-            model=model_id,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            anthropic_api_key=settings.ANTHROPIC_API_KEY,
-        )
+        # Build the kwargs dict so we can omit `temperature` entirely
+        # for model families that reject it. Passing temperature=None
+        # to ChatAnthropic still sends `temperature` in the request
+        # payload on some langchain-anthropic versions, so we don't
+        # rely on that — the parameter just isn't passed at all when
+        # the model doesn't accept it.
+        kwargs: dict = {
+            "model": model_id,
+            "max_tokens": max_tokens,
+            "anthropic_api_key": settings.ANTHROPIC_API_KEY,
+        }
+        if not _model_omits_temperature(model_id):
+            kwargs["temperature"] = temperature
+
+        llm = ChatAnthropic(**kwargs)
         # ChatAnthropic accepts the same SystemMessage/HumanMessage
         # interface as ChatOpenAI thanks to LangChain's standardisation.
         messages = [SystemMessage(content=system), HumanMessage(content=user)]
