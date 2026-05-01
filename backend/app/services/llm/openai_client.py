@@ -8,6 +8,8 @@ the adapter never silently picks up a key from the host environment we
 didn't intend.
 """
 
+from typing import Any, List, Optional
+
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 
@@ -31,6 +33,7 @@ class OpenAIProvider(ProviderClient):
         user: str,
         max_tokens: int,
         temperature: float,
+        images: Optional[List[str]] = None,
     ) -> str:
         # New ChatOpenAI per call so each request can target a different
         # model_id without keeping a forest of long-lived clients alive.
@@ -41,6 +44,24 @@ class OpenAIProvider(ProviderClient):
             max_tokens=max_tokens,
             openai_api_key=settings.OPENAI_API_KEY,
         )
-        messages = [SystemMessage(content=system), HumanMessage(content=user)]
+
+        if images:
+            # Vision call: build a multipart content array. OpenAI accepts
+            # `image_url` blocks where the URL is either an https URL or an
+            # inline data URL — the frontend always sends data URLs in MVP.
+            content: List[Any] = [{"type": "text", "text": user}]
+            for url in images:
+                if not url:
+                    continue
+                content.append(
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": url, "detail": "auto"},
+                    }
+                )
+            messages = [SystemMessage(content=system), HumanMessage(content=content)]
+        else:
+            messages = [SystemMessage(content=system), HumanMessage(content=user)]
+
         resp = await llm.ainvoke(messages)
         return (resp.content or "").strip()

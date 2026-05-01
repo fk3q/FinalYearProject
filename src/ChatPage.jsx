@@ -13,6 +13,7 @@ import {
   Loader2,
   PanelLeft,
   X,
+  Image as ImageIcon,
 } from "lucide-react";
 import {
   transcribeAudio,
@@ -296,6 +297,43 @@ const ChatPage = () => {
 
   const chatEndRef = useRef(null);
   const textareaRef = useRef(null);
+  const imageInputRef = useRef(null);
+
+  // Inline image attachments for the next message. Each entry is a
+  // `{ id, name, dataUrl }` record where `dataUrl` is a
+  // `data:<mime>;base64,<payload>` string ready to ship to the backend
+  // and embed into the user's chat bubble. Cleared after every send.
+  const [pendingImages, setPendingImages] = useState([]);
+
+  const fileToDataUrl = (file) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ""));
+      reader.onerror = () => reject(reader.error || new Error("Could not read image"));
+      reader.readAsDataURL(file);
+    });
+
+  const handleImagePick = async (e) => {
+    const files = Array.from(e.target.files || []);
+    e.target.value = "";
+    if (!files.length) return;
+    const onlyImages = files.filter((f) => /^image\//i.test(f.type));
+    try {
+      const additions = await Promise.all(
+        onlyImages.map(async (f) => ({
+          id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          name: f.name || "image",
+          dataUrl: await fileToDataUrl(f),
+        }))
+      );
+      setPendingImages((p) => [...p, ...additions]);
+    } catch (err) {
+      console.error("Image read failed", err);
+    }
+  };
+
+  const removePendingImage = (id) =>
+    setPendingImages((p) => p.filter((img) => img.id !== id));
 
   const user = getSessionUser();
   const canSaveChats = Boolean(user?.id);
@@ -376,21 +414,31 @@ const ChatPage = () => {
 
   const send = async () => {
     const query = input.trim();
-    if (!query) return;
+    if (!query && pendingImages.length === 0) return;
 
-    const userMsg = { id: Date.now(), type: "user", text: query };
+    const attachedImages = pendingImages;
+    const userMsg = {
+      id: Date.now(),
+      type: "user",
+      text: query,
+      images: attachedImages.map((img) => img.dataUrl),
+    };
     setMessages((p) => [...p, userMsg]);
     setInput("");
+    setPendingImages([]);
     setIsTyping(true);
 
     try {
       const body = {
-        query,
+        query: query || "Describe what's in the attached image(s).",
         mode: aiMode,
         user_role: userRole,
       };
       if (sessionId) body.session_id = sessionId;
       if (selectedModelId) body.model = selectedModelId;
+      if (attachedImages.length) {
+        body.images = attachedImages.map((img) => img.dataUrl);
+      }
 
       const res = await fetch(`${getApiBase()}/api/chat/query`, {
         method: "POST",
@@ -989,7 +1037,22 @@ const ChatPage = () => {
               {m.type === "bot" && <div className="cp-avatar cp-avatar--bot">AI</div>}
 
               <div className="cp-bubble">
-                <p className="cp-bubble-text">{m.text}</p>
+                {m.type === "user" && m.images && m.images.length > 0 && (
+                  <div className="cp-bubble-images">
+                    {m.images.map((src, i) => (
+                      <a
+                        key={i}
+                        href={src}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="cp-bubble-image"
+                      >
+                        <img src={src} alt="" />
+                      </a>
+                    ))}
+                  </div>
+                )}
+                {m.text && <p className="cp-bubble-text">{m.text}</p>}
 
                 {m.type === "bot" && m.confidence > 0 && (
                   <div className="cp-meta">
@@ -1050,7 +1113,43 @@ const ChatPage = () => {
           </div>
         )}
 
+        {pendingImages.length > 0 && (
+          <div className="cp-pending-images">
+            {pendingImages.map((img) => (
+              <div key={img.id} className="cp-pending-image">
+                <img src={img.dataUrl} alt={img.name} />
+                <button
+                  type="button"
+                  className="cp-pending-image__remove"
+                  onClick={() => removePendingImage(img.id)}
+                  aria-label={`Remove ${img.name}`}
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="cp-input-bar">
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            hidden
+            onChange={handleImagePick}
+          />
+          <button
+            type="button"
+            className="cp-image-btn"
+            onClick={() => imageInputRef.current?.click()}
+            disabled={transcribing}
+            aria-label="Attach images"
+            title="Attach images"
+          >
+            <ImageIcon size={18} />
+          </button>
           <textarea
             ref={textareaRef}
             className="cp-textarea"
@@ -1126,7 +1225,12 @@ const ChatPage = () => {
           <button
             className="cp-send-btn"
             onClick={send}
-            disabled={!input.trim() || isTyping || recording || transcribing}
+            disabled={
+              (!input.trim() && pendingImages.length === 0) ||
+              isTyping ||
+              recording ||
+              transcribing
+            }
           >
             Send
           </button>

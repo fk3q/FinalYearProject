@@ -95,6 +95,16 @@ class ChatRequest(BaseModel):
             "models the user's tier doesn't allow."
         ),
     )
+    images: Optional[List[str]] = Field(
+        default=None,
+        description=(
+            "Optional list of inline image data URLs sent alongside the text "
+            "query. Each entry must be a `data:<mime>;base64,<payload>` URL. "
+            "All current Laboracle models accept vision input, so the image "
+            "is forwarded to whichever provider serves the chosen model. "
+            "Not persisted to chat history in the current MVP."
+        ),
+    )
 
 
 class ModelInfoResponse(BaseModel):

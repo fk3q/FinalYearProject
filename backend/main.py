@@ -259,6 +259,7 @@ async def chat_query(
             user_role=body.user_role,
             owner_user_id=user_id,
             model=body.model,
+            images=body.images,
         )
         logger.info("Chat success: confidence=%d, chunks=%d", result.confidence, result.retrieved_chunks)
     except HTTPException:

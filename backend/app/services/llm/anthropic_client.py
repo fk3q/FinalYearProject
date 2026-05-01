@@ -7,6 +7,8 @@ view. If ANTHROPIC_API_KEY is unset we report `is_configured = False`
 and the registry hides every Claude model from /api/models.
 """
 
+from typing import Any, List, Optional
+
 from langchain_core.messages import HumanMessage, SystemMessage
 
 try:
@@ -21,7 +23,7 @@ except Exception as _exc:  # pragma: no cover - install-time edge case
 
 from app.config import settings
 
-from .base import ProviderClient
+from .base import ProviderClient, parse_data_url
 
 
 def _model_omits_temperature(model_id: str) -> bool:
@@ -60,6 +62,7 @@ class AnthropicProvider(ProviderClient):
         user: str,
         max_tokens: int,
         temperature: float,
+        images: Optional[List[str]] = None,
     ) -> str:
         if ChatAnthropic is None:
             raise RuntimeError(
@@ -81,8 +84,30 @@ class AnthropicProvider(ProviderClient):
             kwargs["temperature"] = temperature
 
         llm = ChatAnthropic(**kwargs)
-        # ChatAnthropic accepts the same SystemMessage/HumanMessage
-        # interface as ChatOpenAI thanks to LangChain's standardisation.
-        messages = [SystemMessage(content=system), HumanMessage(content=user)]
+
+        if images:
+            # Anthropic vision: each image becomes an `image` content block
+            # with a base64 source. Skip anything that isn't a valid data URL
+            # (a stray http URL would just confuse the API here).
+            content: List[Any] = [{"type": "text", "text": user}]
+            for url in images:
+                parsed = parse_data_url(url)
+                if not parsed:
+                    continue
+                mime, payload = parsed
+                content.append(
+                    {
+                        "type": "image",
+                        "source": {
+                            "type": "base64",
+                            "media_type": mime,
+                            "data": payload,
+                        },
+                    }
+                )
+            messages = [SystemMessage(content=system), HumanMessage(content=content)]
+        else:
+            messages = [SystemMessage(content=system), HumanMessage(content=user)]
+
         resp = await llm.ainvoke(messages)
         return (resp.content or "").strip()

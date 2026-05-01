@@ -49,6 +49,7 @@ class ChatService:
         user_role: str = 'student',
         owner_user_id: Optional[int] = None,
         model: Optional[str] = None,
+        images: Optional[List[str]] = None,
     ) -> ChatResponse:
         """
         Main entry point.
@@ -58,6 +59,11 @@ class ChatService:
         is restricted to chunks tagged with that owner. Other users' documents
         are never visible. Anonymous queries (no `owner_user_id`) return no
         results because every chunk is tied to an owner.
+
+        Vision: `images` is an optional list of `data:<mime>;base64,…` URLs
+        forwarded to the LLM alongside the text. Currently used only on the
+        no-context (general) path; document-grounded answers ignore images
+        in this MVP since FAISS retrieval is text-only.
         """
 
         # ── Guard: must be signed in to access documents ─────────────────────
@@ -116,7 +122,7 @@ class ChatService:
                     retrieved_chunks=0,
                 )
             return await self._answer_without_context(
-                query, mode, user_role, chosen_model,
+                query, mode, user_role, chosen_model, images=images,
             )
 
         # ── Step 1: embed the user query ─────────────────────────────────────
@@ -169,7 +175,7 @@ class ChatService:
                     retrieved_chunks=0,
                 )
             return await self._answer_without_context(
-                query, mode, user_role, chosen_model,
+                query, mode, user_role, chosen_model, images=images,
             )
 
         docs   = [doc   for doc, _     in results]
@@ -186,7 +192,9 @@ class ChatService:
             f"Question: {query}"
         )
 
-        answer = await self._invoke_llm(chosen_model, system_prompt, user_message)
+        answer = await self._invoke_llm(
+            chosen_model, system_prompt, user_message, images=images,
+        )
 
         if mode == 'exploratory':
             answer += (
@@ -214,6 +222,7 @@ class ChatService:
         mode: str,
         user_role: str,
         model: str,
+        images: Optional[List[str]] = None,
     ) -> ChatResponse:
         """
         Exploratory-mode fallback when there's nothing to retrieve from --
@@ -224,7 +233,9 @@ class ChatService:
         to lean on).
         """
         system_prompt = self._system_prompt_general(mode, user_role)
-        answer = await self._invoke_llm(model, system_prompt, query)
+        answer = await self._invoke_llm(
+            model, system_prompt, query, images=images,
+        )
 
         if mode == "exploratory":
             answer += (
@@ -292,7 +303,14 @@ class ChatService:
             )
         return fallback.id
 
-    async def _invoke_llm(self, model_id: str, system: str, user: str) -> str:
+    async def _invoke_llm(
+        self,
+        model_id: str,
+        system: str,
+        user: str,
+        *,
+        images: Optional[List[str]] = None,
+    ) -> str:
         """
         Single point through which every LLM call flows. Keeps the
         per-vendor wiring (LangChain wrappers, API key plumbing) out of
@@ -307,6 +325,7 @@ class ChatService:
                 user=user,
                 max_tokens=settings.LLM_MAX_TOKENS,
                 temperature=settings.LLM_TEMPERATURE,
+                images=images,
             )
         except HTTPException:
             raise
