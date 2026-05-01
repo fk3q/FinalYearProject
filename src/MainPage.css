@@ -1059,12 +1059,17 @@
   overflow: hidden;
   isolation: isolate;
 
+  /* Slower, smoother swap. Previous 0.38 s read as a quick snap when
+     the card slid under the cursor; bumped to 0.65 s on a symmetric
+     ease-in-out so the motion feels fluid the whole way through.
+     Transform uses the same curve and a slightly shorter duration so
+     the lift never lags behind the slide. */
   transition:
-    grid-column 0.38s cubic-bezier(0.25, 1, 0.3, 1),
-    grid-row 0.38s cubic-bezier(0.25, 1, 0.3, 1),
-    transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1),
-    border-color 0.25s ease,
-    box-shadow 0.3s ease;
+    grid-column 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    grid-row 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.35s ease,
+    box-shadow 0.4s ease;
 }
 
 /* Semantic marker — spanning handled per `.features-bento-row`. */

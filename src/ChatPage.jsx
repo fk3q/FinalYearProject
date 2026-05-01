@@ -1057,7 +1057,7 @@ const ChatPage = () => {
               <PanelLeft size={22} strokeWidth={2} />
             </button>
             <div className="cp-ai-avatar">AI</div>
-            <div>
+            <div className="cp-header-titles">
               <div className="cp-header-title">Laboracle</div>
               <div className="cp-header-sub">
                 {AI_MODE_LABELS[aiMode] || AI_MODE_LABELS.deterministic} &bull;{" "}
