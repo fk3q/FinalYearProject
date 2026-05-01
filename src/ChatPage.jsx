@@ -335,6 +335,52 @@ const ChatPage = () => {
   const removePendingImage = (id) =>
     setPendingImages((p) => p.filter((img) => img.id !== id));
 
+  // Clipboard paste — when the user presses Ctrl/Cmd+V (or right-click ▸
+  // Paste) anywhere on the chat surface and the clipboard contains an
+  // image (e.g. a Win+Shift+S screenshot, a copied PNG from Figma, etc.),
+  // ingest each image item the same way the file picker does.
+  // We attach the listener to `document` so paste works regardless of
+  // whether the textarea, chat surface, or whitespace is focused.
+  const handlePaste = useCallback(async (e) => {
+    const items = e.clipboardData?.items;
+    if (!items || items.length === 0) return;
+
+    const imageFiles = [];
+    for (let i = 0; i < items.length; i += 1) {
+      const it = items[i];
+      if (it.kind === "file" && /^image\//i.test(it.type)) {
+        const f = it.getAsFile();
+        if (f) imageFiles.push(f);
+      }
+    }
+    if (imageFiles.length === 0) return;
+
+    // Stop the browser from pasting the image as a fat base64 blob into
+    // the textarea (some browsers do that for inline content) — we want
+    // it as an attachment, not in the prompt text.
+    e.preventDefault();
+
+    try {
+      const additions = await Promise.all(
+        imageFiles.map(async (f, idx) => ({
+          id: `${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 6)}`,
+          name: f.name && f.name !== "image.png"
+            ? f.name
+            : `screenshot-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.png`,
+          dataUrl: await fileToDataUrl(f),
+        }))
+      );
+      setPendingImages((p) => [...p, ...additions]);
+    } catch (err) {
+      console.error("Paste image read failed", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener("paste", handlePaste);
+    return () => window.removeEventListener("paste", handlePaste);
+  }, [handlePaste]);
+
   const user = getSessionUser();
   const canSaveChats = Boolean(user?.id);
 
